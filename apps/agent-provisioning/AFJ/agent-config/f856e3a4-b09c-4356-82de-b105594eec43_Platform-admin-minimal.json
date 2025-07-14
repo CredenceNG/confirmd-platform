@@ -1,0 +1,30 @@
+{
+  "label": "f856e3a4-b09c-4356-82de-b105594eec43_Platform-admin",
+  "walletId": "platform-admin",
+  "walletKey": "U2FsdGVkX19l6w/PpuicnGBYThBHolzF27oN0JwfWkc=",
+  "walletType": "postgres",
+  "walletUrl": "confirmd-platform-postgres-1:5432",
+  "walletAccount": "postgres",
+  "walletPassword": "postgres",
+  "walletAdminAccount": "postgres",
+  "walletAdminPassword": "postgres",
+  "walletScheme": "DatabasePerWallet",
+  "walletConnectTimeout": 30,
+  "walletMaxConnections": 10,
+  "walletIdleTimeout": 300,
+  "endpoint": ["http://f856e3a4-b09c-4356-82de-b105594eec43_Platform-admin:9002"],
+  "autoAcceptConnections": true,
+  "autoAcceptCredentials": "contentApproved",
+  "autoAcceptProofs": "contentApproved",
+  "logLevel": 2,
+  "inboundTransport": [
+    {
+      "transport": "http",
+      "port": 9002
+    }
+  ],
+  "outboundTransport": ["http"],
+  "webhookUrl": "http://confirmd-platform-api-gateway-1:4321/wh/f856e3a4-b09c-4356-82de-b105594eec43",
+  "adminPort": 8002,
+  "tenancy": true
+}

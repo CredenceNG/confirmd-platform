@@ -52,6 +52,10 @@
       "description": "Joins the organization as member"
     },
     {
+      "name": "super_admin",
+      "description": "Administrative privileges within organization"
+    },
+    {
       "name": "platform_admin",
       "description": "To setup all the platform of the user"
     }
@@ -140,30 +144,30 @@
   "ledgerConfig": [
     {
       "name": "indy",
-      "details":  {
+      "details": {
         "did:indy": {
-            "bcovrin:testnet":"did:indy:bcovrin:testnet",
-            "indicio:demonet":"did:indy:indicio:demonet",
-            "indicio:mainnet":"did:indy:indicio:mainnet",
-            "indicio:testnet":"did:indy:indicio:testnet"
+          "bcovrin:testnet": "did:indy:bcovrin:testnet",
+          "indicio:demonet": "did:indy:indicio:demonet",
+          "indicio:mainnet": "did:indy:indicio:mainnet",
+          "indicio:testnet": "did:indy:indicio:testnet"
         }
-    }
+      }
     },
     {
       "name": "polygon",
-      "details":  {
+      "details": {
         "did:polygon": {
-            "mainnet":"did:polygon:mainnet",
-            "testnet":"did:polygon:testnet"
+          "mainnet": "did:polygon:mainnet",
+          "testnet": "did:polygon:testnet"
         }
-    }
+      }
     },
     {
       "name": "noLedger",
-      "details":  {
+      "details": {
         "did:key": "did:key",
         "did:web": "did:web"
-    }
+      }
     }
   ],
 

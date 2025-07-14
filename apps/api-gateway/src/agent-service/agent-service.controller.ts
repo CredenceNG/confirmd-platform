@@ -81,7 +81,8 @@ export class AgentController {
     OrgRoles.ISSUER,
     OrgRoles.SUPER_ADMIN,
     OrgRoles.MEMBER,
-    OrgRoles.VERIFIER
+    OrgRoles.VERIFIER,
+    OrgRoles.PLATFORM_ADMIN
   )
   async getAgentHealth(@Param('orgId') orgId: string, @User() reqUser: user, @Res() res: Response): Promise<Response> {
     const agentData = await this.agentService.getAgentHealth(reqUser, orgId);

@@ -43,8 +43,8 @@ export class AuthzService extends BaseService {
     return this.natsClient.sendNatsMessage(this.authServiceProxy, 'user-email-verification', payload);
   }
 
-  async login(email: string, password?: string, isPasskey = false): Promise<ISignInUser> {
-    const payload = { email, password, isPasskey };
+  async login(email: string, password?: string, clientId?: string, clientSecret?: string, isPasskey = false): Promise<ISignInUser> {
+    const payload = { email, password, isPasskey, clientId, clientSecret };
     return this.natsClient.sendNatsMessage(this.authServiceProxy, 'user-holder-login', payload);
   }
   

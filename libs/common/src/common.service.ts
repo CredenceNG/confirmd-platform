@@ -116,10 +116,23 @@ export class CommonService {
         error.response.status
       );
     } else {
+      // Enhanced error handling for cases where error.response is undefined
+      this.logger.error(`❌ Error without response object:`, {
+        message: error.message,
+        name: error.name,
+        code: error.code,
+        stack: error.stack,
+        fullError: JSON.stringify(error)
+      });
+      
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          error: error.response.data ? error.response.data : error.message
+          error: error.message || 'Unknown error occurred',
+          details: {
+            errorName: error.name,
+            errorCode: error.code
+          }
         },
         HttpStatus.INTERNAL_SERVER_ERROR
       );
@@ -153,6 +166,24 @@ export class CommonService {
       throw new BadRequestException('Invalid Credentials');
     }
   }
+
+  // To decrypt strings without JSON parsing (for client secrets)
+  decryptString(encryptedString) {
+    try {
+      const decrypted = CryptoJS.AES.decrypt(encryptedString, process.env.CRYPTO_PRIVATE_KEY);
+      let decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
+      
+      // Remove quotes if present (for JSON-encoded values)
+      if (decryptedString.startsWith('"') && decryptedString.endsWith('"')) {
+        decryptedString = decryptedString.slice(1, -1);
+      }
+      
+      return decryptedString;
+    } catch (error) {
+      throw new BadRequestException('Invalid Credentials');
+    }
+  }
+
   dataEncryption(data: string) {
     // eslint-disable-next-line no-useless-catch
     try {
@@ -225,14 +256,41 @@ export class CommonService {
       );
     }
 
-    throw new HttpException(
-      {
-        statusCode: error.response.status,
+    // Enhanced catch-all error handler with proper null checking
+    if (error.response && error.response.status) {
+      // We have a proper HTTP response
+      throw new HttpException(
+        {
+          statusCode: error.response.status,
+          message: error.message,
+          error: error.response.data ? error.response.data : error.message
+        },
+        error.response.status
+      );
+    } else {
+      // No response object or status - likely a network/connection error
+      this.logger.error(`❌ Error without proper response object in handleCommonErrors:`, {
         message: error.message,
-        error: error.response.data ? error.response.data : error.message
-      },
-      error.response.status
-    );
+        name: error.name,
+        code: error.code,
+        stack: error.stack,
+        fullError: JSON.stringify(error)
+      });
+      
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: error.message || 'Unknown error occurred',
+          error: error.message || 'Network or connection error',
+          details: {
+            errorName: error.name,
+            errorCode: error.code,
+            errorType: 'NO_RESPONSE_OBJECT'
+          }
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   /**

@@ -1,27 +1,34 @@
-import * as sendgrid from '@sendgrid/mail';
-import * as dotenv from 'dotenv';
-import { EmailDto } from './dtos/email.dto';
+import { Resend } from "resend";
+import * as dotenv from "dotenv";
+import { EmailDto } from "./dtos/email.dto";
 
 dotenv.config();
 
-sendgrid.setApiKey(
-  process.env.SENDGRID_API_KEY
-);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendEmail = async (EmailDto: EmailDto): Promise<boolean> => {
   try {
-    const msg = {
-      to: EmailDto.emailTo,
+    const emailData = {
       from: EmailDto.emailFrom,
+      to: EmailDto.emailTo,
       subject: EmailDto.emailSubject,
       text: EmailDto.emailText,
       html: EmailDto.emailHtml,
-      attachments: EmailDto.emailAttachments
+      // Note: Resend has different attachment format than SendGrid
+      // attachments: EmailDto.emailAttachments
     };
-    return await sendgrid.send(msg).then(() => true).catch(() => false);
 
+    const { data, error } = await resend.emails.send(emailData);
+
+    if (error) {
+      console.error("❌ Resend email error:", error);
+      return false;
+    }
+
+    console.log("✅ Email sent successfully via Resend:", data?.id);
+    return true;
   } catch (error) {
+    console.error("❌ Failed to send email via Resend:", error);
     return false;
   }
-
 };

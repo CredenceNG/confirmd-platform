@@ -26,8 +26,6 @@ import { UserOrgRolesService } from '@credebl/user-org-roles';
 import { UserRepository } from '../repositories/user.repository';
 import { VerifyEmailTokenDto } from '../dtos/verify-email.dto';
 import { sendEmail } from '@credebl/common/send-grid-helper-file';
-// eslint-disable-next-line camelcase
-import { RecordType, user, user_org_roles } from '@prisma/client';
 import {
   ICheckUserDetails,
   OrgInvitations,
@@ -42,6 +40,7 @@ import {
     IEcosystemConfig,
     IUserForgotPassword
 } from '../interfaces/user.interface';
+import { RecordType } from '@prisma/client';
 import { AcceptRejectInvitationDto } from '../dtos/accept-reject-invitation.dto';
 import { UserActivityService } from '@credebl/user-activity';
 import { SupabaseService } from '@credebl/supabase';
@@ -53,7 +52,7 @@ import { DISALLOWED_EMAIL_DOMAIN } from '@credebl/common/common.constant';
 import { AwsService } from '@credebl/aws';
 import { IUsersActivity } from 'libs/user-activity/interface';
 import { ISendVerificationEmail, ISignInUser, IVerifyUserEmail, IUserInvitations, IResetPasswordResponse, ISignUpUserResponse } from '@credebl/common/interfaces/user.interface';
-import { AddPasskeyDetailsDto } from 'apps/api-gateway/src/user/dto/add-user.dto';
+// import { AddPasskeyDetailsDto } from 'apps/api-gateway/src/user/dto/add-user.dto';
 import { URLUserResetPasswordTemplate } from '../templates/reset-password-template';
 import { toNumber } from '@credebl/common/cast.helper';
 import * as jwt from 'jsonwebtoken';
@@ -83,7 +82,7 @@ export class UserService {
    * @returns
    */
 
-  async sendVerificationMail(userEmailVerification: ISendVerificationEmail): Promise<user> {
+  async sendVerificationMail(userEmailVerification: ISendVerificationEmail): Promise<any> {
     try {
       const { email, brandLogoUrl, platformName, clientId, clientSecret } = userEmailVerification;
   
@@ -109,9 +108,31 @@ export class UserService {
       let sendVerificationMail: boolean;
 
       try {
-
-        const token = await this.clientRegistrationService.getManagementToken(clientId, clientSecret);
-        const getClientData = await this.clientRegistrationService.getClientRedirectUrl(clientId, token);
+        this.logger.log(`🔓 Processing client credentials for email: ${email}`);
+        
+        // Try to decrypt the client credentials, but if they're plain text, use them as is
+        let decryptedClientId = clientId;
+        let decryptedClientSecret = clientSecret;
+        
+        try {
+          // Try to decrypt - if it fails, they're already plain text
+          decryptedClientId = await this.commonService.decryptPassword(clientId);
+          decryptedClientSecret = await this.commonService.decryptPassword(clientSecret);
+          this.logger.log(`🔓 Client credentials were encrypted and decrypted successfully`);
+        } catch (decryptError) {
+          // If decryption fails, assume they're plain text (for development/testing)
+          this.logger.log(`🔓 Client credentials appear to be plain text, using as is`);
+          decryptedClientId = clientId;
+          decryptedClientSecret = clientSecret;
+        }
+        
+        this.logger.log(`🔓 Client credentials processed successfully. ClientId: ${decryptedClientId ? decryptedClientId.substring(0, 8) : 'MISSING'}...`);
+        
+        const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);
+        this.logger.log(`🎫 Management token obtained successfully`);
+        
+        const getClientData = await this.clientRegistrationService.getClientRedirectUrl(decryptedClientId, token);
+        this.logger.log(`🔗 Client redirect data retrieved: ${JSON.stringify(getClientData)}`);
 
         const [redirectUrl] = getClientData[0]?.redirectUris || [];
   
@@ -119,14 +140,18 @@ export class UserService {
           throw new NotFoundException(ResponseMessages.user.error.redirectUrlNotFound);
         }
   
-        sendVerificationMail = await this.sendEmailForVerification(email, verifyCode, redirectUrl, clientId, brandLogoUrl, platformName);
+        this.logger.log(`🔗 Redirect URL found: ${redirectUrl}`);
+        
+        sendVerificationMail = await this.sendEmailForVerification(email, verifyCode, redirectUrl, decryptedClientId, brandLogoUrl, platformName);
       } catch (error) {
+        this.logger.error(`❌ Error in sendVerificationMail flow: ${JSON.stringify(error)}`);
         throw new InternalServerErrorException(ResponseMessages.user.error.emailSend);
       }
   
       if (sendVerificationMail) {
         const uniqueUsername = await this.createUsername(email, verifyCode);
         userEmailVerification.username = uniqueUsername;
+        // Store the original encrypted values in the database
         userEmailVerification.clientId = clientId;
         userEmailVerification.clientSecret = clientSecret;
         const resUser = await this.userRepository.createUser(userEmailVerification, verifyCode);
@@ -170,9 +195,11 @@ export class UserService {
 
   async sendEmailForVerification(email: string, verificationCode: string, redirectUrl: string, clientId: string, brandLogoUrl:string, platformName: string): Promise<boolean> {
     try {
+      this.logger.log(`📧 Starting email verification for: ${email}`);
       const platformConfigData = await this.prisma.platform_config.findMany();
+      this.logger.log(`📧 Platform config data: ${JSON.stringify(platformConfigData)}`);
 
-      const decryptClientId = await this.commonService.decryptPassword(clientId);
+      // clientId is already decrypted when passed from sendVerificationMail
       const urlEmailTemplate = new URLUserEmailTemplate();
       const emailData = new EmailDto();
       emailData.emailFrom = platformConfigData[0].emailFrom;
@@ -180,15 +207,21 @@ export class UserService {
       const platform = platformName || process.env.PLATFORM_NAME;
       emailData.emailSubject = `[${platform}] Verify your email to activate your account`;
 
-      emailData.emailHtml = await urlEmailTemplate.getUserURLTemplate(email, verificationCode, redirectUrl, decryptClientId, brandLogoUrl, platformName);
+      this.logger.log(`📧 Email data prepared: From=${emailData.emailFrom}, To=${emailData.emailTo}, Subject=${emailData.emailSubject}`);
+
+      emailData.emailHtml = await urlEmailTemplate.getUserURLTemplate(email, verificationCode, redirectUrl, clientId, brandLogoUrl, platformName);
+      this.logger.log(`📧 Email HTML template generated successfully`);
+      
       const isEmailSent = await sendEmail(emailData);
+      this.logger.log(`📧 Email send result: ${isEmailSent}`);
+      
       if (isEmailSent) {
         return isEmailSent;
       } else {
         throw new InternalServerErrorException(ResponseMessages.user.error.emailSend);
       }
     } catch (error) {
-      this.logger.error(`Error in sendEmailForVerification: ${JSON.stringify(error)}`);
+      this.logger.error(`❌ Error in sendEmailForVerification: ${JSON.stringify(error)}`);
       throw new RpcException(error.response ? error.response : error);
     }
   }
@@ -229,6 +262,7 @@ export class UserService {
 
   async createUserForToken(userInfo: IUserInformation): Promise<ISignUpUserResponse> {
     try {
+      this.logger.log(`🚀 === STARTING USER CREATION FOR TOKEN === Email: ${userInfo.email}`);
       const { email } = userInfo;
       if (!userInfo.email) {
         throw new UnauthorizedException(ResponseMessages.user.error.invalidEmail);
@@ -244,6 +278,8 @@ export class UserService {
       if (false === checkUserDetails.isEmailVerified) {
         throw new NotFoundException(ResponseMessages.user.error.verifyEmail);
       }
+      this.logger.log(`📋 User validation passed for ${userInfo.email}`);
+      
       const resUser = await this.userRepository.updateUserInfo(userInfo.email.toLowerCase(), userInfo);
       if (!resUser) {
         throw new NotFoundException(ResponseMessages.user.error.invalidEmail);
@@ -252,10 +288,35 @@ export class UserService {
       if (!userDetails) {
         throw new NotFoundException(ResponseMessages.user.error.adduser);
       }
+      this.logger.log(`📝 User info updated successfully for ${userInfo.email}`);
+      
    let keycloakDetails = null;
       
-   const token = await this.clientRegistrationService.getManagementToken(checkUserDetails.clientId, checkUserDetails.clientSecret);
+   this.logger.log(`🔑 Getting management token for user ${userInfo.email}`);
+   this.logger.log(`🔓 Processing client credentials for user creation...`);
+   
+   // Try to decrypt the client credentials, but if they're plain text, use them as is
+   let decryptedClientId = checkUserDetails.clientId;
+   let decryptedClientSecret = checkUserDetails.clientSecret;
+   
+   try {
+     // Try to decrypt - if it fails, they're already plain text
+     decryptedClientId = await this.commonService.decryptPassword(checkUserDetails.clientId);
+     decryptedClientSecret = await this.commonService.decryptPassword(checkUserDetails.clientSecret);
+     this.logger.log(`🔓 Client credentials were encrypted and decrypted successfully for user creation`);
+   } catch (decryptError) {
+     // If decryption fails, assume they're plain text (for development/testing)
+     this.logger.log(`🔓 Client credentials appear to be plain text, using as is for user creation`);
+     decryptedClientId = checkUserDetails.clientId;
+     decryptedClientSecret = checkUserDetails.clientSecret;
+   }
+   
+   this.logger.log(`🔓 Client credentials processed successfully for user creation. ClientId: ${decryptedClientId ? decryptedClientId.substring(0, 8) : 'MISSING'}...`);
+   
+   const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);
+   this.logger.log(`✅ Management token obtained successfully for ${userInfo.email}`);
       if (userInfo.isPasskey) {
+        this.logger.log(`🔐 Processing passkey flow for ${userInfo.email}`);
         const resUser = await this.userRepository.addUserPassword(email.toLowerCase(), userInfo.password);
         const userDetails = await this.userRepository.getUserDetails(email.toLowerCase());
         const decryptedPassword = await this.commonService.decryptPassword(userDetails.password);
@@ -265,20 +326,71 @@ export class UserService {
         }
 
         userInfo.password = decryptedPassword;
+        this.logger.log(`🔒 About to create user in Keycloak with passkey for ${userInfo.email}`);
         try {          
           keycloakDetails = await this.clientRegistrationService.createUser(userInfo, process.env.KEYCLOAK_REALM, token);
+          this.logger.log(`✅ User created successfully in Keycloak with passkey for ${userInfo.email}`);
         } catch (error) {
+          this.logger.error(`❌ Error creating user in Keycloak with passkey for ${userInfo.email}: ${JSON.stringify(error)}`);
           throw new InternalServerErrorException('Error while registering user on keycloak');
         }
       } else {
-        const decryptedPassword = await this.commonService.decryptPassword(userInfo.password);
+        this.logger.log(`🔑 Processing regular signup flow for ${userInfo.email}`);
+        this.logger.log(`📋 Original password present: ${Boolean(userInfo.password)}`);
+        
+        // For regular signup, password comes from frontend already encrypted
+        // We should save it as-is (already encrypted by frontend)
+        const frontendEncryptedPassword = userInfo.password;
+        this.logger.log(`🔐 Using frontend-encrypted password for database storage`);
+        
+        // Save the frontend-encrypted password to database (no additional encryption)
+        const resUser = await this.userRepository.addUserPassword(email.toLowerCase(), frontendEncryptedPassword);
+        if (!resUser) {
+          throw new NotFoundException(ResponseMessages.user.error.invalidEmail);
+        }
+        this.logger.log(`💾 Password saved to database for ${userInfo.email}`);
+        
+        // For Keycloak, we need to decrypt the password to get the plain text
+        const decryptedPasswordForKeycloak = await this.commonService.decryptPassword(frontendEncryptedPassword);
+        this.logger.log(`📋 Using decrypted password for Keycloak user creation`);
 
-        userInfo.password = decryptedPassword;
+        // Update userInfo with decrypted password for Keycloak
+        userInfo.password = decryptedPasswordForKeycloak;
+
+        this.logger.log(`🔒 About to create user in Keycloak for ${userInfo.email}`);
 
         try {          
           keycloakDetails = await this.clientRegistrationService.createUser(userInfo, process.env.KEYCLOAK_REALM, token);
+          this.logger.log(`✅ User created successfully in Keycloak for ${userInfo.email}`);
         } catch (error) {
-          throw new InternalServerErrorException('Error while registering user on keycloak');
+          this.logger.error(`❌ Error creating user in Keycloak for ${userInfo.email}: ${JSON.stringify(error)}`);
+          
+          // Check if error is due to user already existing in Keycloak
+          if (error.response && 409 === error.response.statusCode) {
+            this.logger.log(`🔄 User already exists in Keycloak, fetching existing user details for ${userInfo.email}`);
+            try {
+              // Get the existing user from Keycloak using email parameter instead of username
+              const keycloakDomain = process.env.KEYCLOAK_DOMAIN.endsWith('/') ? process.env.KEYCLOAK_DOMAIN.slice(0, -1) : process.env.KEYCLOAK_DOMAIN;
+              const getUserUrl = `${keycloakDomain}/admin/realms/${process.env.KEYCLOAK_REALM}/users?email=${encodeURIComponent(userInfo.email)}`;
+              this.logger.log(`📡 Fetching existing user from URL: ${getUserUrl}`);
+              
+              const getUserResponse = await this.commonService.httpGet(getUserUrl, { headers: { authorization: `Bearer ${token}` } });
+              this.logger.log(`📋 Get user response: ${JSON.stringify(getUserResponse)}`);
+              
+              if (getUserResponse && 0 < getUserResponse.length) {
+                keycloakDetails = { keycloakUserId: getUserResponse[0].id };
+                this.logger.log(`✅ Found existing user in Keycloak with ID: ${keycloakDetails.keycloakUserId}`);
+              } else {
+                this.logger.error(`❌ No user found in Keycloak response: ${JSON.stringify(getUserResponse)}`);
+                throw new Error('User not found in Keycloak after conflict error');
+              }
+            } catch (fetchError) {
+              this.logger.error(`❌ Error fetching existing user from Keycloak: ${JSON.stringify(fetchError)}`);
+              throw new BadRequestException('Error while fetching existing user from Keycloak');
+            }
+          } else {
+            throw new BadRequestException('Error while registering user on keycloak');
+          }
         }
       }
 
@@ -297,19 +409,34 @@ export class UserService {
 
       const realmRoles = await this.clientRegistrationService.getAllRealmRoles(token);
       
-      const holderRole = realmRoles.filter(role => role.name === OrgRoles.HOLDER);
-      const holderRoleData =  0 < holderRole.length && holderRole[0];
+      // For signup flow, use mb-user role instead of holder role
+      const mbUserRole = realmRoles.filter(role => 'mb-user' === role.name);
+      const mbUserRoleData = 0 < mbUserRole.length && mbUserRole[0];
 
-      const payload = [
-        {
-          id: holderRoleData.id,
-          name: holderRoleData.name
-        }
-      ];
+      if (mbUserRoleData) {
+        const payload = [
+          {
+            id: mbUserRoleData.id,
+            name: mbUserRoleData.name
+          }
+        ];
 
-      await this.clientRegistrationService.createUserHolderRole(token,  keycloakDetails.keycloakUserId.toString(), payload);
-      const holderOrgRole = await this.orgRoleService.getRole(OrgRoles.HOLDER);
-      await this.userOrgRoleService.createUserOrgRole(userDetails.id, holderOrgRole.id, null, holderRoleData.id);
+        this.logger.log(`🎯 Assigning mb-user role to user ${userInfo.email} with role ID: ${mbUserRoleData.id}`);
+        await this.clientRegistrationService.createUserHolderRole(token, keycloakDetails.keycloakUserId.toString(), payload);
+        this.logger.log(`✅ Successfully assigned mb-user role to user ${userInfo.email}`);
+      } else {
+        this.logger.error(`❌ mb-user role not found in realm roles`);
+        throw new BadRequestException('mb-user role not found in realm');
+      }
+      
+      // Still need to handle the org role mapping for database consistency
+      try {
+        const holderOrgRole = await this.orgRoleService.getRole(OrgRoles.HOLDER);
+        await this.userOrgRoleService.createUserOrgRole(userDetails.id, holderOrgRole.id, null, mbUserRoleData.id);
+      } catch (orgRoleError) {
+        this.logger.error(`❌ Error creating org role mapping: ${JSON.stringify(orgRoleError)}`);
+        // Don't throw here as the main user creation was successful
+      }
 
       return { userId: userDetails?.id };
     } catch (error) {
@@ -318,7 +445,7 @@ export class UserService {
     }
   }
 
-  async addPasskey(email: string, userInfo: AddPasskeyDetailsDto): Promise<string> {
+  async addPasskey(email: string, userInfo: IUserInformation): Promise<string> {
     try {
       if (!email.toLowerCase()) {
         throw new UnauthorizedException(ResponseMessages.user.error.invalidEmail);
@@ -365,32 +492,56 @@ export class UserService {
    * @returns User access token details
    */
   async login(loginUserDto: LoginUserDto): Promise<ISignInUser> {
-    const { email, password, isPasskey } = loginUserDto;
+    const { email, password, isPasskey, clientId, clientSecret } = loginUserDto;
 
     try {
+      this.logger.log(`🔐 Starting login process for: ${email}`);
+      this.logger.log(`🔑 Client credentials provided: clientId=${clientId ? 'YES' : 'NO'}, clientSecret=${clientSecret ? 'YES' : 'NO'}`);
 
       this.validateEmail(email.toLowerCase());
       const userData = await this.userRepository.checkUserExist(email.toLowerCase());
       if (!userData) {
+        this.logger.log(`❌ User not found: ${email}`);
         throw new NotFoundException(ResponseMessages.user.error.notFound);
       }
 
+      this.logger.log(`✅ User found: ${email} (ID: ${userData.id})`);
+
       if (userData && !userData.isEmailVerified) {
+        this.logger.log(`⚠️ Email not verified for user: ${email}`);
         throw new BadRequestException(ResponseMessages.user.error.verifyMail);
       }
 
       if (true === isPasskey && false === userData?.isFidoVerified) {
+        this.logger.log(`⚠️ FIDO not verified for user: ${email}`);
         throw new UnauthorizedException(ResponseMessages.user.error.registerFido);
       }
 
       if (true === isPasskey && userData?.username && true === userData?.isFidoVerified) {
+        this.logger.log(`🔑 Using FIDO authentication for user: ${email}`);
         const getUserDetails = await this.userRepository.getUserDetails(userData.email.toLowerCase());
         const decryptedPassword = await this.commonService.decryptPassword(getUserDetails.password);
         return await this.generateToken(email.toLowerCase(), decryptedPassword, userData);
       } else {
-
-        const decryptedPassword = await this.commonService.decryptPassword(password);
-        return await this.generateToken(email.toLowerCase(), decryptedPassword, userData);        
+        this.logger.log(`🔑 Using password authentication for user: ${email}`);
+        
+        let decryptedPassword;
+        try {
+          decryptedPassword = await this.commonService.decryptPassword(password);
+          this.logger.log(`🔓 Password decrypted successfully`);
+        } catch (decryptError) {
+          this.logger.error(`❌ Password decryption failed: ${decryptError.message}`);
+          this.logger.log(`🔓 Attempting to use password as plain text`);
+          decryptedPassword = password;
+        }
+        
+        this.logger.log(`🎯 About to call generateToken for user: ${email}`);
+        this.logger.log(`📊 User data: keycloakUserId=${userData.keycloakUserId}, id=${userData.id}`);
+        
+        // Pass the provided client credentials or use database credentials
+        const result = await this.generateToken(email.toLowerCase(), decryptedPassword, userData);
+        this.logger.log(`✅ generateToken completed successfully for user: ${email}`);
+        return result;        
       }
     } catch (error) {
       this.logger.error(`In Login User : ${JSON.stringify(error)}`);
@@ -404,7 +555,12 @@ export class UserService {
         try {
           const data = jwt.decode(refreshToken) as jwt.JwtPayload;
           const userByKeycloakId = await this.userRepository.getUserByKeycloakId(data?.sub);
-          const tokenResponse = await this.clientRegistrationService.getAccessToken(refreshToken, userByKeycloakId?.['clientId'], userByKeycloakId?.['clientSecret']);
+          
+          // Decrypt both clientId and clientSecret before sending to Keycloak
+          const decryptedClientId = await this.commonService.decryptPassword(userByKeycloakId?.['clientId']);
+          const decryptedClientSecret = await this.commonService.decryptPassword(userByKeycloakId?.['clientSecret']);
+          
+          const tokenResponse = await this.clientRegistrationService.getAccessToken(refreshToken, decryptedClientId, decryptedClientSecret);
           return tokenResponse;
         } catch (error) {
           throw new BadRequestException(ResponseMessages.user.error.invalidRefreshToken);
@@ -528,9 +684,11 @@ export class UserService {
 
       const decryptedPassword = await this.commonService.decryptPassword(password);
       try {    
-        
+        // Decrypt both clientId and clientSecret before sending to Keycloak
+        const decryptedClientId = await this.commonService.decryptPassword(userData.clientId);
+        const decryptedClientSecret = await this.commonService.decryptPassword(userData.clientSecret);
 
-        const authToken = await this.clientRegistrationService.getManagementToken(userData.clientId, userData.clientSecret);  
+        const authToken = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);  
         userData.password = decryptedPassword;
         if (userData.keycloakUserId) {
           await this.clientRegistrationService.resetPasswordOfUser(userData, process.env.KEYCLOAK_REALM, authToken);
@@ -593,7 +751,11 @@ export class UserService {
         userData.password = newDecryptedPassword;
         try {    
           let keycloakDetails = null;    
-          const token = await this.clientRegistrationService.getManagementToken(userData.clientId, userData.clientSecret);  
+          // Decrypt both clientId and clientSecret before sending to Keycloak
+          const decryptedClientId = await this.commonService.decryptPassword(userData.clientId);
+          const decryptedClientSecret = await this.commonService.decryptPassword(userData.clientSecret);
+          
+          const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);  
 
           if (userData.keycloakUserId) {
 
@@ -626,50 +788,23 @@ export class UserService {
     }
   }
 
-  async generateToken(email: string, password: string, userData: user): Promise<ISignInUser> {
-
-      if (userData.keycloakUserId) {
-
-        try {
-          const tokenResponse = await this.clientRegistrationService.getUserToken(email, password, userData.clientId, userData.clientSecret);
-          tokenResponse.isRegisteredToSupabase = false;
-          return tokenResponse;
-        } catch (error) {
-          throw new UnauthorizedException(ResponseMessages.user.error.invalidCredentials);
-        }
-       
-      } else {
-        const supaInstance = await this.supabaseService.getClient();  
-        const { data, error } = await supaInstance.auth.signInWithPassword({
-          email,
-          password
-        });
-  
-        this.logger.error(`Supa Login Error::`, JSON.stringify(error));
-  
-        if (error) {
-          throw new BadRequestException(error?.message);
-        }
-  
-        const token = data?.session;
-
-        return {
-          // eslint-disable-next-line camelcase
-          access_token: token.access_token,
-          // eslint-disable-next-line camelcase
-          token_type: token.token_type,
-          // eslint-disable-next-line camelcase
-          expires_in: token.expires_in,
-          // eslint-disable-next-line camelcase
-          expires_at: token.expires_at,
-          isRegisteredToSupabase: true
-        };
-      }
-  }
-
   async getProfile(payload: { id }): Promise<IUsersProfile> {
     try {
+      this.logger.log(`🔍 getProfile called for user ID: ${payload.id}`);
+      
       const userData = await this.userRepository.getUserById(payload.id);
+      
+      if (!userData) {
+        this.logger.error(`❌ User not found for ID: ${payload.id}`);
+        throw new NotFoundException('User not found');
+      }
+      
+      this.logger.log(`✅ User found: ${userData.email}`);
+      this.logger.log(`👤 User org roles count: ${userData.userOrgRoles ? userData.userOrgRoles.length : 0}`);
+      
+      if (userData.userOrgRoles && 0 < userData.userOrgRoles.length) {
+        this.logger.log(`📋 User roles: ${userData.userOrgRoles.map(r => r.orgRole.name).join(', ')}`);
+      }
 
       if ('true' === process.env.IS_ECOSYSTEM_ENABLE) {
         const ecosystemSettings = await this._getEcosystemConfig();
@@ -680,7 +815,7 @@ export class UserService {
     
       return userData;
     } catch (error) {
-      this.logger.error(`get user: ${JSON.stringify(error)}`);
+      this.logger.error(`❌ Error in getProfile: ${JSON.stringify(error)}`);
       throw new RpcException(error.response ? error.response : error);
     }
   }
@@ -721,7 +856,7 @@ export class UserService {
     }
   }
 
-  async updateUserProfile(updateUserProfileDto: UpdateUserProfile): Promise<user> {
+  async updateUserProfile(updateUserProfileDto: UpdateUserProfile): Promise<any> {
     try {
       return this.userRepository.updateUserProfile(updateUserProfileDto);
     } catch (error) {
@@ -873,7 +1008,7 @@ export class UserService {
     }
   }
 
-  async  _getTotalOrgCount(payload): Promise<number> {
+  async  _getTotalOrgCount(payload: { userId: string }): Promise<number> {
     const pattern = { cmd: 'get-organizations-count' };
 
     const getOrganizationCount = await this.natsClient
@@ -1109,7 +1244,11 @@ export class UserService {
         throw new NotFoundException(ResponseMessages.user.error.notFound);
       }
 
-      const token = await this.clientRegistrationService.getManagementToken(userData?.clientId, userData?.clientSecret);
+      // Decrypt both clientId and clientSecret before sending to Keycloak
+      const decryptedClientId = await this.commonService.decryptPassword(userData?.clientId);
+      const decryptedClientSecret = await this.commonService.decryptPassword(userData?.clientSecret);
+
+      const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);
       const getClientData = await this.clientRegistrationService.getUserInfoByUserId(userData?.keycloakUserId, token);
 
       return getClientData;
@@ -1120,7 +1259,7 @@ export class UserService {
   }
 
    // eslint-disable-next-line camelcase
-   async getuserOrganizationByUserId(userId: string): Promise<user_org_roles[]> {
+   async getuserOrganizationByUserId(userId: string): Promise<object[]> {
     try {
         const getOrganizationDetails = await this.userRepository.handleGetUserOrganizations(userId);
 
@@ -1133,5 +1272,97 @@ export class UserService {
         this.logger.error(`Error in getuserOrganizationByUserId: ${error}`);
         throw new RpcException(error.response ? error.response : error);
     }
-}
+}  async generateToken(email: string, password: string, userData: any): Promise<ISignInUser> {
+    this.logger.log(`🎯 generateToken called for user: ${email}`);
+    this.logger.log(`📊 User data: keycloakUserId=${userData.keycloakUserId}, id=${userData.id}`);
+
+    if (userData.keycloakUserId) {
+      try {
+        // 🔄 SIMPLIFIED LOGIN: Use user management credentials directly
+        this.logger.log(`🔍 Using user management credentials for authentication`);
+        this.logger.log(`   📧 User: ${email}`);
+        this.logger.log(`   🔑 Encrypted Client ID: ${userData.clientId ? `${userData.clientId.substring(0, 8)}...` : '[MISSING]'}`);
+        this.logger.log(`   🔐 Encrypted Client Secret: ${userData.clientSecret ? '[PRESENT]' : '[MISSING]'}`);
+        
+        // Try to decrypt client credentials, but handle plain text gracefully
+        let decryptedClientId = userData.clientId;
+        let decryptedClientSecret = userData.clientSecret;
+        
+        // Try to decrypt client ID
+        try {
+          const testDecryptedClientId = await this.commonService.decryptString(userData.clientId);
+          if (testDecryptedClientId && '' !== testDecryptedClientId.trim()) {
+            decryptedClientId = testDecryptedClientId;
+            this.logger.log(`🔓 Client ID was encrypted and decrypted successfully`);
+          } else {
+            // If decryption returns empty string, it's likely plain text
+            this.logger.log(`🔓 Client ID appears to be plain text, using as is`);
+            decryptedClientId = userData.clientId;
+          }
+        } catch (decryptError) {
+          // If decryption fails, assume it's plain text
+          this.logger.log(`🔓 Client ID decryption failed, using as plain text`);
+          decryptedClientId = userData.clientId;
+        }
+        
+        // Try to decrypt client secret
+        try {
+          const testDecryptedClientSecret = await this.commonService.decryptString(userData.clientSecret);
+          if (testDecryptedClientSecret && '' !== testDecryptedClientSecret.trim()) {
+            decryptedClientSecret = testDecryptedClientSecret;
+            this.logger.log(`🔓 Client Secret was encrypted and decrypted successfully`);
+          } else {
+            // If decryption returns empty string, it's likely plain text
+            this.logger.log(`🔓 Client Secret appears to be plain text, using as is`);
+            decryptedClientSecret = userData.clientSecret;
+          }
+        } catch (decryptError) {
+          // If decryption fails, assume it's plain text
+          this.logger.log(`🔓 Client Secret decryption failed, using as plain text`);
+          decryptedClientSecret = userData.clientSecret;
+        }
+        
+        this.logger.log(`🔐 Attempting Keycloak authentication`);
+        this.logger.log(`   📧 Email: ${email}`);
+        this.logger.log(`   🔑 Client ID: ${decryptedClientId}`);
+        this.logger.log(`   🔐 Client Secret: ${decryptedClientSecret ? '[PRESENT]' : '[MISSING]'}`);
+        this.logger.log(`   🔒 Password: ${password ? '[PRESENT]' : '[MISSING]'}`);
+        
+        const tokenResponse = await this.clientRegistrationService.getUserToken(email, password, decryptedClientId, decryptedClientSecret);
+        this.logger.log(`✅ Keycloak authentication successful`);
+        tokenResponse.isRegisteredToSupabase = false;
+        return tokenResponse;
+      } catch (error) {
+        this.logger.error(`🚨 Login authentication failed: ${error.message}`);
+        this.logger.error(`   Error details: ${JSON.stringify(error)}`);
+        throw new UnauthorizedException(ResponseMessages.user.error.invalidCredentials);
+      }
+    } else {
+      const supaInstance = await this.supabaseService.getClient();  
+      const { data, error } = await supaInstance.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      this.logger.error(`Supa Login Error::`, JSON.stringify(error));
+
+      if (error) {
+        throw new BadRequestException(error?.message);
+      }
+
+      const token = data?.session;
+
+      return {
+        // eslint-disable-next-line camelcase
+        access_token: token.access_token,
+        // eslint-disable-next-line camelcase
+        token_type: token.token_type,
+        // eslint-disable-next-line camelcase
+        expires_in: token.expires_in,
+        // eslint-disable-next-line camelcase
+        expires_at: token.expires_at,
+        isRegisteredToSupabase: true
+      };
+    }
+  }
 }

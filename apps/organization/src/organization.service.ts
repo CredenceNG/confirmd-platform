@@ -34,6 +34,7 @@ import { ClientRegistrationService } from '@credebl/client-registration/client-r
 import { map } from 'rxjs/operators';
 import { Cache } from 'cache-manager';
 import { AwsService } from '@credebl/aws';
+import { LocalFileService } from '@credebl/local-file';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   IOrgCredentials,
@@ -62,6 +63,7 @@ export class OrganizationService {
     private readonly orgRoleService: OrgRolesService,
     private readonly userOrgRoleService: UserOrgRolesService,
     private readonly awsService: AwsService,
+    private readonly localFileService: LocalFileService,
     private readonly userActivityService: UserActivityService,
     private readonly logger: Logger,
     @Inject(CACHE_MANAGER) private cacheService: Cache,
@@ -93,6 +95,15 @@ export class OrganizationService {
     keycloakUserId: string
   ): Promise<organisation> {
     try {
+      this.logger.log(`🚀 === ORGANIZATION CREATION PROCESS STARTED ===`);
+      this.logger.log(`📋 Organization details:`);
+      this.logger.log(`   - Name: ${createOrgDto.name}`);
+      this.logger.log(`   - Description: ${createOrgDto.description || 'N/A'}`);
+      this.logger.log(`   - Website: ${createOrgDto.website || 'N/A'}`);
+      this.logger.log(`👤 User details:`);
+      this.logger.log(`   - User ID: ${userId}`);
+      this.logger.log(`   - Keycloak User ID: ${keycloakUserId}`);
+      
       const userOrgCount = await this.organizationRepository.userOrganizationCount(userId); 
   
       if (userOrgCount >= toNumber(`${process.env.MAX_ORG_LIMIT}`)) {
@@ -127,6 +138,8 @@ export class OrganizationService {
       
       const organizationDetails = await this.organizationRepository.createOrganization(createOrgDto);
 
+      this.logger.log(`✅ Organization created in database: ${organizationDetails.name} (ID: ${organizationDetails.id})`);
+
       // To return selective object data
       delete organizationDetails.lastChangedBy;
       delete organizationDetails.lastChangedDateTime;
@@ -134,6 +147,9 @@ export class OrganizationService {
       delete organizationDetails.website;
 
       try {
+        this.logger.log(`🔑 === KEYCLOAK CLIENT REGISTRATION PHASE ===`);
+        this.logger.log(`📡 Calling registerToKeycloak for organization: ${organizationDetails.name}`);
+        
         const orgCredentials = await this.registerToKeycloak(
           organizationDetails.name,
           organizationDetails.id,
@@ -142,6 +158,12 @@ export class OrganizationService {
           false
         );
 
+        this.logger.log(`✅ Keycloak client registration completed successfully`);
+        this.logger.log(`🔐 Received credentials:`);
+        this.logger.log(`   - Client ID: ${orgCredentials.clientId}`);
+        this.logger.log(`   - IDP ID: ${orgCredentials.idpId}`);
+        this.logger.log(`   - Client Secret: ${orgCredentials.clientSecret ? 'Present' : 'Missing'}`);
+
         const { clientId, idpId } = orgCredentials;
 
         const updateOrgData = {
@@ -149,16 +171,23 @@ export class OrganizationService {
           idpId
         };
   
+        this.logger.log(`💾 Updating organization with Keycloak credentials...`);
         const updatedOrg = await this.organizationRepository.updateOrganizationById(
           updateOrgData,
           organizationDetails.id
         );
   
         if (!updatedOrg) {
+          this.logger.error(`❌ Failed to update organization with Keycloak credentials`);
           throw new InternalServerErrorException(ResponseMessages.organisation.error.credentialsNotUpdate);
         }
+
+        this.logger.log(`✅ Organization successfully updated with Keycloak credentials`);
+        
       } catch (error) {
-        this.logger.error(`Error In creating client : ${JSON.stringify(error)}`);
+        this.logger.error(`❌ KEYCLOAK REGISTRATION FAILED`);
+        this.logger.error(`Error details: ${JSON.stringify(error)}`);
+        this.logger.error(`Error message: ${error.message || 'Unknown error'}`);
         throw new InternalServerErrorException('Unable to create client');
       }
 
@@ -173,9 +202,20 @@ export class OrganizationService {
         'Get started with inviting users to join organization'
       );
 
+      this.logger.log(`🎉 === ORGANIZATION CREATION COMPLETED SUCCESSFULLY ===`);
+      this.logger.log(`📊 Final organization details:`);
+      this.logger.log(`   - Name: ${organizationDetails.name}`);
+      this.logger.log(`   - ID: ${organizationDetails.id}`);
+      this.logger.log(`   - Created by User ID: ${userId}`);
+      this.logger.log(`   - Keycloak integration: ✅ Complete`);
+      this.logger.log(`   - Webhook: ${createOrgDto.notificationWebhook ? '✅ Configured' : '❌ Not configured'}`);
+
       return organizationDetails;
     } catch (error) {
-      this.logger.error(`In create organization : ${JSON.stringify(error)}`);
+      this.logger.error(`❌ === ORGANIZATION CREATION FAILED ===`);
+      this.logger.error(`Organization name: ${createOrgDto?.name || 'Unknown'}`);
+      this.logger.error(`User ID: ${userId}`);
+      this.logger.error(`Error: ${JSON.stringify(error)}`);
       throw new RpcException(error.response ? error.response : error);
     }
   }
@@ -292,7 +332,18 @@ export class OrganizationService {
       if (organizationDetails.idpId) {
 
         const userDetails = await this.organizationRepository.getUser(userId);
-        const token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+        
+        // Check if this is a Platform Admin user who needs environment-based management token
+        const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
+        
+        let token: string;
+        if (isPlatformAdmin) {
+          this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+          token = await this.clientRegistrationService.getManagementTokenFromEnv();
+        } else {
+          this.logger.log(`👤 Regular user - using user's client credentials`);
+          token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+        }
 
         generatedClientSecret = await this.clientRegistrationService.generateClientSecret(
           organizationDetails.idpId,
@@ -358,21 +409,75 @@ export class OrganizationService {
     userId: string,
     shouldUpdateRole: boolean
   ): Promise<IOrgCredentials> {
+    this.logger.log(`🔑 === KEYCLOAK REGISTRATION PROCESS STARTED ===`);
+    this.logger.log(`📋 Registration parameters:`);
+    this.logger.log(`   - Organization: ${orgName} (ID: ${orgId})`);
+    this.logger.log(`   - User ID: ${userId}`);
+    this.logger.log(`   - Keycloak User ID: ${keycloakUserId}`);
+    this.logger.log(`   - Should Update Role: ${shouldUpdateRole}`);
+    this.logger.log(`   - Target Realm: ${process.env.KEYCLOAK_REALM || 'Not configured'}`);
+
+    this.logger.log(`👤 Retrieving user details for management client credentials...`);
     const userDetails = await this.organizationRepository.getUser(userId);
-    const token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+    this.logger.log(`📋 User details retrieved:`);
+    this.logger.log(`   - Email: ${userDetails.email}`);
+    this.logger.log(`   - Client ID: ${userDetails.clientId ? '✅ Present (encrypted)' : '❌ Missing'}`);
+    this.logger.log(`   - Client Secret: ${userDetails.clientSecret ? '✅ Present (encrypted)' : '❌ Missing'}`);
+
+    // Check if this is a Platform Admin user who needs environment-based management token
+    const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
+
+    this.logger.log(`🔓 === MANAGEMENT TOKEN ACQUISITION PHASE ===`);
+    
+    let token: string;
+    if (isPlatformAdmin) {
+      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+      this.logger.log(`📡 Calling clientRegistrationService.getManagementTokenFromEnv...`);
+      this.logger.log(`🎯 This will use the DEDICATED MANAGEMENT CLIENT from environment variables`);
+      token = await this.clientRegistrationService.getManagementTokenFromEnv();
+    } else {
+      this.logger.log(`👤 Regular user - using user's client credentials`);
+      if (!userDetails.clientId || !userDetails.clientSecret) {
+        this.logger.error(`❌ CRITICAL: User missing management client credentials`);
+        this.logger.error(`   - This means the dedicated management client is not properly configured`);
+        throw new Error('User management client credentials not found');
+      }
+      this.logger.log(`📡 Calling clientRegistrationService.getManagementToken...`);
+      this.logger.log(`🎯 This will use the user's management client credentials`);
+      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+    }
+    
+    this.logger.log(`✅ Management token obtained successfully from ${isPlatformAdmin ? 'environment' : 'user'} management client`);
+
+    this.logger.log(`🏢 === KEYCLOAK CLIENT CREATION PHASE ===`);
+    this.logger.log(`📡 Calling clientRegistrationService.createClient...`);
     const orgDetails = await this.clientRegistrationService.createClient(orgName, orgId, token);
+    this.logger.log(`✅ Keycloak client created successfully:`);
+    this.logger.log(`   - Client ID: ${orgDetails.clientId}`);
+    this.logger.log(`   - IDP ID: ${orgDetails.idpId}`);
+    this.logger.log(`   - Client Secret: ${orgDetails.clientSecret ? 'Present' : 'Missing'}`);
 
     const orgRolesList = [OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER];
+    this.logger.log(`👥 === ORGANIZATION ROLES CREATION PHASE ===`);
+    this.logger.log(`📝 Creating ${orgRolesList.length} organization roles: ${orgRolesList.join(', ')}`);
 
       for (const role of orgRolesList) {
+        this.logger.log(`   📝 Creating client role: ${role}`);
         await this.clientRegistrationService.createClientRole(orgDetails.idpId, token, role, role);
+        this.logger.log(`   ✅ Role '${role}' created successfully`);
       }   
 
+    this.logger.log(`✅ All organization roles created successfully`);
+
+    this.logger.log(`👑 === OWNER ROLE ASSIGNMENT PHASE ===`);
     const ownerRoleClient = await this.clientRegistrationService.getClientSpecificRoles(
       orgDetails.idpId,
       token,
       OrgRoles.OWNER
     );
+    this.logger.log(`✅ Owner role retrieved from Keycloak:`);
+    this.logger.log(`   - Role name: ${ownerRoleClient.name}`);
+    this.logger.log(`   - Role ID: ${ownerRoleClient.id}`);
 
     const payload = [
       {
@@ -382,15 +487,20 @@ export class OrganizationService {
     ];
 
     const ownerRoleData = await this.orgRoleService.getRole(OrgRoles.OWNER);
+    this.logger.log(`📊 Owner role data from platform: ${ownerRoleData.name} (ID: ${ownerRoleData.id})`);
 
     if (!shouldUpdateRole) {
+      this.logger.log(`👤 Assigning owner role to user (new assignment)`);
 
       await Promise.all([
         this.clientRegistrationService.createUserClientRole(orgDetails.idpId, token, keycloakUserId, payload),
         this.userOrgRoleService.createUserOrgRole(userId, ownerRoleData.id, orgId, ownerRoleClient.id)
       ]);
       
+      this.logger.log(`✅ Owner role assigned successfully`);
     } else {
+      this.logger.log(`👤 Updating user role assignment`);
+      
       const roleIdList = [
         {
           roleId: ownerRoleData.id,
@@ -403,14 +513,30 @@ export class OrganizationService {
         this.userOrgRoleService.deleteOrgRoles(userId, orgId),
         this.userOrgRoleService.updateUserOrgRole(userId, orgId, roleIdList)
       ]);
+
+      this.logger.log(`✅ User role updated successfully`);
     }
+
+    this.logger.log(`🔑 === KEYCLOAK REGISTRATION PROCESS COMPLETED SUCCESSFULLY ===`);
+    this.logger.log(`Final organization details - Client ID: ${orgDetails.clientId}, IDP ID: ${orgDetails.idpId}`);
 
     return orgDetails;
   }
 
   async deleteClientCredentials(orgId: string, user: user): Promise<string> {
     const getUser = await this.organizationRepository.getUser(user?.id);
-    const token = await this.clientRegistrationService.getManagementToken(getUser.clientId, getUser.clientSecret);
+    
+    // Check if this is a Platform Admin user who needs environment-based management token
+    const isPlatformAdmin = 'platform-admin' === getUser.clientId || getUser.email.includes('platform');
+    
+    let token: string;
+    if (isPlatformAdmin) {
+      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+      token = await this.clientRegistrationService.getManagementTokenFromEnv();
+    } else {
+      this.logger.log(`👤 Regular user - using user's client credentials`);
+      token = await this.clientRegistrationService.getManagementToken(getUser.clientId, getUser.clientSecret);
+    }
 
     const organizationDetails = await this.organizationRepository.getOrganizationDetails(orgId);
 
@@ -470,7 +596,21 @@ export class OrganizationService {
 
   async uploadFileToS3(orgLogo: string): Promise<string> {
     try {
-      const updatedOrglogo = orgLogo.split(',')[1];
+      // Debug logging
+      this.logger.debug(`AWS_ORG_LOGO_BUCKET_NAME value: "${process.env.AWS_ORG_LOGO_BUCKET_NAME}"`);
+      this.logger.debug(`AWS_ORG_LOGO_BUCKET_NAME type: ${typeof process.env.AWS_ORG_LOGO_BUCKET_NAME}`);
+      
+      // Check if S3 bucket is configured
+      if (!process.env.AWS_ORG_LOGO_BUCKET_NAME || '' === process.env.AWS_ORG_LOGO_BUCKET_NAME.trim()) {
+        this.logger.warn('AWS_ORG_LOGO_BUCKET_NAME is not configured. Using local file storage for organization logo.');
+        // Use local file storage for development
+        const logoUrl = await this.localFileService.saveOrgLogo(orgLogo, 'orgLogo');
+        this.logger.debug(`Local file storage returned URL: ${logoUrl}`);
+        return logoUrl;
+      }
+
+      this.logger.debug('Using S3 storage for organization logo');
+      const [, updatedOrglogo] = orgLogo.split(',');
       const imgData = Buffer.from(updatedOrglogo, 'base64');
       const logoUrl = await this.awsService.uploadFileToS3Bucket(
         imgData,
@@ -832,7 +972,18 @@ export class OrganizationService {
       }
 
       const getUser = await this.organizationRepository.getUser(user?.id);
-      const token = await this.clientRegistrationService.getManagementToken(getUser?.clientId, getUser?.clientSecret);
+      
+      // Check if this is a Platform Admin user who needs environment-based management token
+      const isPlatformAdmin = 'platform-admin' === getUser?.clientId || getUser?.email.includes('platform');
+      
+      let token: string;
+      if (isPlatformAdmin) {
+        this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+        token = await this.clientRegistrationService.getManagementTokenFromEnv();
+      } else {
+        this.logger.log(`👤 Regular user - using user's client credentials`);
+        token = await this.clientRegistrationService.getManagementToken(getUser?.clientId, getUser?.clientSecret);
+      }
 
       return this.clientRegistrationService.getAllClientRoles(organizationDetails.idpId, token);
     } catch (error) {
@@ -925,7 +1076,19 @@ export class OrganizationService {
     const { invitations, orgId } = bulkInvitationDto;
 
     const userDetails = await this.organizationRepository.getUser(userId);
-    const token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+    
+    // Check if this is a Platform Admin user who needs environment-based management token
+    const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
+    
+    let token: string;
+    if (isPlatformAdmin) {
+      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+      token = await this.clientRegistrationService.getManagementTokenFromEnv();
+    } else {
+      this.logger.log(`👤 Regular user - using user's client credentials`);
+      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+    }
+    
     const clientRolesList = await this.clientRegistrationService.getAllClientRoles(idpId, token);
     const orgRoles = await this.orgRoleService.getOrgRoles();
 
@@ -1145,8 +1308,20 @@ export class OrganizationService {
     status: string
   ): Promise<void> {
     const userDetails = await this.organizationRepository.getUser(userId);
-    const token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
-      const clientRolesList = await this.clientRegistrationService.getAllClientRoles(idpId, token);
+    
+    // Check if this is a Platform Admin user who needs environment-based management token
+    const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
+    
+    let token: string;
+    if (isPlatformAdmin) {
+      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+      token = await this.clientRegistrationService.getManagementTokenFromEnv();
+    } else {
+      this.logger.log(`👤 Regular user - using user's client credentials`);
+      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+    }
+    
+    const clientRolesList = await this.clientRegistrationService.getAllClientRoles(idpId, token);
 
       const orgRoles = await this.orgRoleService.getOrgRolesByIds(invitation.orgRoles);
 
@@ -1251,7 +1426,19 @@ export class OrganizationService {
     orgId: string
   ): Promise<boolean> {
     const userDetails = await this.organizationRepository.getUser(userId);
-    const token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+    
+    // Check if this is a Platform Admin user who needs environment-based management token
+    const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
+    
+    let token: string;
+    if (isPlatformAdmin) {
+      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+      token = await this.clientRegistrationService.getManagementTokenFromEnv();
+    } else {
+      this.logger.log(`👤 Regular user - using user's client credentials`);
+      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+    }
+    
     const clientRolesList = await this.clientRegistrationService.getAllClientRoles(
       idpId,
       token
@@ -1551,11 +1738,21 @@ export class OrganizationService {
   async deleteOrganization(orgId: string, user: user): Promise<IDeleteOrganization> {
     try {
       const getUser = await this.organizationRepository.getUser(user?.id);
-      // Fetch token and organization details in parallel
-      const [token, organizationDetails] = await Promise.all([
-        this.clientRegistrationService.getManagementToken(getUser?.clientId, getUser?.clientSecret),
-        this.organizationRepository.getOrganizationDetails(orgId)
-      ]);
+      
+      // Check if this is a Platform Admin user who needs environment-based management token
+      const isPlatformAdmin = 'platform-admin' === getUser?.clientId || getUser?.email.includes('platform');
+      
+      let token: string;
+      if (isPlatformAdmin) {
+        this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+        token = await this.clientRegistrationService.getManagementTokenFromEnv();
+      } else {
+        this.logger.log(`👤 Regular user - using user's client credentials`);
+        token = await this.clientRegistrationService.getManagementToken(getUser?.clientId, getUser?.clientSecret);
+      }
+      
+      // Fetch organization details
+      const organizationDetails = await this.organizationRepository.getOrganizationDetails(orgId);
   
       if (!organizationDetails) {
         throw new NotFoundException(ResponseMessages.organisation.error.orgNotFound);
@@ -1787,7 +1984,19 @@ export class OrganizationService {
           const usersToRegisterList = userOrgRoles.filter(userOrgRole => null !== userOrgRole.user.keycloakUserId);
           
             const userDetails = await this.organizationRepository.getUser(orgObj.ownerId);
-            const token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+            
+            // Check if this is a Platform Admin user who needs environment-based management token
+            const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
+            
+            let token: string;
+            if (isPlatformAdmin) {
+              this.logger.log(`🔐 Platform Admin detected - using environment management client`);
+              token = await this.clientRegistrationService.getManagementTokenFromEnv();
+            } else {
+              this.logger.log(`👤 Regular user - using user's client credentials`);
+              token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
+            }
+            
             const clientRolesList = await this.clientRegistrationService.getAllClientRoles(idpId, token);
 
             const deletedUserDetails: string[] = [];

@@ -1,0 +1,16 @@
+# Library watcher for shared components
+FROM node:18-alpine
+
+RUN apk add --no-cache git
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
+
+COPY tsconfig*.json ./
+COPY nest-cli.json ./
+
+# Start watching shared libraries
+CMD ["pnpm", "run", "build:libs:watch"]

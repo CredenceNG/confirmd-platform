@@ -25,14 +25,15 @@ export class NATSClient {
     const headers = nats.headers(1, this.contextStorageService.getContextId());
     const record = new NatsRecordBuilder(payload).setHeaders(headers).build();
 
-    return serviceProxy
-      .send<string>(pattern, record)
-      .pipe(
-        map((response: string) => ({
-          response
-        }))
-      )
-      .toPromise();
+    return firstValueFrom(
+      serviceProxy
+        .send<string>(pattern, record)
+        .pipe(
+          map((response: string) => ({
+            response
+          }))
+        )
+    );
   }
 
   sendNatsMessage(serviceProxy: ClientProxy, cmd: string, payload: any): Promise<any> {

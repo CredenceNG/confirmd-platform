@@ -1,0 +1,13 @@
+tunnel: 00af0aa6-02a4-4c6d-8c8b-ad566348a8c0
+credentials-file: /Users/itopa/.cloudflared/00af0aa6-02a4-4c6d-8c8b-ad566348a8c0.json
+
+ingress:
+  - hostname: minio.confamd.com
+    service: http://localhost:9000
+  - hostname: minio-console.confamd.com
+    service: http://localhost:9001
+  # Platform Admin Agent - running manually on port 8002
+  # Container: f856e3a4-b09c-4356-82de-b105594eec43_platform-admin
+  - hostname: platform-admin.confamd.com
+    service: http://127.0.0.1:8002
+  - service: http_status:404

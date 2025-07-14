@@ -55,12 +55,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<object> {
 
     let userDetails = null;
-    let userInfo;
 
-    if (payload?.email) {
-      userInfo = await this.usersService.getUserByUserIdInKeycloak(payload?.email);
-    }
-    
     if (payload.hasOwnProperty('client_id')) {
       const orgDetails: IOrganization = await this.organizationService.findOrganizationOwner(payload['client_id']);
       
@@ -85,15 +80,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       this.logger.log('User details set');
 
     } else {
+      // Use the simpler database lookup instead of making Keycloak API calls
       userDetails = await this.usersService.findUserinKeycloak(payload.sub);
     }
     
     if (!userDetails) {
       throw new NotFoundException(ResponseMessages.user.error.notFound);
-    }
-    //TODO patch to QA
-    if (userInfo && userInfo?.['attributes'] && userInfo?.['attributes']?.userRole) {
-      userDetails['userRole'] = userInfo?.['attributes']?.userRole;
     }
 
     return {

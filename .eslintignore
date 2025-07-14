@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.nyc_output
+scripts/test-utils/
+*.test.js
+*.spec.js
+test-*.js
+check-*.js
+decrypt-*.js
+encrypt-*.js
+reset-*.js
+**/*.sql
+credo-controller/

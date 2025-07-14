@@ -1160,6 +1160,12 @@ export class AgentServiceService {
     if (!walletResponseDetails && !walletResponseDetails.id) {
       throw new InternalServerErrorException('Error while creating the wallet');
     }
+
+    // Emit DID publish process initiated event
+    if (payload.clientSocketId) {
+      socket.emit('did-publish-process-initiated', { clientId: payload.clientSocketId });
+    }
+
     const didCreateOption = {
       didPayload: WalletSetupPayload,
       agentEndpoint: platformAdminSpinnedUp.org_agents[0].agentEndPoint,
@@ -1169,6 +1175,11 @@ export class AgentServiceService {
     const DIDCreationOption = await this._createDID(didCreateOption);
     if (!DIDCreationOption) {
       throw new InternalServerErrorException('Error while creating the wallet');
+    }
+
+    // Emit DID publish process completed event
+    if (payload.clientSocketId) {
+      socket.emit('did-publish-process-completed', { clientId: payload.clientSocketId });
     }
 
     return { walletResponseDetails, DIDCreationOption };
@@ -1204,10 +1215,26 @@ export class AgentServiceService {
    */
   private async _createDID(didCreateOption): Promise<ICreateTenant> {
     const { didPayload, agentEndpoint, apiKey, tenantId } = didCreateOption;
+    
+    // Log payload transformation for debugging
+    this.logger.debug(`[_createDID] Original payload: ${JSON.stringify(didPayload)}`);
+    
+    // Only remove the role field if endorserDid is present (for backward compatibility)
+    // If no endorserDid is provided, keep the role field for role-based registration
+    let cleanPayload = didPayload;
+    if (didPayload.endorserDid && didPayload.role) {
+      // When endorserDid is provided, remove role to avoid conflicts
+      const { role, ...payloadWithoutRole } = didPayload;
+      cleanPayload = payloadWithoutRole;
+      this.logger.debug(`[_createDID] Removed role field because endorserDid is present`);
+    }
+    
+    this.logger.debug(`[_createDID] Clean payload: ${JSON.stringify(cleanPayload)}`);
+    
     // Invoke an API request from the agent to create multi-tenant agent
     const didDetails = await this.commonService.httpPost(
       `${agentEndpoint}${CommonConstants.URL_SHAGENT_CREATE_DID}${tenantId}`,
-      didPayload,
+      cleanPayload,
       { headers: { authorization: apiKey } }
     );
     return didDetails;

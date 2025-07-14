@@ -9,3 +9,19 @@ uploadedFles/exports
 uploadedFles/import
 uploadedFles/export
 nats-server.conf
+
+# Ignore uploaded files but keep directory structure
+uploads/org-logos/*
+!uploads/org-logos/.gitkeep
+
+# Exclude test and utility files from linting
+scripts/test-utils/*.js
+scripts/test-utils/*.sql
+*.test.js
+*.spec.js
+test-*.js
+check-*.js
+decrypt-*.js
+encrypt-*.js
+reset-*.js
+update-*.sql

@@ -1,0 +1,29 @@
+# Development Dockerfile for API Gateway with hot reloading
+FROM node:18-alpine
+
+# Install OpenSSL
+RUN apk add --no-cache openssl
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package.json
+COPY package.json ./
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+# Install dependencies including dev dependencies
+RUN pnpm i
+
+# Install nodemon and nest CLI for hot reloading
+RUN npm install -g nodemon ts-node @nestjs/cli
+
+# Generate Prisma client
+COPY libs/prisma-service ./libs/prisma-service
+RUN cd libs/prisma-service && npx prisma generate
+
+# Set the command to run the microservice with hot reloading
+CMD ["sh", "-c", "cd libs/prisma-service && npx prisma migrate deploy && npx prisma generate && cd ../.. && pnpm run start:dev api-gateway"]

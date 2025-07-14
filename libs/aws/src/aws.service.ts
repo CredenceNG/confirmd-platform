@@ -1,7 +1,7 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
-import { S3 } from 'aws-sdk';
-import { promisify } from 'util';
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { RpcException } from "@nestjs/microservices";
+import { S3 } from "aws-sdk";
+import { promisify } from "util";
 
 @Injectable()
 export class AwsService {
@@ -13,19 +13,22 @@ export class AwsService {
     this.s3 = new S3({
       accessKeyId: process.env.AWS_ACCESS_KEY,
       secretAccessKey: process.env.AWS_SECRET_KEY,
-      region: process.env.AWS_REGION
+      region: process.env.AWS_REGION,
     });
 
     this.s4 = new S3({
       accessKeyId: process.env.AWS_PUBLIC_ACCESS_KEY,
       secretAccessKey: process.env.AWS_PUBLIC_SECRET_KEY,
-      region: process.env.AWS_PUBLIC_REGION
+      region: process.env.AWS_PUBLIC_REGION,
     });
 
     this.s3StoreObject = new S3({
       accessKeyId: process.env.AWS_S3_STOREOBJECT_ACCESS_KEY,
       secretAccessKey: process.env.AWS_S3_STOREOBJECT_SECRET_KEY,
-      region: process.env.AWS_S3_STOREOBJECT_REGION
+      region: process.env.AWS_S3_STOREOBJECT_REGION,
+      endpoint: process.env.AWS_ENDPOINT_URL || undefined,
+      s3ForcePathStyle: process.env.AWS_ENDPOINT_URL ? true : false,
+      signatureVersion: "v4",
     });
   }
 
@@ -35,7 +38,7 @@ export class AwsService {
     filename: string,
     bucketName: string,
     encoding: string,
-    pathAWS: string = ''
+    pathAWS: string = ""
   ): Promise<string> {
     const timestamp = Date.now();
     const putObjectAsync = promisify(this.s4.putObject).bind(this.s4);
@@ -46,10 +49,14 @@ export class AwsService {
         Key: `${pathAWS}/${encodeURIComponent(filename)}-${timestamp}.${ext}`,
         Body: fileBuffer,
         ContentEncoding: encoding,
-        ContentType: `image/png`
+        ContentType: `image/png`,
       });
 
-      const imageUrl = `https://${bucketName}.s3.${process.env.AWS_PUBLIC_REGION}.amazonaws.com/${pathAWS}/${encodeURIComponent(filename)}-${timestamp}.${ext}`;
+      const imageUrl = `https://${bucketName}.s3.${
+        process.env.AWS_PUBLIC_REGION
+      }.amazonaws.com/${pathAWS}/${encodeURIComponent(
+        filename
+      )}-${timestamp}.${ext}`;
       return imageUrl;
     } catch (error) {
       throw new HttpException(error, HttpStatus.SERVICE_UNAVAILABLE);
@@ -60,7 +67,7 @@ export class AwsService {
     const params: AWS.S3.PutObjectRequest = {
       Bucket: process.env.AWS_BUCKET,
       Key: key,
-      Body: 'string' === typeof body ? body : body.toString()
+      Body: "string" === typeof body ? body : body.toString(),
     };
 
     try {
@@ -73,7 +80,7 @@ export class AwsService {
   async getFile(key: string): Promise<AWS.S3.GetObjectOutput> {
     const params: AWS.S3.GetObjectRequest = {
       Bucket: process.env.AWS_BUCKET,
-      Key: key
+      Key: key,
     };
     try {
       return this.s3.getObject(params).promise();
@@ -85,7 +92,7 @@ export class AwsService {
   async deleteFile(key: string): Promise<void> {
     const params: AWS.S3.DeleteObjectRequest = {
       Bucket: process.env.AWS_BUCKET,
-      Key: key
+      Key: key,
     };
     try {
       await this.s3.deleteObject(params).promise();
@@ -94,15 +101,21 @@ export class AwsService {
     }
   }
 
-  async storeObject(persistent: boolean, key: string, body: unknown): Promise<S3.ManagedUpload.SendData> {
-    const objKey: string = persistent.valueOf() ? `persist/${key}` : `default/${key}`;
+  async storeObject(
+    persistent: boolean,
+    key: string,
+    body: unknown
+  ): Promise<S3.ManagedUpload.SendData> {
+    const objKey: string = persistent.valueOf()
+      ? `persist/${key}`
+      : `default/${key}`;
     const buf = Buffer.from(JSON.stringify(body));
     const params: AWS.S3.PutObjectRequest = {
       Bucket: process.env.AWS_S3_STOREOBJECT_BUCKET,
       Body: buf,
       Key: objKey,
-      ContentEncoding: 'base64',
-      ContentType: 'application/json'
+      ContentEncoding: "base64",
+      ContentType: "application/json",
     };
 
     try {

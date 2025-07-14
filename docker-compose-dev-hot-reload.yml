@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  # Extend your existing services but with hot reload capability
+  user:
+    depends_on:
+      - nats
+      - api-gateway
+    build:
+      context: ./
+      dockerfile: Dockerfiles/Dockerfile.user.dev # New dev dockerfile
+    env_file:
+      - ./.env
+    volumes:
+      # Mount entire source code for hot reloading
+      - ./apps/user/src:/app/apps/user/src
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      # Mount compiled dist for immediate changes
+      - ./dist:/app/dist
+      # Exclude node_modules from host
+      - /app/node_modules
+    command: ['pnpm', 'run', 'start:dev', 'user'] # Use watch mode
+    environment:
+      - NODE_ENV=development
+      - WATCH_MODE=true
+
+  # Add a file watcher service for shared libraries
+  lib-watcher:
+    build:
+      context: ./
+      dockerfile: Dockerfiles/Dockerfile.lib-watcher
+    volumes:
+      - ./libs:/app/libs
+      - ./dist/libs:/app/dist/libs
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+    command: ['pnpm', 'run', 'build:libs:watch'] # Watch and rebuild libs
+    environment:
+      - NODE_ENV=development
+
+volumes:
+  postgres_data:

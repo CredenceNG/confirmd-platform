@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Extract and decode JWT token payload
+echo "Decoding JWT token payload..."
+
+# Extract the token from the previous response
+TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJkNzJIZGZ4RGZ5ajNqZ0IyNGxJQ19WYTJERE9wUTdma3ktX2RuTVczVXNVIn0.eyJleHAiOjE3NTE5MDI5NDcsImlhdCI6MTc1MTkwMTE0NywianRpIjoib25ydHJvOmQ0ZDllMWIwLWFhNzItNDUzMy04MjEzLWQxOTgxY2FmZTlkMyIsImlzcyI6Imh0dHBzOi8vbWFuYWdlci5jcmVkZW5jZS5uZy9yZWFsbXMvY29uZmlybWQtYmVuY2giLCJhdWQiOlsicmVhbG0tbWFuYWdlbWVudCIsImFjY291bnQiXSwic3ViIjoiMWY3ZmFmZTUtOWEwZC00ZjhlLTliNjAtZDM1ZjViOTkyOTczIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoicGxhdGZvcm0tYWRtaW4iLCJzaWQiOiIxNGFiZWNjOC0zYTA3LTQ1ODYtODgxYy03NWZhYWI1NGFjMzIiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm1iLXVzZXIiLCJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwiZGVmYXVsdC1yb2xlcy1jb25maXJtZC1iZW5jaCIsInBsYXRmb3JtX2FkbWluIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsicmVhbG0tbWFuYWdlbWVudCI6eyJyb2xlcyI6WyJ2aWV3LWlkZW50aXR5LXByb3ZpZGVycyIsInZpZXctcmVhbG0iLCJtYW5hZ2UtaWRlbnRpdHktcHJvdmlkZXJzIiwiaW1wZXJzb25hdGlvbiIsInJlYWxtLWFkbWluIiwiY3JlYXRlLWNsaWVudCIsIm1hbmFnZS11c2VycyIsInF1ZXJ5LXJlYWxtcyIsInZpZXctYXV0aG9yaXphdGlvbiIsInF1ZXJ5LWNsaWVudHMiLCJxdWVyeS11c2VycyIsIm1hbmFnZS1ldmVudHMiLCJtYW5hZ2UtcmVhbG0iLCJ2aWV3LWV2ZW50cyIsInZpZXctdXNlcnMiLCJ2aWV3LWNsaWVudHMiLCJtYW5hZ2UtYXV0aG9yaXphdGlvbiIsIm1hbmFnZS1jbGllbnRzIiwicXVlcnktZ3JvdXBzIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6Im9wZW5pZCBlbWFpbCBwcm9maWxlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5hbWUiOiJHZXR0aSBDb25maXJtZCIsInByZWZlcnJlZF91c2VybmFtZSI6ImFkbWluQGdldGNvbmZpcm1kLmNvbSIsImdpdmVuX25hbWUiOiJHZXR0aSIsImZhbWlseV9uYW1lIjoiQ29uZmlybWQiLCJlbWFpbCI6ImFkbWluQGdldGNvbmZpcm1kLmNvbSJ9"
+
+# Extract the payload (second part of JWT)
+PAYLOAD=$(echo $TOKEN | cut -d'.' -f2)
+
+# Add padding if necessary
+case $((${#PAYLOAD} % 4)) in
+    2) PAYLOAD="${PAYLOAD}==" ;;
+    3) PAYLOAD="${PAYLOAD}=" ;;
+esac
+
+# Decode base64
+echo "Decoded JWT payload:"
+echo $PAYLOAD | base64 -d | python3 -m json.tool
+
+echo -e "\nKey information:"
+echo "- User: admin@getconfirmd.com"
+echo "- User ID: 1f7fafe5-9a0d-4f8e-9b60-d35f5b992973"
+echo "- Roles: platform_admin, mb-user, realm-admin"
+echo "- Client: platform-admin"
+echo "- Authentication successful!"

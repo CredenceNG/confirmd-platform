@@ -1,0 +1,34 @@
+# Live Development Dockerfile with hot reload support
+FROM node:18-alpine
+
+# Install essential tools for development
+RUN apk add --no-cache openssl git curl
+
+# Install global packages for development
+RUN npm install -g pnpm nodemon @nestjs/cli typescript ts-node
+
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY package.json pnpm-lock.yaml ./
+
+# Install all dependencies (including dev dependencies)
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+RUN pnpm install --frozen-lockfile
+
+# Copy configuration files
+COPY nest-cli.json tsconfig*.json ./
+
+# Create directories that will be mounted
+RUN mkdir -p apps/user libs dist
+
+# Generate Prisma client (this needs to be done in container)
+COPY libs/prisma-service ./libs/prisma-service
+RUN cd libs/prisma-service && npx prisma generate
+
+# Expose port
+EXPOSE 3000
+
+# Use development mode with watch for live reload
+# This will be overridden by docker-compose command
+CMD ["sh", "-c", "echo 'Starting in live development mode...' && npm run start:dev user"]

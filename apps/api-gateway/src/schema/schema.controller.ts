@@ -133,7 +133,7 @@ export class SchemaController {
     enum: SortFields,
     required: false
   })
-  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER)
+  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER, OrgRoles.PLATFORM_ADMIN)
   @UseGuards(AuthGuard('jwt'), OrgRolesGuard)
   @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: ApiResponseDto })
   async getSchemas(

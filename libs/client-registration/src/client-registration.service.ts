@@ -62,48 +62,135 @@ export class ClientRegistrationService {
   }
 
   async createUser(user: CreateUserDto, realm: string, token: string): Promise<{ keycloakUserId: string }> {
-    const payload = {
-      createdTimestamp: Date.parse(Date.now.toString()),
-      username: user.email,
-      enabled: true,
-      totp: false,
-      emailVerified: true,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      disableableCredentialTypes: [],
-      requiredActions: [],
-      notBefore: 0,
-      access: {
-        manageGroupMembership: true,
-        view: true,
-        mapRoles: true,
-        impersonate: true,
-        manage: true
-      },
-      realmRoles: ['mb-user'],
-      attributes: {
-        ...(user.isHolder ? { userRole: `${CommonConstants.USER_HOLDER_ROLE}` } : {})
+    try {
+      this.logger.log(`🔧 === CREATING KEYCLOAK USER ===`);
+      this.logger.log(`📧 Email: ${user.email}`);
+      this.logger.log(`👤 Name: ${user.firstName} ${user.lastName}`);
+      this.logger.log(`🏰 Realm: ${realm}`);
+      this.logger.log(`🔑 Token available: ${token ? 'YES' : 'NO'}`);
+
+      const payload = {
+        createdTimestamp: Date.parse(Date.now.toString()),
+        username: user.email,
+        enabled: true,
+        totp: false,
+        emailVerified: true,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        disableableCredentialTypes: [],
+        requiredActions: [],
+        notBefore: 0,
+        access: {
+          manageGroupMembership: true,
+          view: true,
+          mapRoles: true,
+          impersonate: true,
+          manage: true
+        },
+        realmRoles: ['mb-user'],
+        attributes: {
+          ...(user.isHolder ? { userRole: `${CommonConstants.USER_HOLDER_ROLE}` } : {})
+        }
+      };
+
+      this.logger.log(`📋 Keycloak user payload prepared`);
+      this.logger.log(`🌐 Creating user in Keycloak...`);
+
+      const createUserUrl = await this.keycloakUrlService.createUserURL(realm);
+      this.logger.log(`📡 Create user URL: ${createUserUrl}`);
+
+      const createUserResponse = await this.commonService.httpPost(
+        createUserUrl,
+        payload,
+        this.getAuthHeader(token)
+      );
+
+      this.logger.log(`✅ User created successfully in Keycloak`);
+
+      const getUserUrl = await this.keycloakUrlService.getUserByUsernameURL(realm, user.email);
+      this.logger.log(`📡 Get user URL: ${getUserUrl}`);
+
+      let getUserResponse;
+      let searchAttempts = 0;
+      const maxAttempts = 3;
+
+      // Try multiple search approaches with retry logic
+      while (searchAttempts < maxAttempts) {
+        searchAttempts++;
+        this.logger.log(`🔍 Search attempt ${searchAttempts}/${maxAttempts}`);
+
+        try {
+          // Try searching by username first
+          getUserResponse = await this.commonService.httpGet(
+            getUserUrl,
+            this.getAuthHeader(token)
+          );
+
+          this.logger.log(`📊 Username search response: ${Array.isArray(getUserResponse) ? getUserResponse.length : 'Not array'} results`);
+
+          if (Array.isArray(getUserResponse) && getUserResponse.length > 0) {
+            this.logger.log(`✅ User found via username search on attempt ${searchAttempts}`);
+            break;
+          }
+
+          // If username search fails, try email search
+          const emailSearchUrl = `${process.env.KEYCLOAK_DOMAIN}admin/realms/${realm}/users?email=${encodeURIComponent(user.email)}`;
+          this.logger.log(`📡 Trying email search URL: ${emailSearchUrl}`);
+
+          getUserResponse = await this.commonService.httpGet(
+            emailSearchUrl,
+            this.getAuthHeader(token)
+          );
+
+          this.logger.log(`📊 Email search response: ${Array.isArray(getUserResponse) ? getUserResponse.length : 'Not array'} results`);
+
+          if (Array.isArray(getUserResponse) && getUserResponse.length > 0) {
+            this.logger.log(`✅ User found via email search on attempt ${searchAttempts}`);
+            break;
+          }
+
+          // If both fail, wait a bit and try again (except on last attempt)
+          if (searchAttempts < maxAttempts) {
+            this.logger.log(`⏳ Waiting 1 second before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+
+        } catch (searchError) {
+          this.logger.error(`❌ Search error on attempt ${searchAttempts}: ${JSON.stringify(searchError)}`);
+          if (searchAttempts === maxAttempts) {
+            throw searchError;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-    };
 
-    await this.commonService.httpPost(
-      await this.keycloakUrlService.createUserURL(realm),
-      payload,
-      this.getAuthHeader(token)
-    );
+      if (!Array.isArray(getUserResponse) || getUserResponse.length === 0) {
+        this.logger.error(`❌ No user found after creation despite ${maxAttempts} attempts`);
+        this.logger.error(`❌ Search parameters used: username=${user.email}, email=${user.email}`);
+        throw new Error('User not found after creation in Keycloak');
+      }
 
-    const getUserResponse = await this.commonService.httpGet(
-      await this.keycloakUrlService.getUserByUsernameURL(realm, user.email),
-      this.getAuthHeader(token)
-    );
-    const userid = getUserResponse[0].id;
+      const userid = getUserResponse[0].id;
+      this.logger.log(`🆔 Retrieved user ID: ${userid}`);
 
-    await this.resetPasswordOfKeycloakUser(realm, user.password, userid, token);
+      this.logger.log(`🔐 Setting user password...`);
+      await this.resetPasswordOfKeycloakUser(realm, user.password, userid, token);
+      this.logger.log(`✅ Password set successfully`);
 
-    return {
-      keycloakUserId: getUserResponse[0].id
-    };
+      this.logger.log(`🎉 Keycloak user creation completed successfully`);
+      return {
+        keycloakUserId: getUserResponse[0].id
+      };
+
+    } catch (error) {
+      this.logger.error(`❌ Error in createUser: ${error.message}`);
+      this.logger.error(`❌ Error status: ${error.response?.status}`);
+      this.logger.error(`❌ Error statusText: ${error.response?.statusText}`);
+      this.logger.error(`❌ Error data: ${JSON.stringify(error.response?.data)}`);
+      this.logger.error(`❌ Full error: ${JSON.stringify(error)}`);
+      throw error;
+    }
   }
 
   async resetPasswordOfKeycloakUser(realm: string, resetPasswordValue: string, userid: string, token: string) {
@@ -148,36 +235,157 @@ export class ClientRegistrationService {
 
   async getManagementToken(clientId: string, clientSecret: string) {
     try {
+      this.logger.log(`🔐 === GETTING MANAGEMENT TOKEN FROM DEDICATED CLIENT ===`);
+      this.logger.log(`Client ID provided: ${clientId ? 'Yes' : 'No'}`);
+      this.logger.log(`Client Secret provided: ${clientSecret ? 'Yes' : 'No'}`);
+
       const payload = new ClientCredentialTokenPayloadDto();
       if (!clientId && !clientSecret) {
-        this.logger.error(`getManagementToken ::: Client ID and client secret are missing`);
+        this.logger.error(`❌ getManagementToken ::: Client ID and client secret are missing`);
         throw new BadRequestException(`Client ID and client secret are missing`);
       }
 
-      const decryptClientId = await this.commonService.decryptPassword(clientId);
-      const decryptClientSecret = await this.commonService.decryptPassword(clientSecret);
+      this.logger.log(`🔓 Processing client credentials...`);
+      // clientId and clientSecret are already decrypted when passed from user service
+      // No need to decrypt again as they come as plain text
+      this.logger.log(`🔍 Client ID received: ${clientId ? `${clientId.substring(0, 8)}...` : 'MISSING'}`);
+      this.logger.log(`🔍 Client Secret received: ${clientSecret ? `${clientSecret.substring(0, 8)}...` : 'MISSING'}`);
+      this.logger.log(`✅ Client credentials processed successfully`);
 
-      payload.client_id = decryptClientId;
-      payload.client_secret = decryptClientSecret;
+      payload.client_id = clientId; // Already plain text
+      payload.client_secret = clientSecret; // Already decrypted in user service
+
+      this.logger.log(`🌐 Requesting management token from Keycloak...`);
+      this.logger.log(`Using realm: ${process.env.KEYCLOAK_REALM}`);
+      this.logger.log(`Token endpoint will be constructed for realm: ${process.env.KEYCLOAK_REALM}`);
+
       const mgmtTokenResponse = await this.getToken(payload);
+      
+      this.logger.log(`✅ Management token obtained successfully from dedicated management client`);
+      this.logger.log(`Token type: ${mgmtTokenResponse.token_type || 'Bearer'}`);
+      this.logger.log(`Token expires in: ${mgmtTokenResponse.expires_in || 'Unknown'} seconds`);
+
       return mgmtTokenResponse.access_token;
     } catch (error) {
-      this.logger.error(`Error in getManagementToken: ${JSON.stringify(error)}`);
+      this.logger.error(`❌ Error in getManagementToken: ${JSON.stringify(error)}`);
 
       throw error;
     }
   }
 
-  async getManagementTokenForMobile() {
-    const payload = new ClientCredentialTokenPayloadDto();
-    payload.client_id = process.env.KEYCLOAK_MANAGEMENT_ADEYA_CLIENT_ID;
-    payload.client_secret = process.env.KEYCLOAK_MANAGEMENT_ADEYA_CLIENT_SECRET;
-    payload.scope = 'email profile';
+  async getManagementTokenFromEnv() {
+    try {
+      this.logger.log(`🔐 === GETTING MANAGEMENT TOKEN FROM ENVIRONMENT VARIABLES ===`);
+      
+      const managementClientId = process.env.KEYCLOAK_MANAGEMENT_CLIENT_ID;
+      const managementClientSecret = process.env.KEYCLOAK_MANAGEMENT_CLIENT_SECRET;
+      
+      if (!managementClientId || !managementClientSecret) {
+        this.logger.error(`❌ Management client credentials missing from environment variables`);
+        throw new BadRequestException(`Management client credentials missing from environment variables`);
+      }
 
-    this.logger.log(`management Payload: ${JSON.stringify(payload)}`);
-    const mgmtTokenResponse = await this.getToken(payload);
-    this.logger.debug(`ClientRegistrationService management token ${JSON.stringify(mgmtTokenResponse)}`);
-    return mgmtTokenResponse;
+      this.logger.log(`✅ Management client credentials found in environment variables`);
+      this.logger.log(`Management Client ID: ${managementClientId}`);
+
+      const payload = new ClientCredentialTokenPayloadDto();
+      payload.client_id = managementClientId;
+      payload.client_secret = managementClientSecret;
+      payload.scope = 'openid';
+
+      this.logger.log(`🌐 Requesting management token from Keycloak realm...`);
+      
+      // Use the application realm instead of master realm for management client
+      const keycloakRealm = process.env.KEYCLOAK_REALM;
+      const tokenEndpoint = `${process.env.KEYCLOAK_DOMAIN}realms/${keycloakRealm}/protocol/openid-connect/token`;
+      
+      this.logger.log(`Token endpoint: ${tokenEndpoint}`);
+      
+      const tokenResponse = await this.commonService.httpPost(
+        tokenEndpoint,
+        qs.stringify(payload),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+
+      this.logger.log(`✅ Management token obtained successfully from realm ${keycloakRealm}`);
+      this.logger.log(`Token type: ${tokenResponse.token_type || 'Bearer'}`);
+      this.logger.log(`Token expires in: ${tokenResponse.expires_in || 'Unknown'} seconds`);
+
+      return tokenResponse.access_token;
+    } catch (error) {
+      this.logger.error(`❌ Error in getManagementTokenFromEnv: ${JSON.stringify(error)}`);
+      throw error;
+    }
+  }
+
+  async getManagementTokenWithAdminCredentials() {
+    try {
+      this.logger.log(`🔐 === GETTING MANAGEMENT TOKEN USING KEYCLOAK MANAGEMENT CLIENT (V2 UPDATED) ===`);
+      
+      // Use the management client credentials instead of user credentials
+      const managementClientId = process.env.KEYCLOAK_MANAGEMENT_CLIENT_ID;
+      const managementClientSecret = process.env.KEYCLOAK_MANAGEMENT_CLIENT_SECRET;
+      const keycloakRealm = process.env.KEYCLOAK_REALM;
+      
+      if (!managementClientId || !managementClientSecret || !keycloakRealm) {
+        this.logger.error(`❌ Keycloak management client credentials missing from environment variables`);
+        throw new BadRequestException(`Keycloak management client credentials missing from environment variables`);
+      }
+
+      this.logger.log(`✅ Keycloak management client credentials found in environment variables`);
+      this.logger.log(`Management Client ID: ${managementClientId}`);
+      this.logger.log(`Management Client Secret length: ${managementClientSecret.length}`);
+      this.logger.log(`Keycloak Realm: ${keycloakRealm}`);
+
+      // Use client credentials grant flow with the management client
+      const payload = {
+        grant_type: 'client_credentials',
+        client_id: managementClientId,
+        client_secret: managementClientSecret
+      };
+
+      this.logger.log(`🌐 Requesting admin token from Keycloak realm using client credentials grant...`);
+      
+      // Use the actual realm, not master realm
+      const tokenEndpoint = `${process.env.KEYCLOAK_DOMAIN}realms/${keycloakRealm}/protocol/openid-connect/token`;
+      
+      this.logger.log(`Token endpoint: ${tokenEndpoint}`);
+      this.logger.log(`Payload client_id: ${payload.client_id}`);
+      this.logger.log(`Payload grant_type: ${payload.grant_type}`);
+      
+      const tokenResponse = await this.commonService.httpPost(
+        tokenEndpoint,
+        qs.stringify(payload),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+
+      this.logger.log(`✅ Management token obtained successfully from realm ${keycloakRealm}`);
+      this.logger.log(`Token type: ${tokenResponse.token_type || 'Bearer'}`);
+      this.logger.log(`Token expires in: ${tokenResponse.expires_in || 'Unknown'} seconds`);
+
+      return tokenResponse.access_token;
+    } catch (error) {
+      this.logger.error(`❌ Error in getManagementTokenWithAdminCredentials: ${JSON.stringify(error)}`);
+      
+      // Check if this is a Keycloak authentication error vs other error
+      if (401 === error?.status || 401 === error?.response?.status) {
+        this.logger.error(`🚫 Keycloak authentication failed - invalid client credentials`);
+        this.logger.error(`Error details: ${JSON.stringify(error.response || error)}`);
+        throw new BadRequestException('Keycloak management client authentication failed - invalid client credentials');
+      } else {
+        // This is likely a connection or other error
+        this.logger.error(`🔧 Non-authentication error occurred: ${error.message}`);
+        throw new BadRequestException('Failed to authenticate with Keycloak admin credentials');
+      }
+    }
   }
 
   async getClientIdAndSecret(
@@ -356,6 +564,11 @@ export class ClientRegistrationService {
   }
 
   async createClient(orgName: string, orgId: string, token: string) {
+    this.logger.log(`🏢 === CREATING KEYCLOAK CLIENT FOR ORGANIZATION ===`);
+    this.logger.log(`Organization: ${orgName} (ID: ${orgId})`);
+    this.logger.log(`Target realm: ${process.env.KEYCLOAK_REALM}`);
+    this.logger.log(`📋 This is NOT the master realm - creating client in application realm`);
+
     //create client for respective created realm in order to access its resources
     const realmName = process.env.KEYCLOAK_REALM;
     const clientPayload = {
@@ -397,13 +610,16 @@ export class ClientRegistrationService {
       nodeReRegistrationTimeout: 0
     };
 
+    this.logger.log(`🔧 Creating Keycloak client with payload...`);
     const createClientResponse = await this.commonService.httpPost(
       await this.keycloakUrlService.createClientURL(realmName),
       clientPayload,
       this.getAuthHeader(token)
     );
+    this.logger.log(`✅ Keycloak client created successfully`);
     this.logger.debug(`ClientRegistrationService create realm client ${JSON.stringify(createClientResponse)}`);
 
+    this.logger.log(`🔍 Retrieving client details...`);
     const getClientResponse = await this.commonService.httpGet(
       await this.keycloakUrlService.GetClientURL(realmName, `${orgId}`),
       this.getAuthHeader(token)
@@ -412,6 +628,7 @@ export class ClientRegistrationService {
     const { id } = getClientResponse[0];
     const client_id = getClientResponse[0].clientId;
 
+    this.logger.log(`🔑 Retrieving client secret...`);
     const getClientSercretResponse = await this.commonService.httpGet(
       await this.keycloakUrlService.GetClientSecretURL(realmName, id),
       this.getAuthHeader(token)
@@ -419,8 +636,11 @@ export class ClientRegistrationService {
     this.logger.debug(
       `ClientRegistrationService get realm admin client secret ${JSON.stringify(getClientSercretResponse)}`
     );
-    this.logger.log(`${getClientSercretResponse.value}`);
+    this.logger.log(`Client secret retrieved successfully`);
     const client_secret = getClientSercretResponse.value;
+
+    this.logger.log(`✅ Client creation completed successfully`);
+    this.logger.log(`Client ID: ${client_id}, IDP ID: ${id}`);
 
     return {
       idpId: id,
@@ -495,21 +715,38 @@ export class ClientRegistrationService {
   }
 
   async getToken(payload: ClientCredentialTokenPayloadDto) {
+    this.logger.log(`🎫 === REQUESTING TOKEN FROM KEYCLOAK ===`);
+    this.logger.log(`Grant type: ${payload.grant_type}`);
+    this.logger.log(`Client ID: ${payload.client_id ? 'Present' : 'Missing'}`);
+    this.logger.log(`Client Secret: ${payload.client_secret ? 'Present' : 'Missing'}`);
+
     if ('client_credentials' !== payload.grant_type || !payload.client_id || !payload.client_secret) {
+      this.logger.error(`❌ Invalid inputs while getting token`);
       throw new Error('Invalid inputs while getting token.');
     }
+
     const strURL = await this.keycloakUrlService.GetSATURL(process.env.KEYCLOAK_REALM);
-    this.logger.log(`getToken URL: ${strURL}`);
+    this.logger.log(`🌐 Token endpoint URL: ${strURL}`);
+    this.logger.log(`🔍 Target realm: ${process.env.KEYCLOAK_REALM}`);
+    this.logger.log(`📋 This is NOT the master realm - using application realm for management token`);
+
     const config = {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     };
+
+    this.logger.log(`📡 Making token request to Keycloak...`);
     const tokenResponse = await this.commonService.httpPost(
       await this.keycloakUrlService.GetSATURL(process.env.KEYCLOAK_REALM),
       qs.stringify(payload),
       config
     );
+
+    this.logger.log(`✅ Token response received successfully`);
+    this.logger.log(`Token type: ${tokenResponse.token_type || 'Bearer'}`);
+    this.logger.log(`Access token: ${tokenResponse.access_token ? 'Present' : 'Missing'}`);
+    this.logger.log(`Expires in: ${tokenResponse.expires_in || 'Unknown'} seconds`);
 
     return tokenResponse;
   }
@@ -574,18 +811,89 @@ export class ClientRegistrationService {
 
   async getUserToken(email: string, password: string, clientId: string, clientSecret: string) {
     const payload = new userTokenPayloadDto();
+    
+    this.logger.log(`🔑 getUserToken called for email: ${email}`);
+    this.logger.log(`📋 Client ID: ${clientId ? `${clientId.substring(0, 8)}...` : 'MISSING'}`);
+    this.logger.log(`🔐 Client Secret: ${clientSecret ? `${clientSecret.substring(0, 8)}...` : 'MISSING'}`);
+    this.logger.log(`👤 Username: ${email}`);
+    this.logger.log(`🔑 Has password: ${password ? 'YES' : 'NO'}`);
+    
     if (!clientId && !clientSecret) {
-      this.logger.error(`getUserToken ::: Client ID and client secret are missing`);
+      this.logger.error(`❌ getUserToken ::: Client ID and client secret are missing`);
       throw new BadRequestException(`Client ID and client secret are missing`);
     }
 
-    const decryptClientId = await this.commonService.decryptPassword(clientId);
-    const decryptClientSecret = await this.commonService.decryptPassword(clientSecret);
+    // Try to decrypt client credentials, but handle plain text gracefully
+    let decryptedClientId = clientId;
+    let decryptedClientSecret = clientSecret;
+    
+    // Try to decrypt client ID
+    try {
+      const testDecryptedClientId = await this.commonService.decryptString(clientId);
+      if (testDecryptedClientId && '' !== testDecryptedClientId.trim()) {
+        decryptedClientId = testDecryptedClientId;
+        this.logger.log(`🔓 Client ID was encrypted and decrypted successfully`);
+      } else {
+        // If decryption returns empty string, it's likely plain text
+        this.logger.log(`🔓 Client ID appears to be plain text, using as is`);
+        decryptedClientId = clientId;
+      }
+    } catch (error) {
+      // If decryption fails, assume it's plain text
+      this.logger.log(`🔓 Client ID decryption failed, using as plain text`);
+      decryptedClientId = clientId;
+    }
+    
+    // Try to decrypt client secret
+    try {
+      const testDecryptedClientSecret = await this.commonService.decryptString(clientSecret);
+      if (testDecryptedClientSecret && '' !== testDecryptedClientSecret.trim()) {
+        decryptedClientSecret = testDecryptedClientSecret;
+        this.logger.log(`🔓 Client Secret was encrypted and decrypted successfully`);
+      } else {
+        // If decryption returns empty string, it's likely plain text
+        this.logger.log(`🔓 Client Secret appears to be plain text, using as is`);
+        decryptedClientSecret = clientSecret;
+      }
+    } catch (error) {
+      // If decryption fails, assume it's plain text
+      this.logger.log(`🔓 Client Secret decryption failed, using as plain text`);
+      decryptedClientSecret = clientSecret;
+    }
 
-    payload.client_id = decryptClientId;
-    payload.client_secret = decryptClientSecret;
+    // Try to decrypt password, but handle plain text gracefully
+    let decryptedPassword = password;
+    try {
+      const testDecryptedPassword = await this.commonService.decryptPassword(password);
+      if (testDecryptedPassword && '' !== testDecryptedPassword.trim()) {
+        decryptedPassword = testDecryptedPassword;
+        this.logger.log(`🔓 Password was encrypted and decrypted successfully`);
+      } else {
+        // If decryption returns empty string, it's likely plain text
+        this.logger.log(`🔓 Password appears to be plain text, using as is`);
+        decryptedPassword = password;
+      }
+    } catch (error) {
+      // If decryption fails, assume it's plain text
+      this.logger.log(`🔓 Password decryption failed, using as plain text`);
+      decryptedPassword = password;
+    }
+
+    payload.client_id = decryptedClientId;
+    payload.client_secret = decryptedClientSecret;
     payload.username = email;
-    payload.password = password;
+    payload.password = decryptedPassword;
+
+    this.logger.log(`📦 Payload prepared:`, {
+      grant_type: payload.grant_type,
+      client_id: payload.client_id ? `${payload.client_id.substring(0, 8)}...` : 'MISSING',
+      client_secret: payload.client_secret ? `${payload.client_secret.substring(0, 8)}...` : 'MISSING',
+      username: payload.username,
+      password: payload.password ? '[REDACTED]' : 'MISSING'
+    });
+
+    this.logger.log(`🔍 Decrypted Client ID: ${decryptedClientId}`);
+    this.logger.log(`🔍 Decrypted Client Secret: ${decryptedClientSecret ? `${decryptedClientSecret.substring(0, 8)}...` : 'MISSING'}`);
 
     if (
       'password' !== payload.grant_type ||
@@ -594,24 +902,43 @@ export class ClientRegistrationService {
       !payload.username ||
       !payload.password
     ) {
+      this.logger.error(`❌ Invalid inputs while getting token:`, {
+        grant_type_valid: 'password' === payload.grant_type,
+        has_client_id: Boolean(payload.client_id),
+        has_client_secret: Boolean(payload.client_secret),
+        has_username: Boolean(payload.username),
+        has_password: Boolean(payload.password)
+      });
       throw new Error('Invalid inputs while getting token.');
     }
 
     const strURL = await this.keycloakUrlService.GetSATURL(process.env.KEYCLOAK_REALM);
-    this.logger.log(`getToken URL: ${strURL}`);
+    this.logger.log(`🌐 getToken URL: ${strURL}`);
     const config = {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     };
 
-    const tokenResponse = await this.commonService.httpPost(
-      await this.keycloakUrlService.GetSATURL(process.env.KEYCLOAK_REALM),
-      qs.stringify(payload),
-      config
-    );
-
-    return tokenResponse;
+    try {
+      this.logger.log(`🚀 Making request to Keycloak for token...`);
+      const tokenResponse = await this.commonService.httpPost(
+        await this.keycloakUrlService.GetSATURL(process.env.KEYCLOAK_REALM),
+        qs.stringify(payload),
+        config
+      );
+      
+      this.logger.log(`✅ Token received successfully from Keycloak`);
+      return tokenResponse;
+    } catch (error) {
+      this.logger.error(`❌ Token request failed:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
+    }
   }
 
   async getAccessToken(refreshToken: string, clientId: string, clientSecret: string) {
@@ -622,11 +949,11 @@ export class ClientRegistrationService {
         throw new BadRequestException(`Client ID and client secret are missing`);
       }
 
-      const decryptClientId = await this.commonService.decryptPassword(clientId);
+      // clientId is stored as plain text, only clientSecret is encrypted
       const decryptClientSecret = await this.commonService.decryptPassword(clientSecret);
 
-      payload.client_id = decryptClientId;
-      payload.client_secret = decryptClientSecret;
+      payload.client_id = clientId; // Use plain text clientId
+      payload.client_secret = decryptClientSecret; // Use decrypted clientSecret
 
       payload.grant_type = 'refresh_token';
       payload.refresh_token = refreshToken;
@@ -698,7 +1025,18 @@ export class ClientRegistrationService {
   async getClientRedirectUrl(clientId: string, token: string) {
     const realmName = process.env.KEYCLOAK_REALM;
 
-    const decryptClientId = await this.commonService.decryptPassword(clientId);
+    // Check if clientId needs decryption or is already plaintext
+    let decryptClientId;
+    try {
+      // Try to decrypt first (in case it's encrypted)
+      decryptClientId = await this.commonService.decryptPassword(clientId);
+      this.logger.debug(`🔓 Successfully decrypted clientId for Keycloak API call`);
+    } catch (error) {
+      // If decryption fails, assume it's already plaintext
+      decryptClientId = clientId;
+      this.logger.debug(`📝 Using plaintext clientId for Keycloak API call: ${clientId}`);
+    }
+
     const redirectUrls = await this.commonService.httpGet(
       await this.keycloakUrlService.GetClientURL(realmName, decryptClientId),
       this.getAuthHeader(token)

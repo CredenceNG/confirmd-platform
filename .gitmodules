@@ -1,3 +1,6 @@
 [submodule "apps/agent-provisioning/AFJ/afj-controller"]
 	path = apps/agent-provisioning/AFJ/afj-controller
 	url = https://github.com/credebl/afj-controller.git
+[submodule "credo-controller"]
+	path = credo-controller
+	url = ./credo-controller

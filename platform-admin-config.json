@@ -1,0 +1,35 @@
+{
+  "label": "platform-admin",
+  "walletId": "platform-admin",
+  "walletKey": "U2FsdGVkX19l6w/PpuicnGBYThBHolzF27oN0JwfWkc=",
+  "walletType": "postgres",
+  "walletUrl": "postgres:5432",
+  "walletAccount": "postgres",
+  "walletPassword": "postgres",
+  "walletAdminAccount": "postgres",
+  "walletAdminPassword": "postgres",
+  "walletScheme": "DatabasePerWallet",
+  "walletConnectTimeout": 30000,
+  "walletMaxConnections": 10,
+  "walletIdleTimeout": 30000,
+  "indyLedger": [
+    {
+      "genesisTransactions": "https://raw.githubusercontent.com/bcgov/von-network/main/BCovrin/genesis_test",
+      "indyNamespace": "bcovrin:testnet"
+    }
+  ],
+  "endpoint": ["https://platform-admin.confamd.com"],
+  "autoAcceptConnections": true,
+  "autoAcceptCredentials": "always",
+  "autoAcceptProofs": "always",
+  "logLevel": 2,
+  "inboundTransport": [
+    {
+      "transport": "http",
+      "port": 8001
+    }
+  ],
+  "outboundTransport": ["http"],
+  "adminPort": 8001,
+  "tenancy": false
+}
