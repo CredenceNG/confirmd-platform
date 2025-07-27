@@ -246,14 +246,51 @@ export class ClientRegistrationService {
       }
 
       this.logger.log(`🔓 Processing client credentials...`);
-      // clientId and clientSecret are already decrypted when passed from user service
-      // No need to decrypt again as they come as plain text
       this.logger.log(`🔍 Client ID received: ${clientId ? `${clientId.substring(0, 8)}...` : 'MISSING'}`);
       this.logger.log(`🔍 Client Secret received: ${clientSecret ? `${clientSecret.substring(0, 8)}...` : 'MISSING'}`);
+      
+      // Try to decrypt client credentials, but handle plain text gracefully
+      let decryptedClientId = clientId;
+      let decryptedClientSecret = clientSecret;
+      
+      // Try to decrypt client ID
+      try {
+        const testDecryptedClientId = await this.commonService.decryptString(clientId);
+        if (testDecryptedClientId && '' !== testDecryptedClientId.trim()) {
+          decryptedClientId = testDecryptedClientId;
+          this.logger.log(`🔓 Client ID was encrypted and decrypted successfully`);
+        } else {
+          // If decryption returns empty string, it's likely plain text
+          this.logger.log(`� Client ID appears to be plain text, using as is`);
+          decryptedClientId = clientId;
+        }
+      } catch (error) {
+        // If decryption fails, assume it's plain text
+        this.logger.log(`� Client ID decryption failed, using as plain text: ${error.message}`);
+        decryptedClientId = clientId;
+      }
+      
+      // Try to decrypt client secret
+      try {
+        const testDecryptedClientSecret = await this.commonService.decryptString(clientSecret);
+        if (testDecryptedClientSecret && '' !== testDecryptedClientSecret.trim()) {
+          decryptedClientSecret = testDecryptedClientSecret;
+          this.logger.log(`🔓 Client Secret was encrypted and decrypted successfully`);
+        } else {
+          // If decryption returns empty string, it's likely plain text
+          this.logger.log(`🔓 Client Secret appears to be plain text, using as is`);
+          decryptedClientSecret = clientSecret;
+        }
+      } catch (error) {
+        // If decryption fails, assume it's plain text
+        this.logger.log(`🔓 Client Secret decryption failed, using as plain text: ${error.message}`);
+        decryptedClientSecret = clientSecret;
+      }
+      
       this.logger.log(`✅ Client credentials processed successfully`);
 
-      payload.client_id = clientId; // Already plain text
-      payload.client_secret = clientSecret; // Already decrypted in user service
+      payload.client_id = decryptedClientId;
+      payload.client_secret = decryptedClientSecret;
 
       this.logger.log(`🌐 Requesting management token from Keycloak...`);
       this.logger.log(`Using realm: ${process.env.KEYCLOAK_REALM}`);
@@ -287,6 +324,7 @@ export class ClientRegistrationService {
 
       this.logger.log(`✅ Management client credentials found in environment variables`);
       this.logger.log(`Management Client ID: ${managementClientId}`);
+      this.logger.log(`Management Client Secret: ${managementClientSecret.substring(0, 5)}...`);
 
       const payload = new ClientCredentialTokenPayloadDto();
       payload.client_id = managementClientId;
@@ -385,6 +423,118 @@ export class ClientRegistrationService {
         this.logger.error(`🔧 Non-authentication error occurred: ${error.message}`);
         throw new BadRequestException('Failed to authenticate with Keycloak admin credentials');
       }
+    }
+  }
+
+  /**
+   * Get management token using encrypted credentials from database (for platform admins)
+   * @param user User object containing encrypted clientId and clientSecret
+   * @returns Management access token
+   */
+  async getManagementTokenFromDatabase(user: any): Promise<string> {
+    try {
+      this.logger.log(`🔐 === GETTING MANAGEMENT TOKEN FROM DATABASE (PLATFORM ADMIN) ===`);
+      this.logger.log(`👤 User: ${user.email}`);
+      this.logger.log(`🆔 User ID: ${user.id}`);
+
+      if (!user.clientId || !user.clientSecret) {
+        this.logger.error(`❌ Platform admin user missing encrypted credentials in database`);
+        throw new BadRequestException(`Platform admin user missing encrypted credentials in database`);
+      }
+
+      // Decrypt the stored credentials
+      let decryptedClientId: string;
+      let decryptedClientSecret: string;
+
+      try {
+        decryptedClientId = await this.commonService.decryptPassword(user.clientId);
+        decryptedClientSecret = await this.commonService.decryptPassword(user.clientSecret);
+        
+        this.logger.log(`✅ Successfully decrypted platform admin credentials`);
+        this.logger.log(`🔑 Decrypted Client ID: ${decryptedClientId}`);
+        this.logger.log(`🔒 Decrypted Client Secret: ${decryptedClientSecret ? '[PRESENT]' : '[MISSING]'}`);
+      } catch (decryptError) {
+        this.logger.error(`❌ Failed to decrypt platform admin credentials: ${decryptError.message}`);
+        throw new BadRequestException(`Failed to decrypt platform admin credentials`);
+      }
+
+      if (!decryptedClientId || !decryptedClientSecret) {
+        this.logger.error(`❌ Decrypted credentials are empty`);
+        throw new BadRequestException(`Decrypted platform admin credentials are empty`);
+      }
+
+      // Use client credentials grant flow with the decrypted credentials
+      const payload = {
+        grant_type: 'client_credentials',
+        client_id: decryptedClientId,
+        client_secret: decryptedClientSecret
+      };
+
+      this.logger.log(`🌐 Requesting management token using platform admin database credentials...`);
+      
+      const keycloakRealm = process.env.KEYCLOAK_REALM;
+      const tokenEndpoint = `${process.env.KEYCLOAK_DOMAIN}realms/${keycloakRealm}/protocol/openid-connect/token`;
+      
+      this.logger.log(`Token endpoint: ${tokenEndpoint}`);
+      this.logger.log(`Using platform admin client: ${decryptedClientId}`);
+      
+      const tokenResponse = await this.commonService.httpPost(
+        tokenEndpoint,
+        qs.stringify(payload),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+
+      this.logger.log(`✅ Management token obtained successfully using platform admin database credentials`);
+      this.logger.log(`Token type: ${tokenResponse.token_type || 'Bearer'}`);
+      this.logger.log(`Token expires in: ${tokenResponse.expires_in || 'Unknown'} seconds`);
+
+      return tokenResponse.access_token;
+    } catch (error) {
+      this.logger.error(`❌ Error in getManagementTokenFromDatabase: ${JSON.stringify(error)}`);
+      
+      // Check if this is a Keycloak authentication error vs other error
+      if (401 === error?.status || 401 === error?.response?.status) {
+        this.logger.error(`🚫 Keycloak authentication failed with platform admin database credentials`);
+        this.logger.error(`This suggests the encrypted credentials in database are invalid or expired`);
+        throw new BadRequestException('Platform admin database credentials authentication failed');
+      } else {
+        // This is likely a connection or other error
+        this.logger.error(`🔧 Non-authentication error occurred: ${error.message}`);
+        throw new BadRequestException('Failed to authenticate with platform admin database credentials');
+      }
+    }
+  }
+
+  /**
+   * Check if user has platform admin role
+   * @param user User object with roles or role information
+   * @returns true if user is platform admin
+   */
+  isPlatformAdmin(user: any): boolean {
+    try {
+      this.logger.log(`🔍 Checking if user is platform admin: ${user?.email}`);
+      
+      // Check if user has platform admin role in various possible formats
+      const isPlatformAdmin = 
+        user?.roles?.some((role: any) => 
+          role?.role === 'platform_admin' || 
+          role?.name === 'platform_admin' ||
+          role === 'platform_admin'
+        ) ||
+        user?.role === 'platform_admin' ||
+        user?.userRole === 'platform_admin' ||
+        // Also check clientId pattern as fallback (admin user has 'platform-admin' as clientId)
+        (user?.clientId && user.clientId.includes('platform-admin'));
+
+      this.logger.log(`📊 Platform admin check result: ${isPlatformAdmin}`);
+      return isPlatformAdmin;
+    } catch (error) {
+      this.logger.error(`❌ Error checking platform admin status: ${error.message}`);
+      return false;
     }
   }
 

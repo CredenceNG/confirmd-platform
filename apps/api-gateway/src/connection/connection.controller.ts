@@ -190,13 +190,27 @@ export class ConnectionController {
          @Res() res: Response
      ): Promise<Response> {
  
+        // 🔍 MONITOR LOG: API Gateway request
+        this.logger.log(`🎯 [API MONITOR] POST /orgs/${orgId}/connections - Starting request`);
+        this.logger.log(`📦 [API MONITOR] Request payload: ${JSON.stringify(createOutOfBandConnectionInvitation, null, 2)}`);
+        this.logger.log(`👤 [API MONITOR] User: ${reqUser.email}`);
+
         createOutOfBandConnectionInvitation.orgId = orgId;
          const connectionData = await this.connectionService.createConnectionInvitation(createOutOfBandConnectionInvitation, reqUser);
+         
+         // 🔍 MONITOR LOG: Service response
+         this.logger.log(`🚀 [API MONITOR] Service response received`);
+         this.logger.log(`📊 [API MONITOR] Full response: ${JSON.stringify(connectionData, null, 2)}`);
+         
          const finalResponse: IResponse = {
              statusCode: HttpStatus.CREATED,
              message: ResponseMessages.connection.success.create,
              data: connectionData
          };
+         
+         // 🔍 MONITOR LOG: Final API response
+         this.logger.log(`📤 [API MONITOR] Final response being sent: ${JSON.stringify(finalResponse, null, 2)}`);
+         
          return res.status(HttpStatus.CREATED).json(finalResponse);
  
      }

@@ -9,6 +9,8 @@ export interface IUsersProfile {
   supabaseUserId?: string;
   keycloakUserId?: string;
   userOrgRoles?: IUserOrgRole[];
+  // eslint-disable-next-line camelcase
+  user_role_mapping?: IUserRoleMapping[];
 }
 
 interface IUserOrgRole {
@@ -18,6 +20,19 @@ interface IUserOrgRole {
   orgId: string;
   orgRole: IOrgRole;
   organisation: IOrganisation;
+}
+
+interface IUserRoleMapping {
+  id: string;
+  userId: string;
+  userRoleId: string;
+  // eslint-disable-next-line camelcase
+  user_role: IUserRole;
+}
+
+interface IUserRole {
+  id: string;
+  role: string;
 }
 export interface IOrgRole {
   id: string;

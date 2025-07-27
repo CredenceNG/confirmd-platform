@@ -856,8 +856,23 @@ export class OrganizationController {
     @Body() updateUserDto: UpdateUserRolesDto,
     @Param("orgId") orgId: string,
     @Param("userId") userId: string,
+    @User() user: user,
     @Res() res: Response
   ): Promise<Response> {
+    console.log(`🚀 === API GATEWAY: UPDATE USER ROLES REQUEST RECEIVED ===`);
+    console.log(`📨 Request details:`);
+    console.log(`   - Organization ID: ${orgId}`);
+    console.log(`   - User ID: ${userId}`);
+    console.log(`   - Body:`, JSON.stringify(updateUserDto, null, 2));
+    console.log(
+      `   - User context:`,
+      JSON.stringify(
+        { id: user.id, email: user.email, firstName: user.firstName },
+        null,
+        2
+      )
+    );
+
     updateUserDto.orgId = orgId;
     updateUserDto.userId = userId.trim();
     if (!updateUserDto.userId.length) {
@@ -874,7 +889,12 @@ export class OrganizationController {
 
     await this.organizationService.updateUserRoles(
       updateUserDto,
-      updateUserDto.userId
+      updateUserDto.userId,
+      user
+    );
+
+    console.log(
+      `✅ API GATEWAY: Organization service updateUserRoles completed successfully`
     );
 
     const finalResponse: IResponse = {

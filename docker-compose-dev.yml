@@ -293,10 +293,12 @@ services:
     depends_on:
       - minio
       # Added platform-admin dependency since it's running separately
-      # Platform admin runs manually on port 8001
+      # Platform admin runs manually on port 8002
     volumes:
       - /Users/itopa/.cloudflared:/etc/cloudflared
-    command: tunnel --no-autoupdate run --config /etc/cloudflared/config.yml confirmd-platform
+    command: tunnel --config /etc/cloudflared/config.yml --no-autoupdate run 00af0aa6-02a4-4c6d-8c8b-ad566348a8c0
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     networks:
       - default
 

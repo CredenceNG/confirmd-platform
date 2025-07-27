@@ -299,20 +299,19 @@ model shortening_url {
 }
 
 model agent_invitations {
-  id                      String       @id @default(uuid()) @db.Uuid
-  orgId                   String       @db.Uuid
-  agentId                 String       @db.Uuid
-  connectionInvitation    String
-  multiUse                Boolean
-  createDateTime          DateTime     @default(now()) @db.Timestamptz(6)
-  createdBy               Int          @default(1)
-  lastChangedDateTime     DateTime     @default(now()) @db.Timestamptz(6)
-  lastChangedBy           Int          @default(1)
-  org_agents              org_agents   @relation(fields: [agentId], references: [id])
-  organisation            organisation @relation(fields: [orgId], references: [id])
-  recipientKey            String?
-  invitationDid           String?
-  resolvedInvitationUrl   String?      @map("resolved_invitation_url") @db.Text
+  id                   String       @id @default(uuid()) @db.Uuid
+  orgId                String       @db.Uuid
+  agentId              String       @db.Uuid
+  connectionInvitation String
+  multiUse             Boolean
+  createDateTime       DateTime     @default(now()) @db.Timestamptz(6)
+  createdBy            Int          @default(1)
+  lastChangedDateTime  DateTime     @default(now()) @db.Timestamptz(6)
+  lastChangedBy        Int          @default(1)
+  org_agents           org_agents   @relation(fields: [agentId], references: [id])
+  organisation         organisation @relation(fields: [orgId], references: [id])
+  recipientKey         String?
+  invitationDid        String?
 }
 
 model connections {

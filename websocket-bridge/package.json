@@ -1,0 +1,10 @@
+{
+  "name": "websocket-bridge",
+  "version": "1.0.0",
+  "main": "websocket-bridge.js",
+  "dependencies": {
+    "socket.io": "^4.7.2",
+    "ws": "^8.13.0",
+    "express": "^4.18.2"
+  }
+}

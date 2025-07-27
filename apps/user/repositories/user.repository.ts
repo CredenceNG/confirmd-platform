@@ -310,6 +310,21 @@ export class UserRepository {
             },
           },
         },
+        // eslint-disable-next-line camelcase
+        user_role_mapping: {
+          select: {
+            id: true,
+            userId: true,
+            userRoleId: true,
+            // eslint-disable-next-line camelcase
+            user_role: {
+              select: {
+                id: true,
+                role: true,
+              },
+            },
+          },
+        },
       },
     });
   }

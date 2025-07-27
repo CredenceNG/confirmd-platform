@@ -333,17 +333,9 @@ export class OrganizationService {
 
         const userDetails = await this.organizationRepository.getUser(userId);
         
-        // Check if this is a Platform Admin user who needs environment-based management token
-        const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
-        
-        let token: string;
-        if (isPlatformAdmin) {
-          this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-          token = await this.clientRegistrationService.getManagementTokenFromEnv();
-        } else {
-          this.logger.log(`👤 Regular user - using user's client credentials`);
-          token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
-        }
+        // Client credential creation is a privileged operation that requires platform admin access
+        this.logger.log(`🔐 Client credential creation operation - using environment management client for security`);
+        const token = await this.clientRegistrationService.getManagementTokenFromEnv();
 
         generatedClientSecret = await this.clientRegistrationService.generateClientSecret(
           organizationDetails.idpId,
@@ -429,23 +421,11 @@ export class OrganizationService {
 
     this.logger.log(`🔓 === MANAGEMENT TOKEN ACQUISITION PHASE ===`);
     
-    let token: string;
-    if (isPlatformAdmin) {
-      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-      this.logger.log(`📡 Calling clientRegistrationService.getManagementTokenFromEnv...`);
-      this.logger.log(`🎯 This will use the DEDICATED MANAGEMENT CLIENT from environment variables`);
-      token = await this.clientRegistrationService.getManagementTokenFromEnv();
-    } else {
-      this.logger.log(`👤 Regular user - using user's client credentials`);
-      if (!userDetails.clientId || !userDetails.clientSecret) {
-        this.logger.error(`❌ CRITICAL: User missing management client credentials`);
-        this.logger.error(`   - This means the dedicated management client is not properly configured`);
-        throw new Error('User management client credentials not found');
-      }
-      this.logger.log(`📡 Calling clientRegistrationService.getManagementToken...`);
-      this.logger.log(`🎯 This will use the user's management client credentials`);
-      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
-    }
+    // Organization registration is a privileged operation that requires platform admin access
+    this.logger.log(`🔐 Keycloak registration operation - using environment management client for security`);
+    this.logger.log(`📡 Calling clientRegistrationService.getManagementTokenFromEnv...`);
+    this.logger.log(`🎯 This will use the DEDICATED MANAGEMENT CLIENT from environment variables`);
+    const token = await this.clientRegistrationService.getManagementTokenFromEnv();
     
     this.logger.log(`✅ Management token obtained successfully from ${isPlatformAdmin ? 'environment' : 'user'} management client`);
 
@@ -526,17 +506,9 @@ export class OrganizationService {
   async deleteClientCredentials(orgId: string, user: user): Promise<string> {
     const getUser = await this.organizationRepository.getUser(user?.id);
     
-    // Check if this is a Platform Admin user who needs environment-based management token
-    const isPlatformAdmin = 'platform-admin' === getUser.clientId || getUser.email.includes('platform');
-    
-    let token: string;
-    if (isPlatformAdmin) {
-      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-      token = await this.clientRegistrationService.getManagementTokenFromEnv();
-    } else {
-      this.logger.log(`👤 Regular user - using user's client credentials`);
-      token = await this.clientRegistrationService.getManagementToken(getUser.clientId, getUser.clientSecret);
-    }
+    // Client credential deletion is a privileged operation that requires platform admin access
+    this.logger.log(`🔐 Client deletion operation - using environment management client for security`);
+    const token = await this.clientRegistrationService.getManagementTokenFromEnv();
 
     const organizationDetails = await this.organizationRepository.getOrganizationDetails(orgId);
 
@@ -973,17 +945,10 @@ export class OrganizationService {
 
       const getUser = await this.organizationRepository.getUser(user?.id);
       
-      // Check if this is a Platform Admin user who needs environment-based management token
-      const isPlatformAdmin = 'platform-admin' === getUser?.clientId || getUser?.email.includes('platform');
-      
-      let token: string;
-      if (isPlatformAdmin) {
-        this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-        token = await this.clientRegistrationService.getManagementTokenFromEnv();
-      } else {
-        this.logger.log(`👤 Regular user - using user's client credentials`);
-        token = await this.clientRegistrationService.getManagementToken(getUser?.clientId, getUser?.clientSecret);
-      }
+      // For role management operations, always use platform admin credentials
+      // Regular user credentials are encrypted and cannot be used for Keycloak API calls
+      this.logger.log(`🔐 Role retrieval operation - using environment management client for security`);
+      const token = await this.clientRegistrationService.getManagementTokenFromEnv();
 
       return this.clientRegistrationService.getAllClientRoles(organizationDetails.idpId, token);
     } catch (error) {
@@ -1077,17 +1042,9 @@ export class OrganizationService {
 
     const userDetails = await this.organizationRepository.getUser(userId);
     
-    // Check if this is a Platform Admin user who needs environment-based management token
-    const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
-    
-    let token: string;
-    if (isPlatformAdmin) {
-      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-      token = await this.clientRegistrationService.getManagementTokenFromEnv();
-    } else {
-      this.logger.log(`👤 Regular user - using user's client credentials`);
-      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
-    }
+    // Invitation creation is a privileged operation that requires platform admin access
+    this.logger.log(`🔐 Invitation creation operation - using environment management client for security`);
+    const token = await this.clientRegistrationService.getManagementTokenFromEnv();
     
     const clientRolesList = await this.clientRegistrationService.getAllClientRoles(idpId, token);
     const orgRoles = await this.orgRoleService.getOrgRoles();
@@ -1309,17 +1266,9 @@ export class OrganizationService {
   ): Promise<void> {
     const userDetails = await this.organizationRepository.getUser(userId);
     
-    // Check if this is a Platform Admin user who needs environment-based management token
-    const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
-    
-    let token: string;
-    if (isPlatformAdmin) {
-      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-      token = await this.clientRegistrationService.getManagementTokenFromEnv();
-    } else {
-      this.logger.log(`👤 Regular user - using user's client credentials`);
-      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
-    }
+    // Invitation update is a privileged operation that requires platform admin access
+    this.logger.log(`🔐 Invitation update operation - using environment management client for security`);
+    const token = await this.clientRegistrationService.getManagementTokenFromEnv();
     
     const clientRolesList = await this.clientRegistrationService.getAllClientRoles(idpId, token);
 
@@ -1425,19 +1374,10 @@ export class OrganizationService {
     userId: string,
     orgId: string
   ): Promise<boolean> {
-    const userDetails = await this.organizationRepository.getUser(userId);
-    
-    // Check if this is a Platform Admin user who needs environment-based management token
-    const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
-    
-    let token: string;
-    if (isPlatformAdmin) {
-      this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-      token = await this.clientRegistrationService.getManagementTokenFromEnv();
-    } else {
-      this.logger.log(`👤 Regular user - using user's client credentials`);
-      token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
-    }
+    // User role management operations always require platform admin credentials
+    // This is a privileged operation that must use environment management client
+    this.logger.log(`� User role update operation - using platform admin environment management client`);
+    const token = await this.clientRegistrationService.getManagementTokenFromEnv();
     
     const clientRolesList = await this.clientRegistrationService.getAllClientRoles(
       idpId,
@@ -1507,19 +1447,34 @@ export class OrganizationService {
    */
   async updateUserRoles(orgId: string, roleIds: string[], userId: string): Promise<boolean> {
     try {
+      this.logger.log(`🔧 === ORGANIZATION SERVICE: UPDATE USER ROLES PROCESS STARTED ===`);
+      this.logger.log(`📋 Input parameters:`);
+      this.logger.log(`   - Organization ID: ${orgId}`);
+      this.logger.log(`   - User ID: ${userId}`);
+      this.logger.log(`   - Role IDs: [${roleIds.join(', ')}]`);
+      
+      this.logger.log(`🔍 Step 1: Checking if user exists in organization...`);
       const isUserExistForOrg = await this.userOrgRoleService.checkUserOrgExist(userId, orgId);
+      this.logger.log(`   Result: User exists in org = ${isUserExistForOrg}`);
 
       if (!isUserExistForOrg) {
+        this.logger.error(`❌ User not found in organization`);
         throw new NotFoundException(ResponseMessages.organisation.error.userNotFound);
       }
 
+      this.logger.log(`🏢 Step 2: Getting organization details...`);
       const organizationDetails = await this.organizationRepository.getOrganizationDetails(orgId);
+      this.logger.log(`   Organization found: ${organizationDetails?.name || 'N/A'}`);
+      this.logger.log(`   Has IDP ID: ${organizationDetails?.idpId ? 'Yes' : 'No'}`);
+      this.logger.log(`   IDP ID: ${organizationDetails?.idpId || 'None'}`);
 
       if (!organizationDetails) {
+        this.logger.error(`❌ Organization not found`);
         throw new NotFoundException(ResponseMessages.organisation.error.orgNotFound);
       }
 
       if (!organizationDetails.idpId) {
+        this.logger.log(`📝 Step 3a: Using LOCAL ROLE MANAGEMENT (no Keycloak integration)`);
         const isRolesExist = await this.orgRoleService.getOrgRolesByIds(roleIds);
 
         if (isRolesExist && 0 === isRolesExist.length) {
@@ -1536,18 +1491,27 @@ export class OrganizationService {
           this.userOrgRoleService.createUserOrgRole(userId, role, orgId);
         }
 
+        this.logger.log(`✅ LOCAL ROLE UPDATE: Completed successfully`);
         return true;
       } else {
+        this.logger.log(`🔐 Step 3b: Using KEYCLOAK ROLE MANAGEMENT (has IDP integration)`);
+        this.logger.log(`   IDP ID: ${organizationDetails.idpId}`);
+        this.logger.log(`   Organization ID: ${organizationDetails.id}`);
+        this.logger.log(`📡 Calling updateUserClientRoles...`);
 
-        return this.updateUserClientRoles(
+        const result = await this.updateUserClientRoles(
           roleIds,
           organizationDetails.idpId,
           userId,
           organizationDetails.id          
-        );      
+        );
+        
+        this.logger.log(`✅ KEYCLOAK ROLE UPDATE: Completed with result = ${result}`);
+        return result;
       }
 
     } catch (error) {
+      this.logger.error(`❌ === UPDATE USER ROLES FAILED ===`);
       this.logger.error(`Error in updateUserRoles: ${JSON.stringify(error)}`);
       throw new RpcException(error.response ? error.response : error);
     }
@@ -1739,17 +1703,9 @@ export class OrganizationService {
     try {
       const getUser = await this.organizationRepository.getUser(user?.id);
       
-      // Check if this is a Platform Admin user who needs environment-based management token
-      const isPlatformAdmin = 'platform-admin' === getUser?.clientId || getUser?.email.includes('platform');
-      
-      let token: string;
-      if (isPlatformAdmin) {
-        this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-        token = await this.clientRegistrationService.getManagementTokenFromEnv();
-      } else {
-        this.logger.log(`👤 Regular user - using user's client credentials`);
-        token = await this.clientRegistrationService.getManagementToken(getUser?.clientId, getUser?.clientSecret);
-      }
+      // Organization deletion is a privileged operation that requires platform admin access
+      this.logger.log(`🔐 Organization deletion operation - using environment management client for security`);
+      const token = await this.clientRegistrationService.getManagementTokenFromEnv();
       
       // Fetch organization details
       const organizationDetails = await this.organizationRepository.getOrganizationDetails(orgId);
@@ -1985,17 +1941,9 @@ export class OrganizationService {
           
             const userDetails = await this.organizationRepository.getUser(orgObj.ownerId);
             
-            // Check if this is a Platform Admin user who needs environment-based management token
-            const isPlatformAdmin = 'platform-admin' === userDetails.clientId || userDetails.email.includes('platform');
-            
-            let token: string;
-            if (isPlatformAdmin) {
-              this.logger.log(`🔐 Platform Admin detected - using environment management client`);
-              token = await this.clientRegistrationService.getManagementTokenFromEnv();
-            } else {
-              this.logger.log(`👤 Regular user - using user's client credentials`);
-              token = await this.clientRegistrationService.getManagementToken(userDetails.clientId, userDetails.clientSecret);
-            }
+            // Organization registration mapping is a privileged operation that requires platform admin access
+            this.logger.log(`🔐 Organization mapping operation - using environment management client for security`);
+            const token = await this.clientRegistrationService.getManagementTokenFromEnv();
             
             const clientRolesList = await this.clientRegistrationService.getAllClientRoles(idpId, token);
 

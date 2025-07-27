@@ -128,7 +128,9 @@ export class UserService {
         
         this.logger.log(`🔓 Client credentials processed successfully. ClientId: ${decryptedClientId ? decryptedClientId.substring(0, 8) : 'MISSING'}...`);
         
-        const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);
+        // User email verification is a privileged operation that requires platform admin access
+        this.logger.log(`🔐 User verification operation - using environment management client for security`);
+        const token = await this.clientRegistrationService.getManagementTokenFromEnv();
         this.logger.log(`🎫 Management token obtained successfully`);
         
         const getClientData = await this.clientRegistrationService.getClientRedirectUrl(decryptedClientId, token);
@@ -313,7 +315,9 @@ export class UserService {
    
    this.logger.log(`🔓 Client credentials processed successfully for user creation. ClientId: ${decryptedClientId ? decryptedClientId.substring(0, 8) : 'MISSING'}...`);
    
-   const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);
+   // User creation is a privileged operation that requires platform admin access
+   this.logger.log(`🔐 User creation operation - using environment management client for security`);
+   const token = await this.clientRegistrationService.getManagementTokenFromEnv();
    this.logger.log(`✅ Management token obtained successfully for ${userInfo.email}`);
       if (userInfo.isPasskey) {
         this.logger.log(`🔐 Processing passkey flow for ${userInfo.email}`);
@@ -684,11 +688,9 @@ export class UserService {
 
       const decryptedPassword = await this.commonService.decryptPassword(password);
       try {    
-        // Decrypt both clientId and clientSecret before sending to Keycloak
-        const decryptedClientId = await this.commonService.decryptPassword(userData.clientId);
-        const decryptedClientSecret = await this.commonService.decryptPassword(userData.clientSecret);
-
-        const authToken = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);  
+        // Password reset is a privileged operation that requires platform admin access
+        this.logger.log(`🔐 Password reset operation - using environment management client for security`);
+        const authToken = await this.clientRegistrationService.getManagementTokenFromEnv();  
         userData.password = decryptedPassword;
         if (userData.keycloakUserId) {
           await this.clientRegistrationService.resetPasswordOfUser(userData, process.env.KEYCLOAK_REALM, authToken);
@@ -751,11 +753,9 @@ export class UserService {
         userData.password = newDecryptedPassword;
         try {    
           let keycloakDetails = null;    
-          // Decrypt both clientId and clientSecret before sending to Keycloak
-          const decryptedClientId = await this.commonService.decryptPassword(userData.clientId);
-          const decryptedClientSecret = await this.commonService.decryptPassword(userData.clientSecret);
-          
-          const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);  
+          // Password reset is a privileged operation that requires platform admin access
+          this.logger.log(`🔐 Password reset operation - using environment management client for security`);
+          const token = await this.clientRegistrationService.getManagementTokenFromEnv();  
 
           if (userData.keycloakUserId) {
 
@@ -1244,11 +1244,9 @@ export class UserService {
         throw new NotFoundException(ResponseMessages.user.error.notFound);
       }
 
-      // Decrypt both clientId and clientSecret before sending to Keycloak
-      const decryptedClientId = await this.commonService.decryptPassword(userData?.clientId);
-      const decryptedClientSecret = await this.commonService.decryptPassword(userData?.clientSecret);
-
-      const token = await this.clientRegistrationService.getManagementToken(decryptedClientId, decryptedClientSecret);
+      // User information retrieval is a privileged operation that requires platform admin access
+      this.logger.log(`🔐 User info retrieval operation - using environment management client for security`);
+      const token = await this.clientRegistrationService.getManagementTokenFromEnv();
       const getClientData = await this.clientRegistrationService.getUserInfoByUserId(userData?.keycloakUserId, token);
 
       return getClientData;

@@ -61,7 +61,24 @@ async function testCompleteFlow() {
         console.log('📋 Profile response status:', profileResponse.status);
         console.log('👤 Profile user ID:', profileResponse.data.data?.id);
         console.log('📧 Profile email:', profileResponse.data.data?.email);
-        console.log('🎭 Roles:', profileResponse.data.data?.userOrgRoles?.map((role) => role.orgRole?.name).join(', '));
+        console.log(
+          '🎭 Org Roles:',
+          profileResponse.data.data?.userOrgRoles?.map((role) => role.orgRole?.name).join(', ')
+        );
+
+        // Check for platform roles
+        if (profileResponse.data.data?.user_role_mapping && profileResponse.data.data.user_role_mapping.length > 0) {
+          console.log(
+            '🔑 Platform Roles:',
+            profileResponse.data.data.user_role_mapping.map((mapping) => mapping.user_role?.role).join(', ')
+          );
+        } else {
+          console.log('🔑 Platform Roles: None found');
+        }
+
+        // Debug: Show full response structure
+        console.log('\n🔍 Full profile response:');
+        console.log(JSON.stringify(profileResponse.data.data, null, 2));
       } catch (profileError) {
         console.log('❌ Profile access failed!');
         console.log('📋 Status:', profileError.response?.status);
