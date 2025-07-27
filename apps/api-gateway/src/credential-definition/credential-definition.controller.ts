@@ -85,7 +85,10 @@ export class CredentialDefinitionController {
     OrgRoles.ADMIN,
     OrgRoles.ISSUER,
     OrgRoles.VERIFIER,
-    OrgRoles.MEMBER
+    OrgRoles.MEMBER,
+    OrgRoles.HOLDER,
+    OrgRoles.SUPER_ADMIN,
+    OrgRoles.PLATFORM_ADMIN
   )
   @UseGuards(AuthGuard("jwt"), OrgRolesGuard)
   async getCredentialDefinitionById(
@@ -169,6 +172,8 @@ export class CredentialDefinitionController {
     OrgRoles.ISSUER,
     OrgRoles.VERIFIER,
     OrgRoles.MEMBER,
+    OrgRoles.HOLDER,
+    OrgRoles.SUPER_ADMIN,
     OrgRoles.PLATFORM_ADMIN
   )
   @UseGuards(AuthGuard("jwt"), OrgRolesGuard)

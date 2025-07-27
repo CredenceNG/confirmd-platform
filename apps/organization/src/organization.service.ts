@@ -1372,12 +1372,29 @@ export class OrganizationService {
     roleIds: string[],
     idpId: string,
     userId: string,
-    orgId: string
+    orgId: string,
+    usePlatformAdmin?: boolean
   ): Promise<boolean> {
-    // User role management operations always require platform admin credentials
-    // This is a privileged operation that must use environment management client
-    this.logger.log(`� User role update operation - using platform admin environment management client`);
-    const token = await this.clientRegistrationService.getManagementTokenFromEnv();
+    this.logger.log(`🔐 === USER ROLE MANAGEMENT: DETERMINING CREDENTIAL SOURCE ===`);
+    this.logger.log(`   Use Platform Admin: ${usePlatformAdmin}`);
+    
+    let token: string;
+    
+    if (usePlatformAdmin) {
+      // Use platform admin credentials for elevated permissions
+      this.logger.log(`🚀 Using PLATFORM ADMIN credentials (environment variables)`);
+      this.logger.log(`   Reason: usePlatformAdmin=true - elevated Keycloak admin permissions required`);
+      token = await this.clientRegistrationService.getManagementTokenFromEnv();
+    } else {
+      // Use organization-specific credentials (original CREDEBL behavior)
+      this.logger.log(`🏢 Using ORGANIZATION-SPECIFIC credentials (database)`);
+      this.logger.log(`   Reason: usePlatformAdmin=false - using org's own client credentials`);
+      // FIX: Get credentials from organization record instead of user record
+      const organizationDetails = await this.organizationRepository.getOrganizationDetails(orgId);
+      token = await this.clientRegistrationService.getManagementToken(organizationDetails.clientId, organizationDetails.clientSecret);
+    }
+    
+    this.logger.log(`✅ Management token obtained successfully`);
     
     const clientRolesList = await this.clientRegistrationService.getAllClientRoles(
       idpId,
@@ -1445,7 +1462,7 @@ export class OrganizationService {
    * @param userId
    * @returns
    */
-  async updateUserRoles(orgId: string, roleIds: string[], userId: string): Promise<boolean> {
+  async updateUserRoles(orgId: string, roleIds: string[], userId: string, user?: user, usePlatformAdmin?: boolean): Promise<boolean> {
     try {
       this.logger.log(`🔧 === ORGANIZATION SERVICE: UPDATE USER ROLES PROCESS STARTED ===`);
       this.logger.log(`📋 Input parameters:`);
@@ -1497,13 +1514,15 @@ export class OrganizationService {
         this.logger.log(`🔐 Step 3b: Using KEYCLOAK ROLE MANAGEMENT (has IDP integration)`);
         this.logger.log(`   IDP ID: ${organizationDetails.idpId}`);
         this.logger.log(`   Organization ID: ${organizationDetails.id}`);
+        this.logger.log(`   Use Platform Admin: ${usePlatformAdmin}`);
         this.logger.log(`📡 Calling updateUserClientRoles...`);
 
         const result = await this.updateUserClientRoles(
           roleIds,
           organizationDetails.idpId,
           userId,
-          organizationDetails.id          
+          organizationDetails.id,
+          usePlatformAdmin
         );
         
         this.logger.log(`✅ KEYCLOAK ROLE UPDATE: Completed with result = ${result}`);

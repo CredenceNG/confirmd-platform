@@ -32,6 +32,7 @@ import { ForbiddenErrorDto } from '../dtos/forbidden-error.dto';
 import { Response } from 'express';
 import { IResponse } from '@credebl/common/interfaces/response.interface';
 import { WebhookService } from './webhook.service';
+import { WebhookReceiverService } from './webhook-receiver.service';
 import { RegisterWebhookDto } from './dtos/register-webhook-dto';
 import { ResponseMessages } from '@credebl/common/response-messages';
 import { CustomExceptionFilter } from 'apps/api-gateway/common/exception-handler';
@@ -47,7 +48,8 @@ import { GetWebhookDto } from './dtos/get-webhoook-dto';
 @ApiForbiddenResponse({ status: 403, description: 'Forbidden', type: ForbiddenErrorDto })
 export class WebhookController {
   constructor(
-    private readonly webhookService: WebhookService
+    private readonly webhookService: WebhookService,
+    private readonly webhookReceiverService: WebhookReceiverService
   ) {}
   private readonly logger = new Logger('WebhookController');
   private readonly PAGE: number = 1;
@@ -114,5 +116,97 @@ export class WebhookController {
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
+  }
+
+  /**
+   * Receive webhook events from external agents
+   * @param topic The webhook topic (e.g., 'connections', 'credentials', etc.)
+   * @param body The webhook payload
+   * @param res The response object
+   * @returns Success response
+   */
+  @Post('/topic')
+  @ApiOperation({
+    summary: 'Receive Webhook Events',
+    description: 'Endpoint for receiving webhook events from external agents and clients.'
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Webhook event processed successfully' })
+  async receiveWebhookEvent(
+    @Body() body: any,
+    @Res() res: Response
+  ): Promise<Response> {
+    this.logger.log('🎯 === EXTERNAL WEBHOOK EVENT RECEIVED ===');
+    this.logger.log(`📨 Event Body: ${JSON.stringify(body, null, 2)}`);
+    this.logger.log(`📊 Headers: ${JSON.stringify(res.req.headers, null, 2)}`);
+    
+    try {
+      // Process the webhook event using WebhookReceiverService
+      const result = await this.webhookReceiverService.processWebhookEvent(body);
+      
+      this.logger.log('✅ Webhook event processed successfully');
+      
+      const finalResponse: IResponse = {
+        statusCode: HttpStatus.OK,
+        message: 'Webhook event processed successfully',
+        data: result
+      };
+
+      return res.status(HttpStatus.OK).json(finalResponse);
+    } catch (error) {
+      this.logger.error('❌ Webhook event processing failed:', error);
+      
+      const errorResponse: IResponse = {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Webhook event processing failed',
+        data: null
+      };
+
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
+    }
+  }
+
+  /**
+   * Receive connection webhook events specifically
+   * @param body The connection webhook payload
+   * @param res The response object
+   * @returns Success response
+   */
+  @Post('/connections')
+  @ApiOperation({
+    summary: 'Receive Connection Webhook Events',
+    description: 'Endpoint specifically for receiving connection webhook events from DIDComm agents.'
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Connection webhook event processed successfully' })
+  async receiveConnectionWebhook(
+    @Body() body: any,
+    @Res() res: Response
+  ): Promise<Response> {
+    this.logger.log('🔗 === CONNECTION WEBHOOK EVENT RECEIVED ===');
+    this.logger.log(`📨 Connection Event Body: ${JSON.stringify(body, null, 2)}`);
+    
+    try {
+      // Process the connection webhook event specifically
+      const result = await this.webhookReceiverService.processConnectionWebhook(body);
+      
+      this.logger.log('✅ Connection webhook event processed successfully');
+      
+      const finalResponse: IResponse = {
+        statusCode: HttpStatus.OK,
+        message: 'Connection webhook event processed successfully',
+        data: result
+      };
+
+      return res.status(HttpStatus.OK).json(finalResponse);
+    } catch (error) {
+      this.logger.error('❌ Connection webhook event processing failed:', error);
+      
+      const errorResponse: IResponse = {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Connection webhook event processing failed',
+        data: null
+      };
+
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
+    }
   }
 }

@@ -43,7 +43,7 @@ export class SchemaController {
    * @returns The schema details retrieved from the ledger.
    */
   @Get('/:orgId/schemas/:schemaId')
-  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER)
+  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER, OrgRoles.HOLDER, OrgRoles.SUPER_ADMIN, OrgRoles.PLATFORM_ADMIN)
   @UseGuards(AuthGuard('jwt'), OrgRolesGuard)
   @ApiOperation({
     summary: 'Get schema information from the ledger using its schema ID.',
@@ -90,7 +90,7 @@ export class SchemaController {
     enum: CredDefSortFields,
     required: false
   })
-  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER)
+  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER, OrgRoles.HOLDER, OrgRoles.SUPER_ADMIN, OrgRoles.PLATFORM_ADMIN)
   @UseGuards(AuthGuard('jwt'), OrgRolesGuard)
   async getcredDeffListBySchemaId(
     @Param('orgId', new ParseUUIDPipe({exceptionFactory: (): Error => { throw new BadRequestException(ResponseMessages.organisation.error.invalidOrgId); }})) orgId: string,    
@@ -133,7 +133,7 @@ export class SchemaController {
     enum: SortFields,
     required: false
   })
-  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER, OrgRoles.PLATFORM_ADMIN)
+  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER, OrgRoles.HOLDER, OrgRoles.SUPER_ADMIN, OrgRoles.PLATFORM_ADMIN)
   @UseGuards(AuthGuard('jwt'), OrgRolesGuard)
   @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: ApiResponseDto })
   async getSchemas(

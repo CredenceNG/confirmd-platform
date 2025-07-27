@@ -2,6 +2,15 @@
 
 START_TIME=$(date +%s)
 
+# Function to extract base URL from full URL
+extract_base_url() {
+    local url="$1"
+    # Remove protocol (http:// or https://)
+    local without_protocol="${url#*://}"
+    # Extract just the domain:port part (remove any path)
+    echo "${without_protocol%%/*}"
+}
+
 AGENCY=$1
 EXTERNAL_IP=$2
 WALLET_NAME=$3
@@ -17,6 +26,14 @@ PROTOCOL=${12}
 TENANT=${13}
 AFJ_VERSION=${14}
 INDY_LEDGER=${15}
+
+# Use PLATFORM_URL environment variable instead of hardcoded EXTERNAL_IP
+if [ -n "$PLATFORM_URL" ]; then
+    EXTERNAL_IP=$(extract_base_url "$PLATFORM_URL")
+    echo "Using PLATFORM_URL: $PLATFORM_URL -> $EXTERNAL_IP"
+else
+    echo "PLATFORM_URL not set, using provided EXTERNAL_IP: $EXTERNAL_IP"
+fi
 
 echo "AGENCY: $AGENCY"
 echo "EXTERNAL_IP: $EXTERNAL_IP"

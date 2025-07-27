@@ -661,7 +661,8 @@ export class OrganizationController {
     OrgRoles.ADMIN,
     OrgRoles.ISSUER,
     OrgRoles.VERIFIER,
-    OrgRoles.MEMBER
+    OrgRoles.MEMBER,
+    OrgRoles.PLATFORM_ADMIN
   )
   @ApiOperation({
     summary: "Set primary DID",
@@ -809,7 +810,7 @@ export class OrganizationController {
     description: "Success",
     type: ApiResponseDto,
   })
-  @Roles(OrgRoles.OWNER, OrgRoles.SUPER_ADMIN, OrgRoles.ADMIN)
+  @Roles(OrgRoles.OWNER, OrgRoles.PLATFORM_ADMIN, OrgRoles.ADMIN)
   @UseGuards(AuthGuard("jwt"), OrgRolesGuard)
   @ApiBearerAuth()
   async createInvitation(
@@ -840,7 +841,7 @@ export class OrganizationController {
    * @returns Success message
    */
   @Put("/:orgId/user-roles/:userId")
-  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN)
+  @Roles(OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.PLATFORM_ADMIN)
   @ApiBearerAuth()
   @UseGuards(AuthGuard("jwt"), OrgRolesGuard)
   @ApiResponse({
@@ -904,6 +905,7 @@ export class OrganizationController {
 
     return res.status(HttpStatus.OK).json(finalResponse);
   }
+
   /**
    * Update an organization
    * @param updateOrgDto The details of the organization to be updated

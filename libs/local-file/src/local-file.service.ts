@@ -43,11 +43,12 @@ export class LocalFileService {
       // Write the file to local directory
       await fs.writeFile(filePath, imageBuffer);
 
-      // Return the local file URL that can be served by the application
-      const localUrl = `/uploads/org-logos/${fileName}`;
+      // Return the absolute URL for the file that can be accessed by mobile clients
+      const baseUrl = `${process.env.API_GATEWAY_PROTOCOL}://${process.env.API_ENDPOINT}`;
+      const absoluteUrl = `${baseUrl}/uploads/org-logos/${fileName}`;
 
-      this.logger.log(`✅ Organization logo saved locally: ${localUrl}`);
-      return localUrl;
+      this.logger.log(`✅ Organization logo saved locally: ${absoluteUrl}`);
+      return absoluteUrl;
     } catch (error) {
       this.logger.error(
         `❌ Failed to save organization logo locally: ${error.message}`
@@ -58,11 +59,27 @@ export class LocalFileService {
 
   async deleteOrgLogo(logoUrl: string): Promise<void> {
     try {
-      if (!logoUrl || !logoUrl.startsWith("/uploads/org-logos/")) {
-        return; // Not a local file, skip deletion
+      if (!logoUrl) {
+        return; // No URL provided, skip deletion
       }
 
-      const fileName = path.basename(logoUrl);
+      let fileName: string;
+
+      // Handle both absolute URLs and relative paths
+      if (logoUrl.startsWith("http://") || logoUrl.startsWith("https://")) {
+        // Extract filename from absolute URL
+        const urlPath = new URL(logoUrl).pathname;
+        if (!urlPath.includes("/uploads/org-logos/")) {
+          return; // Not a local org logo file, skip deletion
+        }
+        fileName = path.basename(urlPath);
+      } else if (logoUrl.startsWith("/uploads/org-logos/")) {
+        // Handle relative path
+        fileName = path.basename(logoUrl);
+      } else {
+        return; // Not a recognizable logo URL, skip deletion
+      }
+
       const filePath = path.join(this.uploadDir, fileName);
 
       await fs.unlink(filePath);
@@ -77,11 +94,27 @@ export class LocalFileService {
 
   async fileExists(logoUrl: string): Promise<boolean> {
     try {
-      if (!logoUrl || !logoUrl.startsWith("/uploads/org-logos/")) {
+      if (!logoUrl) {
         return false;
       }
 
-      const fileName = path.basename(logoUrl);
+      let fileName: string;
+
+      // Handle both absolute URLs and relative paths
+      if (logoUrl.startsWith("http://") || logoUrl.startsWith("https://")) {
+        // Extract filename from absolute URL
+        const urlPath = new URL(logoUrl).pathname;
+        if (!urlPath.includes("/uploads/org-logos/")) {
+          return false; // Not a local org logo file
+        }
+        fileName = path.basename(urlPath);
+      } else if (logoUrl.startsWith("/uploads/org-logos/")) {
+        // Handle relative path
+        fileName = path.basename(logoUrl);
+      } else {
+        return false; // Not a recognizable logo URL
+      }
+
       const filePath = path.join(this.uploadDir, fileName);
 
       await fs.access(filePath);

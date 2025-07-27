@@ -110,4 +110,59 @@ export class WebhookService {
       throw new RpcException(error.response ? error.response : error);
     }
   }
+
+  async processExternalConnectionWebhook(webhookData: object): Promise<void> {
+    try {
+      this.logger.log('Processing external connection webhook:', JSON.stringify(webhookData, null, 2));
+      // Here you would integrate with the connection service
+      // For now, we'll just log the data
+    } catch (error) {
+      this.logger.error('Error processing external connection webhook:', error);
+      throw new RpcException(error.response ? error.response : error);
+    }
+  }
+
+  async processExternalCredentialWebhook(webhookData: object): Promise<void> {
+    try {
+      this.logger.log('Processing external credential webhook:', JSON.stringify(webhookData, null, 2));
+      // Here you would integrate with the credential service
+      // For now, we'll just log the data
+    } catch (error) {
+      this.logger.error('Error processing external credential webhook:', error);
+      throw new RpcException(error.response ? error.response : error);
+    }
+  }
+
+  async processExternalProofWebhook(webhookData: object): Promise<void> {
+    try {
+      this.logger.log('Processing external proof webhook:', JSON.stringify(webhookData, null, 2));
+      // Here you would integrate with the proof service
+      // For now, we'll just log the data
+    } catch (error) {
+      this.logger.error('Error processing external proof webhook:', error);
+      throw new RpcException(error.response ? error.response : error);
+    }
+  }
+
+  async processExternalBasicMessageWebhook(webhookData: object): Promise<void> {
+    try {
+      this.logger.log('Processing external basic message webhook:', JSON.stringify(webhookData, null, 2));
+      // Here you would integrate with the messaging service
+      // For now, we'll just log the data
+    } catch (error) {
+      this.logger.error('Error processing external basic message webhook:', error);
+      throw new RpcException(error.response ? error.response : error);
+    }
+  }
+
+  async processExternalQuestionAnswerWebhook(webhookData: object): Promise<void> {
+    try {
+      this.logger.log('Processing external question-answer webhook:', JSON.stringify(webhookData, null, 2));
+      // Here you would integrate with the question-answer service
+      // For now, we'll just log the data
+    } catch (error) {
+      this.logger.error('Error processing external question-answer webhook:', error);
+      throw new RpcException(error.response ? error.response : error);
+    }
+  }
 }

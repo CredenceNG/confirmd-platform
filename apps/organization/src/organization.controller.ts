@@ -270,6 +270,8 @@ export class OrganizationController {
     orgId: string;
     roleIds: string[];
     userId: string;
+    user?: user;
+    usePlatformAdmin?: boolean;
   }): Promise<boolean> {
     this.logger.log(
       `🎯 === ORGANIZATION CONTROLLER: UPDATE USER ROLES REQUEST ===`
@@ -279,13 +281,19 @@ export class OrganizationController {
     this.logger.log(`   - Organization ID: ${payload.orgId}`);
     this.logger.log(`   - User ID: ${payload.userId}`);
     this.logger.log(`   - Role IDs: [${payload.roleIds.join(", ")}]`);
+    this.logger.log(`   - Use Platform Admin: ${payload.usePlatformAdmin}`);
+    this.logger.log(
+      `   - User context: ${JSON.stringify(payload.user, null, 2)}`
+    );
     this.logger.log(`📡 Calling organizationService.updateUserRoles...`);
 
     try {
       const result = await this.organizationService.updateUserRoles(
         payload.orgId,
         payload.roleIds,
-        payload.userId
+        payload.userId,
+        payload.user,
+        payload.usePlatformAdmin
       );
       this.logger.log(
         `✅ ORGANIZATION CONTROLLER: Update successful, result: ${result}`

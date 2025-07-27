@@ -207,7 +207,19 @@ export class AgentServiceService {
       // Invoke function for validate platform configuration
       this.validatePlatformConfig(platformConfig);
 
-      const externalIp = platformConfig?.externalIp;
+      // Use PLATFORM_URL environment variable instead of database externalIp
+      const platformUrl = process.env.PLATFORM_URL;
+      let externalIp = platformConfig?.externalIp;
+      
+      if (platformUrl) {
+        // Extract domain from PLATFORM_URL (remove protocol and path)
+        const url = new URL(platformUrl);
+        externalIp = url.host; // includes port if specified
+        this.logger.log(`Using PLATFORM_URL for externalIp: ${platformUrl} -> ${externalIp}`);
+      } else {
+        this.logger.log(`PLATFORM_URL not set, using database externalIp: ${externalIp}`);
+      }
+      
       const inboundEndpoint = platformConfig?.inboundEndpoint !== 'false' ? platformConfig?.inboundEndpoint : '';
       const apiEndpoint = platformConfig?.apiEndpoint;
 
@@ -341,15 +353,15 @@ export class AgentServiceService {
       });
     }
 
-    if (!platformConfig.externalIp) {
-      this.logger.error(`External IP is missing in the platform configuration`);
+    if (!platformConfig.externalIp && !process.env.PLATFORM_URL) {
+      this.logger.error(`External IP is missing in the platform configuration and PLATFORM_URL environment variable is not set`);
       throw new BadRequestException(ResponseMessages.agent.error.externalIp, {
         cause: new Error(),
         description: ResponseMessages.errorMessages.badRequest
       });
     }
 
-    if (typeof platformConfig.externalIp !== 'string') {
+    if (platformConfig.externalIp && typeof platformConfig.externalIp !== 'string') {
       this.logger.error(`External IP must be a string`);
       throw new BadRequestException(ResponseMessages.agent.error.externalIp, {
         cause: new Error(),
@@ -513,7 +525,25 @@ export class AgentServiceService {
         });
       }
       const agentDetails = walletProvision.response;
-      const agentEndPoint = `${process.env.API_GATEWAY_PROTOCOL}://${agentDetails.agentEndPoint}`;
+      
+      // Fix agent endpoint to use PLATFORM_URL instead of hardcoded domain
+      let agentEndPoint = `${process.env.API_GATEWAY_PROTOCOL}://${agentDetails.agentEndPoint}`;
+      
+      if (process.env.PLATFORM_URL) {
+        try {
+          const platformUrl = new URL(process.env.PLATFORM_URL);
+          // Extract port from agentDetails.agentEndPoint (e.g., "platform-admin.confamd.com:5000" -> ":5000")
+          const portMatch = agentDetails.agentEndPoint.match(/:(\d+)$/);
+          const port = portMatch ? portMatch[0] : '';
+          
+          agentEndPoint = `${process.env.API_GATEWAY_PROTOCOL}://${platformUrl.host}${port}`;
+          this.logger.log(`Fixed agent endpoint using PLATFORM_URL: ${agentEndPoint}`);
+        } catch (error) {
+          this.logger.warn(`Invalid PLATFORM_URL format, using original endpoint: ${error.message}`);
+        }
+      } else {
+        this.logger.log(`PLATFORM_URL not set, using original endpoint: ${agentEndPoint}`);
+      }
       /**
        * Socket connection
        */

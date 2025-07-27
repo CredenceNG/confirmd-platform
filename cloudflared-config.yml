@@ -1,16 +1,18 @@
-tunnel: 00af0aa6-02a4-4c6d-8c8b-ad566348a8c0
-credentials-file: /etc/cloudflared/00af0aa6-02a4-4c6d-8c8b-ad566348a8c0.json
+tunnel: bde0a2ad-19ce-4fee-8095-8c1a2ad7579d
+credentials-file: /Users/itopa/.cloudflared/bde0a2ad-19ce-4fee-8095-8c1a2ad7579d.json
 
 ingress:
+  # MinIO S3 API endpoint
   - hostname: minio.confamd.com
     service: http://localhost:9000
+  # MinIO Console (web interface)
   - hostname: minio-console.confamd.com
     service: http://localhost:9001
   # Platform application frontend - WebSocket requests to API Gateway
-  - hostname: platform-admin.confamd.com
+  - hostname: platform.confamd.com
     path: /socket.io/*
-    service: http://host.docker.internal:5000
+    service: http://localhost:5000
   # Platform application frontend - HTTP requests to API Gateway
-  - hostname: platform-admin.confamd.com
-    service: http://host.docker.internal:5000
+  - hostname: platform.confamd.com
+    service: http://localhost:5000
   - service: http_status:404

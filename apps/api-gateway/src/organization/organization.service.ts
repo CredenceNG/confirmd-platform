@@ -1,6 +1,7 @@
 import { Inject } from "@nestjs/common";
 import { Injectable } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
+import { firstValueFrom } from "rxjs";
 import { BaseService } from "libs/service/base.service";
 import { CreateOrganizationDto } from "./dtos/create-organization-dto";
 import { BulkSendInvitationDto } from "./dtos/send-invitation.dto";
@@ -27,14 +28,10 @@ import { PaginationDto } from "@credebl/common/dtos/pagination.dto";
 import { IClientRoles } from "@credebl/client-registration/interfaces/client.interface";
 import { GetAllOrganizationsDto } from "./dtos/get-organizations.dto";
 import { PrimaryDid } from "./dtos/set-primary-did.dto";
-import { NATSClient } from "@credebl/common/NATSClient";
 
 @Injectable()
 export class OrganizationService extends BaseService {
-  constructor(
-    @Inject("NATS_CLIENT") private readonly serviceProxy: ClientProxy,
-    private readonly natsClient: NATSClient
-  ) {
+  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
     super("OrganizationService");
   }
 
@@ -49,10 +46,8 @@ export class OrganizationService extends BaseService {
     keycloakUserId: string
   ): Promise<organisation> {
     const payload = { createOrgDto, userId, keycloakUserId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "create-organization",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "create-organization" }, payload)
     );
   }
 
@@ -67,10 +62,8 @@ export class OrganizationService extends BaseService {
   ): Promise<organisation> {
     const { did, id } = primaryDidPayload;
     const payload = { did, orgId, id };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "set-primary-did",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "set-primary-did" }, payload)
     );
   }
 
@@ -86,10 +79,8 @@ export class OrganizationService extends BaseService {
     keycloakUserId: string
   ): Promise<IOrgCredentials> {
     const payload = { orgId, userId, keycloakUserId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "create-org-credentials",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "create-org-credentials" }, payload)
     );
   }
 
@@ -104,10 +95,8 @@ export class OrganizationService extends BaseService {
     orgId: string
   ): Promise<organisation> {
     const payload = { updateOrgDto, userId, orgId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "update-organization",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "update-organization" }, payload)
     );
   }
 
@@ -117,10 +106,8 @@ export class OrganizationService extends BaseService {
    * @returns Organization details with owner
    */
   async findOrganizationOwner(orgId: string): Promise<IOrganization> {
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-organization-owner",
-      orgId
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "get-organization-owner" }, orgId)
     );
   }
 
@@ -135,10 +122,8 @@ export class OrganizationService extends BaseService {
     userId: string
   ): Promise<IGetOrganization> {
     const payload = { userId, ...organizationDto };
-    const fetchOrgs = await this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-organizations",
-      payload
+    const fetchOrgs = await firstValueFrom(
+      this.natsClient.send({ cmd: "get-organizations" }, payload)
     );
     return fetchOrgs;
   }
@@ -152,10 +137,8 @@ export class OrganizationService extends BaseService {
     paginationDto: PaginationDto
   ): Promise<IGetOrganization> {
     const payload = { ...paginationDto };
-    const PublicOrg = this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-public-organizations",
-      payload
+    const PublicOrg = await firstValueFrom(
+      this.natsClient.send({ cmd: "get-public-organizations" }, payload)
     );
     return PublicOrg;
   }
@@ -163,10 +146,11 @@ export class OrganizationService extends BaseService {
   async getPublicProfile(orgSlug: string): Promise<IGetOrgById> {
     const payload = { orgSlug };
     try {
-      return this.natsClient.sendNatsMessage(
-        this.serviceProxy,
-        "get-organization-public-profile",
-        payload
+      return firstValueFrom(
+        this.natsClient.send(
+          { cmd: "get-organization-public-profile" },
+          payload
+        )
       );
     } catch (error) {
       this.logger.error(`Error in get user:${JSON.stringify(error)}`);
@@ -180,10 +164,8 @@ export class OrganizationService extends BaseService {
    */
   async getOrganization(orgId: string, userId: string): Promise<IGetOrgById> {
     const payload = { orgId, userId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-organization-by-id",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "get-organization-by-id" }, payload)
     );
   }
 
@@ -192,10 +174,8 @@ export class OrganizationService extends BaseService {
     userId: string
   ): Promise<IOrgCredentials> {
     const payload = { orgId, userId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "fetch-org-client-credentials",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "fetch-org-client-credentials" }, payload)
     );
   }
 
@@ -210,10 +190,8 @@ export class OrganizationService extends BaseService {
   ): Promise<IOrganizationInvitations> {
     const { pageNumber, pageSize, search } = pagination;
     const payload = { orgId, pageNumber, pageSize, search };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-invitations-by-orgId",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "get-invitations-by-orgId" }, payload)
     );
   }
 
@@ -222,10 +200,8 @@ export class OrganizationService extends BaseService {
     userId: string
   ): Promise<IOrganizationDashboard> {
     const payload = { orgId, userId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-organization-dashboard",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "get-organization-dashboard" }, payload)
     );
   }
 
@@ -234,10 +210,8 @@ export class OrganizationService extends BaseService {
     userId: string
   ): Promise<IOrgActivityCount> {
     const payload = { orgId, userId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-organization-activity-count",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "get-organization-activity-count" }, payload)
     );
   }
 
@@ -249,10 +223,8 @@ export class OrganizationService extends BaseService {
 
   async getOrgRoles(orgId: string, user: user): Promise<IClientRoles[]> {
     const payload = { orgId, user };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-org-roles",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "get-org-roles" }, payload)
     );
   }
 
@@ -267,19 +239,15 @@ export class OrganizationService extends BaseService {
     userEmail: string
   ): Promise<string> {
     const payload = { bulkInvitationDto, userId, userEmail };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "send-invitation",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "send-invitation" }, payload)
     );
   }
 
   async registerOrgsMapUsers(): Promise<string> {
     const payload = {};
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "register-orgs-users-map",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "register-orgs-users-map" }, payload)
     );
   }
 
@@ -295,32 +263,23 @@ export class OrganizationService extends BaseService {
     userId: string,
     user: user
   ): Promise<boolean> {
-    console.log(`📡 === API GATEWAY SERVICE: SENDING NATS MESSAGE ===`);
-    console.log(`🎯 Message pattern: "update-user-roles"`);
-    console.log(`📦 Constructing payload...`);
-    
+    // Role update operation - ALWAYS using platform admin credentials
+    // Fix for 500 error: Ensure we always use platform admin credentials for role operations
+    // regardless of the organization's client credentials status
     const payload = {
       orgId: updateUserDto.orgId,
       roleIds: updateUserDto.orgRoleId,
       userId,
-      user,
+      user: null, // No user object needed since we're using platform admin
+      usePlatformAdmin: true, // CRITICAL: Always use platform admin credentials for role operations
     };
-    
-    console.log(`📤 NATS payload:`, JSON.stringify(payload, null, 2));
-    console.log(`📡 Sending NATS message to organization service...`);
-    
-    try {
-      const result = await this.natsClient.sendNatsMessage(
-        this.serviceProxy,
-        "update-user-roles",
-        payload
-      );
-      console.log(`✅ API GATEWAY SERVICE: NATS response received:`, result);
-      return result;
-    } catch (error) {
-      console.log(`❌ API GATEWAY SERVICE: NATS message failed:`, error);
-      throw error;
-    }
+
+    console.log("🚀 === API GATEWAY: SENDING NATS MESSAGE ===");
+    console.log('📦 Message pattern: "update-user-roles"');
+    console.log("📋 Payload:", JSON.stringify(payload, null, 2));
+
+    const pattern = { cmd: "update-user-roles" };
+    return firstValueFrom(this.natsClient.send(pattern, payload));
   }
 
   async getOrgUsers(
@@ -330,29 +289,23 @@ export class OrganizationService extends BaseService {
     const { pageNumber, pageSize, search } = paginationDto;
     const payload = { orgId, pageNumber, pageSize, search };
 
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "fetch-organization-user",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "fetch-organization-user" }, payload)
     );
   }
 
   async getDidList(orgId: string): Promise<IDidList[]> {
     const payload = { orgId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "fetch-organization-dids",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "fetch-organization-dids" }, payload)
     );
   }
 
   async getOrgPofile(orgId: string): Promise<organisation> {
     const payload = { orgId };
 
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "fetch-organization-profile",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "fetch-organization-profile" }, payload)
     );
   }
 
@@ -362,20 +315,16 @@ export class OrganizationService extends BaseService {
   ): Promise<IDeleteOrganization> {
     const payload = { orgId, user };
 
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "delete-organization",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "delete-organization" }, payload)
     );
   }
 
   async deleteOrgClientCredentials(orgId: string, user: user): Promise<string> {
     const payload = { orgId, user };
 
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "delete-org-client-credentials",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "delete-org-client-credentials" }, payload)
     );
   }
 
@@ -384,20 +333,19 @@ export class OrganizationService extends BaseService {
     invitationId: string
   ): Promise<boolean> {
     const payload = { orgId, invitationId };
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "delete-organization-invitation",
-      payload
+    return firstValueFrom(
+      this.natsClient.send({ cmd: "delete-organization-invitation" }, payload)
     );
   }
 
   async clientLoginCredentials(
     clientCredentialsDto: ClientCredentialsDto
   ): Promise<IAccessTokenData> {
-    return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "authenticate-client-credentials",
-      clientCredentialsDto
+    return firstValueFrom(
+      this.natsClient.send(
+        { cmd: "authenticate-client-credentials" },
+        clientCredentialsDto
+      )
     );
   }
 

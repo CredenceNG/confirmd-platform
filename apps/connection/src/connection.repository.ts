@@ -165,69 +165,117 @@ export class ConnectionRepository {
   // eslint-disable-next-line camelcase
   async saveConnectionWebhook(payload: ICreateConnection): Promise<object> {
     try {
+      this.logger.log("🔧 === SAVE CONNECTION WEBHOOK DEBUG ===");
+      this.logger.log(`📨 Full payload: ${JSON.stringify(payload, null, 2)}`);
+
       let organisationId;
       const { connectionDto, orgId } = payload;
 
-      if ("default" !== connectionDto?.contextCorrelationId) {
+      this.logger.log(
+        `🔍 connectionDto.contextCorrelationId: ${connectionDto?.contextCorrelationId}`
+      );
+      this.logger.log(`🔍 orgId from payload: ${orgId}`);
+
+      if (
+        connectionDto?.contextCorrelationId &&
+        "default" !== connectionDto?.contextCorrelationId
+      ) {
         const getOrganizationId = await this.getOrganization(
           connectionDto?.contextCorrelationId
+        );
+        this.logger.log(
+          `🔍 getOrganization result: ${JSON.stringify(getOrganizationId)}`
         );
         organisationId = getOrganizationId?.orgId;
       } else {
         organisationId = orgId;
       }
 
-      const walletLabelName = connectionDto?.theirLabel;
-      let maskedTheirLabel: string;
-      let firstLetters: string;
-      let maskedMiddleLetters: string;
-      let lastLetters: string;
+      this.logger.log(`🎯 Final organisationId: ${organisationId}`);
 
-      switch (true) {
-        case 3 >= walletLabelName.length:
-          firstLetters = walletLabelName.slice(0, 1);
-          maskedMiddleLetters = walletLabelName.slice(1).replace(/./g, "*");
-          maskedTheirLabel = firstLetters + maskedMiddleLetters;
-          break;
-
-        case 3 < walletLabelName.length && 6 > walletLabelName.length:
-          firstLetters = walletLabelName.slice(0, 1);
-          lastLetters = walletLabelName.slice(-1);
-          maskedMiddleLetters = walletLabelName.slice(1, -1).replace(/./g, "*");
-          maskedTheirLabel = firstLetters + maskedMiddleLetters + lastLetters;
-          break;
-
-        case 6 <= walletLabelName.length && 8 >= walletLabelName.length:
-          firstLetters = walletLabelName.slice(0, 2);
-          lastLetters = walletLabelName.slice(-2);
-          maskedMiddleLetters = walletLabelName.slice(2, -2).replace(/./g, "*");
-          maskedTheirLabel = firstLetters + maskedMiddleLetters + lastLetters;
-          break;
-
-        case 8 < walletLabelName.length:
-          firstLetters = walletLabelName.slice(0, 3);
-          lastLetters = walletLabelName.slice(-3);
-          maskedMiddleLetters = walletLabelName.slice(3, -3).replace(/./g, "*");
-          maskedTheirLabel = firstLetters + maskedMiddleLetters + lastLetters;
-          break;
-
-        default:
-          maskedTheirLabel = walletLabelName;
-          break;
+      // Ensure organisationId is valid before proceeding
+      if (!organisationId) {
+        this.logger.error(
+          "❌ No valid organisationId found - cannot save connection"
+        );
+        throw new Error("Invalid organization ID - connection cannot be saved");
       }
+
+      const walletLabelName = connectionDto?.theirLabel;
+
+      // Add validation for walletLabelName
+      let maskedTheirLabel: string;
+      if (!walletLabelName) {
+        this.logger.warn("⚠️ No theirLabel found, using default");
+        maskedTheirLabel = "Unknown";
+      } else {
+        let firstLetters: string;
+        let maskedMiddleLetters: string;
+        let lastLetters: string;
+
+        switch (true) {
+          case 3 >= walletLabelName.length:
+            firstLetters = walletLabelName.slice(0, 1);
+            maskedMiddleLetters = walletLabelName.slice(1).replace(/./g, "*");
+            maskedTheirLabel = firstLetters + maskedMiddleLetters;
+            break;
+
+          case 3 < walletLabelName.length && 6 > walletLabelName.length:
+            firstLetters = walletLabelName.slice(0, 1);
+            lastLetters = walletLabelName.slice(-1);
+            maskedMiddleLetters = walletLabelName
+              .slice(1, -1)
+              .replace(/./g, "*");
+            maskedTheirLabel = firstLetters + maskedMiddleLetters + lastLetters;
+            break;
+
+          case 6 <= walletLabelName.length && 8 >= walletLabelName.length:
+            firstLetters = walletLabelName.slice(0, 2);
+            lastLetters = walletLabelName.slice(-2);
+            maskedMiddleLetters = walletLabelName
+              .slice(2, -2)
+              .replace(/./g, "*");
+            maskedTheirLabel = firstLetters + maskedMiddleLetters + lastLetters;
+            break;
+
+          case 8 < walletLabelName.length:
+            firstLetters = walletLabelName.slice(0, 3);
+            lastLetters = walletLabelName.slice(-3);
+            maskedMiddleLetters = walletLabelName
+              .slice(3, -3)
+              .replace(/./g, "*");
+            maskedTheirLabel = firstLetters + maskedMiddleLetters + lastLetters;
+            break;
+
+          default:
+            maskedTheirLabel = walletLabelName;
+            break;
+        }
+      }
+
+      // Ensure we have valid timestamps
+      const now = new Date().toISOString();
+      const createDateTime = connectionDto?.createDateTime || now;
+      const lastChangedDateTime = connectionDto?.lastChangedDateTime || now;
+
+      this.logger.log(`💾 About to upsert connection with:`);
+      this.logger.log(`   - connectionId: ${connectionDto?.id}`);
+      this.logger.log(`   - state: ${connectionDto?.state}`);
+      this.logger.log(`   - organisationId: ${organisationId}`);
+      this.logger.log(`   - maskedTheirLabel: ${maskedTheirLabel}`);
 
       return this.prisma.connections.upsert({
         where: {
           connectionId: connectionDto?.id,
         },
         update: {
-          lastChangedDateTime: connectionDto?.lastChangedDateTime,
+          lastChangedDateTime,
           lastChangedBy: organisationId,
           state: connectionDto?.state,
         },
         create: {
-          createDateTime: connectionDto?.createDateTime,
-          lastChangedDateTime: connectionDto?.lastChangedDateTime,
+          createDateTime,
+          lastChangedDateTime,
           createdBy: organisationId,
           lastChangedBy: organisationId,
           connectionId: connectionDto?.id,

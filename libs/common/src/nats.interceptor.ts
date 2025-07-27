@@ -19,6 +19,7 @@ export class NatsInterceptor implements NestInterceptor {
       catchError((error) => {
         if (
           error?.message &&
+          "string" === typeof error?.message &&
           error?.message.includes(ResponseMessages.nats.error.natsConnect)
         ) {
           this.logger.error(`No subscribers for message: ${error.message}`);

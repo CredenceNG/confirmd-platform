@@ -64,6 +64,8 @@ services:
     environment:
       - MINIO_ROOT_USER=dev-access-key
       - MINIO_ROOT_PASSWORD=dev-secret-key
+      - MINIO_SERVER_URL=https://minio.confamd.com
+      - MINIO_BROWSER_REDIRECT_URL=https://minio-console.confamd.com
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -189,6 +191,16 @@ services:
       - ./.env
     volumes:
       - ./uploads:/app/uploads
+      # Volume mappings for hot reloading
+      - ./apps/organization:/app/apps/organization
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      # Exclude node_modules and dist folders from sync
+      - /app/node_modules
+      - /app/dist
   verification:
     depends_on:
       - nats # Use depends_on instead of needs
