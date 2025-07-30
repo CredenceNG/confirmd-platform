@@ -15,7 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { KeycloakUrlService } from '@credebl/keycloak-url';
 import { accessTokenPayloadDto } from './dtos/accessTokenPayloadDto';
 import { userTokenPayloadDto } from './dtos/userTokenPayloadDto';
-import { KeycloakUserRegistrationDto } from 'apps/user/dtos/keycloak-register.dto';
+import { KeycloakUserRegistrationDto } from '@credebl/user-dtos';
 import { ResponseMessages } from '@credebl/common/response-messages';
 import { IClientRoles } from './interfaces/client.interface';
 import { IFormattedResponse } from '@credebl/common/interfaces/interface';
@@ -255,7 +255,9 @@ export class ClientRegistrationService {
       
       // Try to decrypt client ID
       try {
-        const testDecryptedClientId = await this.commonService.decryptString(clientId);
+        this.logger.log(`🔍 DEBUGGING: Attempting to decrypt Client ID: ${clientId ? clientId.substring(0, 20) : 'N/A'}...`);
+        const testDecryptedClientId = await this.commonService.decryptPassword(clientId);
+        this.logger.log(`🔍 DEBUGGING: Client ID decryption result: ${testDecryptedClientId ? testDecryptedClientId.substring(0, 20) : 'EMPTY'}...`);
         if (testDecryptedClientId && '' !== testDecryptedClientId.trim()) {
           decryptedClientId = testDecryptedClientId;
           this.logger.log(`🔓 Client ID was encrypted and decrypted successfully`);
@@ -272,7 +274,9 @@ export class ClientRegistrationService {
       
       // Try to decrypt client secret
       try {
-        const testDecryptedClientSecret = await this.commonService.decryptString(clientSecret);
+        this.logger.log(`🔍 DEBUGGING: Attempting to decrypt Client Secret: ${clientSecret ? clientSecret.substring(0, 20) : 'N/A'}...`);
+        const testDecryptedClientSecret = await this.commonService.decryptPassword(clientSecret);
+        this.logger.log(`🔍 DEBUGGING: Client Secret decryption result: ${testDecryptedClientSecret ? testDecryptedClientSecret.substring(0, 20) : 'EMPTY'}...`);
         if (testDecryptedClientSecret && '' !== testDecryptedClientSecret.trim()) {
           decryptedClientSecret = testDecryptedClientSecret;
           this.logger.log(`🔓 Client Secret was encrypted and decrypted successfully`);
@@ -979,7 +983,7 @@ export class ClientRegistrationService {
     
     // Try to decrypt client ID
     try {
-      const testDecryptedClientId = await this.commonService.decryptString(clientId);
+      const testDecryptedClientId = await this.commonService.decryptPassword(clientId);
       if (testDecryptedClientId && '' !== testDecryptedClientId.trim()) {
         decryptedClientId = testDecryptedClientId;
         this.logger.log(`🔓 Client ID was encrypted and decrypted successfully`);
@@ -996,7 +1000,7 @@ export class ClientRegistrationService {
     
     // Try to decrypt client secret
     try {
-      const testDecryptedClientSecret = await this.commonService.decryptString(clientSecret);
+      const testDecryptedClientSecret = await this.commonService.decryptPassword(clientSecret);
       if (testDecryptedClientSecret && '' !== testDecryptedClientSecret.trim()) {
         decryptedClientSecret = testDecryptedClientSecret;
         this.logger.log(`🔓 Client Secret was encrypted and decrypted successfully`);

@@ -1,0 +1,69 @@
+# Development Dockerfile for Organization Service with Hot Reload
+FROM node:18-alpine
+
+# Install required packages for building native dependencies
+RUN apk add --no-cache openssl python3 make g++
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package.json first for better layer caching
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+
+# Set environment variables
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+ENV NODE_ENV=development
+ENV WATCH_MODE=true
+
+# Install dependencies
+RUN pnpm install --ignore-scripts
+
+# Copy configuration files
+COPY nest-cli.json ./
+COPY tsconfig.json ./
+COPY tsconfig.build.json ./
+
+# Create directories for mounted source code and ensure proper permissions
+RUN mkdir -p apps/organization/src
+RUN mkdir -p libs
+RUN mkdir -p dist
+RUN mkdir -p node_modules/.prisma
+
+# Copy prisma service for later runtime migrations
+COPY libs/prisma-service ./libs/prisma-service
+
+# Create a startup script to handle proper sequencing
+RUN echo '#!/bin/sh' > /app/start-dev.sh && \
+    echo 'set -e' >> /app/start-dev.sh && \
+    echo 'echo "🚀 Starting organization service development environment..."' >> /app/start-dev.sh && \
+    echo 'sleep 2' >> /app/start-dev.sh && \
+    echo 'echo "📁 Checking volume mounts..."' >> /app/start-dev.sh && \
+    echo 'ls -la /app/libs/prisma-service/prisma/' >> /app/start-dev.sh && \
+    echo 'echo "🔧 Running Prisma migrations..."' >> /app/start-dev.sh && \
+    echo 'cd /app/libs/prisma-service' >> /app/start-dev.sh && \
+    echo 'PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start-dev.sh && \
+    echo 'echo "⚡ Generating Prisma client..."' >> /app/start-dev.sh && \
+    echo 'PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma generate --schema=./prisma/schema.prisma' >> /app/start-dev.sh && \
+    echo 'echo "📦 Checking generated Prisma client..."' >> /app/start-dev.sh && \
+    echo 'ls -la /app/node_modules/.prisma/client/ || echo "❌ Prisma client not found, will try alternate generation"' >> /app/start-dev.sh && \
+    echo 'if [ ! -d "/app/node_modules/.prisma/client" ]; then' >> /app/start-dev.sh && \
+    echo '    echo "🔄 Attempting alternate Prisma client generation..."' >> /app/start-dev.sh && \
+    echo '    cd /app' >> /app/start-dev.sh && \
+    echo '    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate --schema=./libs/prisma-service/prisma/schema.prisma' >> /app/start-dev.sh && \
+    echo 'fi' >> /app/start-dev.sh && \
+    echo 'echo "✅ Prisma setup complete, starting NestJS..."' >> /app/start-dev.sh && \
+    echo 'cd /app' >> /app/start-dev.sh && \
+    echo 'pnpm run start:dev organization' >> /app/start-dev.sh
+
+RUN chmod +x /app/start-dev.sh
+
+# The actual source code will be mounted as volumes
+# This allows for hot reloading during development
+
+# Use the startup script that handles proper Prisma generation sequencing
+CMD ["/app/start-dev.sh"]

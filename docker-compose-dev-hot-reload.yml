@@ -1,19 +1,84 @@
 version: '3'
 
 services:
-  # Extend your existing services but with hot reload capability
+  # Organization service with hot reload
+  organization:
+    depends_on:
+      - nats
+      - postgres
+    build:
+      context: ./
+      dockerfile: Dockerfiles/Dockerfile.organization.dev
+    env_file:
+      - ./.env
+    volumes:
+      # Mount entire source code for hot reloading
+      - ./apps/organization:/app/apps/organization
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      # Mount compiled dist for immediate changes
+      - ./dist:/app/dist
+      # Exclude node_modules from host
+      - /app/node_modules
+    # Let the Dockerfile startup script handle Prisma generation and startup
+    environment:
+      - NODE_ENV=development
+      - WATCH_MODE=true
+    networks:
+      - confirmd_network
+
+  # API Gateway with hot reload
+  api-gateway:
+    build:
+      context: ./
+      dockerfile: Dockerfiles/Dockerfile.api-gateway.dev
+    expose:
+      - '5000'
+    env_file:
+      - ./.env
+    volumes:
+      # API Gateway specific files
+      - ./apps/api-gateway/src:/app/apps/api-gateway/src
+      - ./apps/api-gateway/common:/app/apps/api-gateway/common
+      - ./apps/api-gateway/tsconfig.app.json:/app/apps/api-gateway/tsconfig.app.json
+      # Other apps directories needed for imports
+      - ./apps/connection:/app/apps/connection
+      - ./apps/organization:/app/apps/organization
+      - ./apps/user:/app/apps/user
+      - ./apps/issuance:/app/apps/issuance
+      - ./apps/ledger:/app/apps/ledger
+      - ./apps/webhook:/app/apps/webhook
+      # Shared libraries and config
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      - ./dist:/app/dist
+      - /app/node_modules
+    command: ['pnpm', 'run', 'start:dev', 'api-gateway']
+    environment:
+      - NODE_ENV=development
+      - WATCH_MODE=true
+    networks:
+      - confirmd_network
+
+  # User service with hot reload
   user:
     depends_on:
       - nats
       - api-gateway
     build:
       context: ./
-      dockerfile: Dockerfiles/Dockerfile.user.dev # New dev dockerfile
+      dockerfile: Dockerfiles/Dockerfile.user.dev
     env_file:
       - ./.env
     volumes:
       # Mount entire source code for hot reloading
-      - ./apps/user/src:/app/apps/user/src
+      - ./apps/user:/app/apps/user
       - ./libs:/app/libs
       - ./package.json:/app/package.json
       - ./nest-cli.json:/app/nest-cli.json
@@ -27,6 +92,8 @@ services:
     environment:
       - NODE_ENV=development
       - WATCH_MODE=true
+    networks:
+      - confirmd_network
 
   # Add a file watcher service for shared libraries
   lib-watcher:
@@ -41,6 +108,241 @@ services:
     command: ['pnpm', 'run', 'build:libs:watch'] # Watch and rebuild libs
     environment:
       - NODE_ENV=development
+    networks:
+      - confirmd_network
+
+  # Supporting services (from main docker-compose.yml)
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: confirmd
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - confirmd_network
+
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - cache:/data
+    networks:
+      - confirmd_network
+
+  nats:
+    image: nats:2.9-alpine
+    command: ['-c', '/etc/nats/nats-server.conf']
+    volumes:
+      - './nats-server.conf:/etc/nats/nats-server.conf'
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    networks:
+      - confirmd_network
+
+  # NGINX Reverse Proxy
+  nginx-proxy:
+    image: nginx:alpine
+    ports:
+      - '5000:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./uploads:/app/uploads:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - confirmd_network
+
+  # Seed service
+  seed:
+    container_name: seed-service
+    image: ghcr.io/credebl/seed:latest
+    env_file:
+      - ./.env
+    volumes:
+      - $PWD/libs/prisma-service/prisma/data/credebl-master-table.json:/app/libs/prisma-service/prisma/data/credebl-master-table.json
+    networks:
+      - confirmd_network
+
+  # Utility service
+  utility:
+    depends_on:
+      - nats
+      - api-gateway
+    image: ghcr.io/credebl/utility:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Connection service
+  connection:
+    depends_on:
+      - nats
+      - api-gateway
+      - utility
+      - user
+    image: ghcr.io/credebl/connection:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Issuance service
+  issuance:
+    depends_on:
+      - nats
+      - api-gateway
+      - user
+      - connection
+    image: ghcr.io/credebl/issuance:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Ledger service
+  ledger:
+    depends_on:
+      - nats
+      - api-gateway
+      - user
+      - connection
+      - issuance
+    image: ghcr.io/credebl/ledger:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Verification service
+  verification:
+    depends_on:
+      - nats
+      - api-gateway
+      - user
+      - connection
+      - issuance
+      - ledger
+      - organization
+    image: ghcr.io/credebl/verification:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Agent provisioning service
+  agent-provisioning:
+    depends_on:
+      - nats
+      - api-gateway
+      - user
+      - connection
+      - issuance
+      - ledger
+      - organization
+      - verification
+    image: ghcr.io/credebl/agent-provisioning:latest
+    env_file:
+      - ./.env
+    environment:
+      - ROOT_PATH=$PWD/apps/agent-provisioning/AFJ/agent-config
+    volumes:
+      - $PWD/apps/agent-provisioning/AFJ/agent-config:/app/agent-provisioning/AFJ/agent-config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $PWD/agent.env:/app/agent.env
+    networks:
+      - confirmd_network
+
+  # Agent service
+  agent-service:
+    depends_on:
+      - nats
+      - api-gateway
+      - user
+      - connection
+      - issuance
+      - ledger
+      - organization
+      - verification
+      - agent-provisioning
+    command: sh -c 'until (docker logs confirmd-platform-agent-provisioning-1 | grep "Agent-Provisioning-Service Microservice is listening to NATS"); do sleep 1; done && node dist/apps/agent-service/main.js'
+    build:
+      context: .
+      dockerfile: Dockerfiles/Dockerfile.agent-service
+    env_file:
+      - ./.env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    volumes_from:
+      - agent-provisioning
+    networks:
+      - confirmd_network
+
+  # Cloud wallet service
+  cloud-wallet:
+    depends_on:
+      - nats
+      - api-gateway
+    image: ghcr.io/credebl/cloud-wallet:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Geolocation service
+  geolocation:
+    depends_on:
+      - nats
+      - api-gateway
+    image: ghcr.io/credebl/geolocation:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Notification service
+  notification:
+    depends_on:
+      - nats
+      - api-gateway
+    image: ghcr.io/credebl/notification:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Webhook service
+  webhook:
+    depends_on:
+      - nats
+      - api-gateway
+    image: ghcr.io/credebl/webhook:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
+
+  # Schema file server
+  schema-file-server:
+    container_name: schema-file-server
+    image: ghcr.io/credebl/schema-file-server:latest
+    env_file:
+      - ./.env
+    networks:
+      - confirmd_network
 
 volumes:
   postgres_data:
+  cache:
+
+networks:
+  confirmd_network:
+    driver: bridge

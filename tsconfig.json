@@ -37,7 +37,13 @@
       "@credebl/context": ["libs/context/src"],
       "@credebl/context/*": ["libs/context/src/*"],
       "@credebl/local-file": ["libs/local-file/src"],
-      "@credebl/local-file/*": ["libs/local-file/src/*"]
+      "@credebl/local-file/*": ["libs/local-file/src/*"],
+      "@credebl/user-dtos": ["libs/user-dtos/src"],
+      "@credebl/user-dtos/*": ["libs/user-dtos/src/*"],
+      "@credebl/user-repository": ["libs/user-repository/src"],
+      "@credebl/user-repository/*": ["libs/user-repository/src/*"],
+      "apps/*": ["apps/*"],
+      "apps/user/*": ["apps/user/*"]
     }
   },
   "exclude": ["node_modules", "dist"]

@@ -12,7 +12,7 @@ import { UserActivityRepository } from "libs/user-activity/repositories";
 import { UserActivityService } from "@credebl/user-activity";
 import { UserOrgRolesRepository } from "libs/user-org-roles/repositories";
 import { UserOrgRolesService } from "@credebl/user-org-roles";
-import { UserRepository } from "apps/user/repositories/user.repository";
+import { UserRepository } from "@credebl/user-repository";
 import { CacheModule } from "@nestjs/cache-manager";
 import { getNatsOptions } from "@credebl/common/nats.config";
 import { ClientRegistrationService } from "@credebl/client-registration";
