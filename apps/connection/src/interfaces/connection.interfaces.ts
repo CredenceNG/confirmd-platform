@@ -1,7 +1,7 @@
 // eslint-disable-next-line camelcase
-import { IUserRequest } from "@credebl/user-request/user-request.interface";
-import { organisation } from "@prisma/client";
-import { UserRoleOrgPermsDto } from "apps/api-gateway/src/dtos/user-role-org-perms.dto";
+import { IUserRequest } from '@credebl/user-request/user-request.interface';
+import { organisation } from '@prisma/client';
+import { UserRoleOrgPermsDto } from 'apps/api-gateway/src/dtos/user-role-org-perms.dto';
 
 export interface IConnection {
   user: IUserRequestInterface;
@@ -168,8 +168,8 @@ interface Service {
 }
 
 interface Invitation {
-  "@id": string;
-  "@type": string;
+  '@id': string;
+  '@type': string;
   label: string;
   goalCode: string;
   goal: string;
@@ -210,8 +210,8 @@ interface OutOfBandInvitationService {
 }
 
 interface OutOfBandInvitation {
-  "@type": string;
-  "@id": string;
+  '@type': string;
+  '@id': string;
   label: string;
   accept: string[];
   handshake_protocols: string[];
@@ -260,7 +260,6 @@ export interface ConnectionResponseDetail {
   orgId: string;
   agentId: string;
   connectionInvitation: string;
-  shortenedUrl?: string;
   multiUse: boolean;
   createDateTime: Date;
   createdBy: number;

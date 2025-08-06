@@ -207,19 +207,7 @@ export class AgentServiceService {
       // Invoke function for validate platform configuration
       this.validatePlatformConfig(platformConfig);
 
-      // Use PLATFORM_URL environment variable instead of database externalIp
-      const platformUrl = process.env.PLATFORM_URL;
-      let externalIp = platformConfig?.externalIp;
-      
-      if (platformUrl) {
-        // Extract domain from PLATFORM_URL (remove protocol and path)
-        const url = new URL(platformUrl);
-        externalIp = url.host; // includes port if specified
-        this.logger.log(`Using PLATFORM_URL for externalIp: ${platformUrl} -> ${externalIp}`);
-      } else {
-        this.logger.log(`PLATFORM_URL not set, using database externalIp: ${externalIp}`);
-      }
-      
+      const externalIp = platformConfig?.externalIp;
       const inboundEndpoint = platformConfig?.inboundEndpoint !== 'false' ? platformConfig?.inboundEndpoint : '';
       const apiEndpoint = platformConfig?.apiEndpoint;
 
@@ -353,15 +341,15 @@ export class AgentServiceService {
       });
     }
 
-    if (!platformConfig.externalIp && !process.env.PLATFORM_URL) {
-      this.logger.error(`External IP is missing in the platform configuration and PLATFORM_URL environment variable is not set`);
+    if (!platformConfig.externalIp) {
+      this.logger.error(`External IP is missing in the platform configuration`);
       throw new BadRequestException(ResponseMessages.agent.error.externalIp, {
         cause: new Error(),
         description: ResponseMessages.errorMessages.badRequest
       });
     }
 
-    if (platformConfig.externalIp && typeof platformConfig.externalIp !== 'string') {
+    if (typeof platformConfig.externalIp !== 'string') {
       this.logger.error(`External IP must be a string`);
       throw new BadRequestException(ResponseMessages.agent.error.externalIp, {
         cause: new Error(),
@@ -525,25 +513,7 @@ export class AgentServiceService {
         });
       }
       const agentDetails = walletProvision.response;
-      
-      // Fix agent endpoint to use PLATFORM_URL instead of hardcoded domain
-      let agentEndPoint = `${process.env.API_GATEWAY_PROTOCOL}://${agentDetails.agentEndPoint}`;
-      
-      if (process.env.PLATFORM_URL) {
-        try {
-          const platformUrl = new URL(process.env.PLATFORM_URL);
-          // Extract port from agentDetails.agentEndPoint (e.g., "platform-admin.confamd.com:5000" -> ":5000")
-          const portMatch = agentDetails.agentEndPoint.match(/:(\d+)$/);
-          const port = portMatch ? portMatch[0] : '';
-          
-          agentEndPoint = `${process.env.API_GATEWAY_PROTOCOL}://${platformUrl.host}${port}`;
-          this.logger.log(`Fixed agent endpoint using PLATFORM_URL: ${agentEndPoint}`);
-        } catch (error) {
-          this.logger.warn(`Invalid PLATFORM_URL format, using original endpoint: ${error.message}`);
-        }
-      } else {
-        this.logger.log(`PLATFORM_URL not set, using original endpoint: ${agentEndPoint}`);
-      }
+      const agentEndPoint = `${process.env.API_GATEWAY_PROTOCOL}://${agentDetails.agentEndPoint}`;
       /**
        * Socket connection
        */
@@ -1190,12 +1160,6 @@ export class AgentServiceService {
     if (!walletResponseDetails && !walletResponseDetails.id) {
       throw new InternalServerErrorException('Error while creating the wallet');
     }
-
-    // Emit DID publish process initiated event
-    if (payload.clientSocketId) {
-      socket.emit('did-publish-process-initiated', { clientId: payload.clientSocketId });
-    }
-
     const didCreateOption = {
       didPayload: WalletSetupPayload,
       agentEndpoint: platformAdminSpinnedUp.org_agents[0].agentEndPoint,
@@ -1205,11 +1169,6 @@ export class AgentServiceService {
     const DIDCreationOption = await this._createDID(didCreateOption);
     if (!DIDCreationOption) {
       throw new InternalServerErrorException('Error while creating the wallet');
-    }
-
-    // Emit DID publish process completed event
-    if (payload.clientSocketId) {
-      socket.emit('did-publish-process-completed', { clientId: payload.clientSocketId });
     }
 
     return { walletResponseDetails, DIDCreationOption };
@@ -1245,26 +1204,10 @@ export class AgentServiceService {
    */
   private async _createDID(didCreateOption): Promise<ICreateTenant> {
     const { didPayload, agentEndpoint, apiKey, tenantId } = didCreateOption;
-    
-    // Log payload transformation for debugging
-    this.logger.debug(`[_createDID] Original payload: ${JSON.stringify(didPayload)}`);
-    
-    // Only remove the role field if endorserDid is present (for backward compatibility)
-    // If no endorserDid is provided, keep the role field for role-based registration
-    let cleanPayload = didPayload;
-    if (didPayload.endorserDid && didPayload.role) {
-      // When endorserDid is provided, remove role to avoid conflicts
-      const { role, ...payloadWithoutRole } = didPayload;
-      cleanPayload = payloadWithoutRole;
-      this.logger.debug(`[_createDID] Removed role field because endorserDid is present`);
-    }
-    
-    this.logger.debug(`[_createDID] Clean payload: ${JSON.stringify(cleanPayload)}`);
-    
     // Invoke an API request from the agent to create multi-tenant agent
     const didDetails = await this.commonService.httpPost(
       `${agentEndpoint}${CommonConstants.URL_SHAGENT_CREATE_DID}${tenantId}`,
-      cleanPayload,
+      didPayload,
       { headers: { authorization: apiKey } }
     );
     return didDetails;
@@ -1879,9 +1822,8 @@ export class AgentServiceService {
       // Perform the deletion in a transaction
       return await this.prisma.$transaction(async (prisma) => {
         // Delete org agent and related records
-        const { orgDid, agentInvitation, deleteOrgAgent } = await this.agentServiceRepository.deleteOrgAgentByOrg(
-          orgId
-        );
+        const { orgDid, agentInvitation, deleteOrgAgent } =
+          await this.agentServiceRepository.deleteOrgAgentByOrg(orgId);
 
         // Make the HTTP DELETE request
         const deleteWallet = await this.commonService.httpDelete(url, {
@@ -2144,8 +2086,8 @@ export class AgentServiceService {
             orgAgentType === OrgAgentType.DEDICATED
               ? `${agentEndPoint}${CommonConstants.URL_AGENT_SIGN_DATA}`
               : orgAgentType === OrgAgentType.SHARED
-              ? `${agentEndPoint}${CommonConstants.URL_SHARED_AGENT_SIGN_DATA}`.replace('#', tenantId)
-              : null;
+                ? `${agentEndPoint}${CommonConstants.URL_SHARED_AGENT_SIGN_DATA}`.replace('#', tenantId)
+                : null;
           break;
         }
         case 'verify-signed-data-from-agent': {
@@ -2153,8 +2095,8 @@ export class AgentServiceService {
             orgAgentType === OrgAgentType.DEDICATED
               ? `${agentEndPoint}${CommonConstants.URL_AGENT_VERIFY_SIGNED_DATA}`
               : orgAgentType === OrgAgentType.SHARED
-              ? `${agentEndPoint}${CommonConstants.URL_SHARED_AGENT_VERIFY_SIGNED_DATA}`.replace('#', tenantId)
-              : null;
+                ? `${agentEndPoint}${CommonConstants.URL_SHARED_AGENT_VERIFY_SIGNED_DATA}`.replace('#', tenantId)
+                : null;
           break;
         }
         default: {
