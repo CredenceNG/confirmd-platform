@@ -1,0 +1,13 @@
+tunnel: 7b101602-16a3-4f85-afd9-e424e7f36d96
+credentials-file: /home/nonroot/.cloudflared/7b101602-16a3-4f85-afd9-e424e7f36d96.json
+
+ingress:
+  - hostname: platform.confamd.com
+    service: http://nginx-proxy:5000
+  - hostname: agent.confamd.com
+    service: http://platform-admin-agent:9002 # ✅ Changed to DIDComm port
+  - hostname: minio.confamd.com
+    service: http://minio:9000
+  - hostname: minio-console.confamd.com
+    service: http://minio:9001
+  - service: http_status:404
