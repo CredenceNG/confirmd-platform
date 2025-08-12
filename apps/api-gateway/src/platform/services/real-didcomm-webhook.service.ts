@@ -1,11 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 
 // Real DIDComm Webhook Service for Mobile Wallet Integration
 export interface DIDCommWebhookPayload {
-  "@id": string;
-  "@type": string;
+  '@id': string;
+  '@type': string;
   connectionId?: string;
   threadId?: string;
   state?: string;
@@ -17,11 +17,11 @@ export interface DIDCommWebhookPayload {
 
 export interface MobileConnectionEvent {
   eventType:
-    | "connection-invitation"
-    | "connection-request"
-    | "connection-response"
-    | "connection-completed"
-    | "connection-error";
+    | 'connection-invitation'
+    | 'connection-request'
+    | 'connection-response'
+    | 'connection-completed'
+    | 'connection-error';
   connectionId: string;
   orgId: string;
   userId?: string;
@@ -33,11 +33,11 @@ export interface MobileConnectionEvent {
 
 export interface MobileCredentialEvent {
   eventType:
-    | "credential-offer"
-    | "credential-request"
-    | "credential-issue"
-    | "credential-received"
-    | "credential-error";
+    | 'credential-offer'
+    | 'credential-request'
+    | 'credential-issue'
+    | 'credential-received'
+    | 'credential-error';
   credentialExchangeId: string;
   connectionId: string;
   orgId: string;
@@ -49,10 +49,10 @@ export interface MobileCredentialEvent {
 
 export interface MobileProofEvent {
   eventType:
-    | "proof-request"
-    | "proof-presentation"
-    | "proof-verified"
-    | "proof-error";
+    | 'proof-request'
+    | 'proof-presentation'
+    | 'proof-verified'
+    | 'proof-error';
   proofExchangeId: string;
   connectionId: string;
   orgId: string;
@@ -69,8 +69,8 @@ export class RealDIDCommWebhookService {
     new Map();
   private readonly activeConnections: Map<string, string> = new Map(); // connectionId -> userId
 
-  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
-    this.logger.log("Real DIDComm Webhook Service initialized");
+  constructor(@Inject('NATS_CLIENT') private readonly natsClient: ClientProxy) {
+    this.logger.log('Real DIDComm Webhook Service initialized');
   }
 
   /**
@@ -78,39 +78,39 @@ export class RealDIDCommWebhookService {
    */
   public async processWebhook(payload: DIDCommWebhookPayload): Promise<void> {
     try {
-      this.logger.log("Processing real DIDComm webhook:", {
-        type: payload["@type"],
-        id: payload["@id"],
+      this.logger.log('Processing real DIDComm webhook:', {
+        type: payload['@type'],
+        id: payload['@id'],
         connectionId: payload.connectionId,
-        state: payload.state,
+        state: payload.state
       });
 
       // Route to appropriate handler based on message type
-      if (payload["@type"].includes("connections")) {
+      if (payload['@type'].includes('connections')) {
         await this.handleConnectionWebhook(payload);
-      } else if (payload["@type"].includes("issue-credential")) {
+      } else if (payload['@type'].includes('issue-credential')) {
         await this.handleCredentialWebhook(payload);
-      } else if (payload["@type"].includes("present-proof")) {
+      } else if (payload['@type'].includes('present-proof')) {
         await this.handleProofWebhook(payload);
-      } else if (payload["@type"].includes("trust_ping")) {
+      } else if (payload['@type'].includes('trust_ping')) {
         await this.handleTrustPingWebhook(payload);
       } else {
-        this.logger.warn(`Unhandled webhook type: ${payload["@type"]}`);
+        this.logger.warn(`Unhandled webhook type: ${payload['@type']}`);
       }
 
       // Emit general webhook processed event
-      await this.emitWebhookEvent("webhook-processed", {
+      await this.emitWebhookEvent('webhook-processed', {
         payload,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
-      this.logger.error("Failed to process DIDComm webhook:", error);
+      this.logger.error('Failed to process DIDComm webhook:', error);
 
       // Emit webhook error event
-      await this.emitWebhookEvent("webhook-error", {
+      await this.emitWebhookEvent('webhook-error', {
         payload,
-        error: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       });
     }
   }
@@ -124,55 +124,55 @@ export class RealDIDCommWebhookService {
     try {
       const { connectionId } = payload;
       if (!connectionId) {
-        this.logger.warn("Connection webhook missing connectionId");
+        this.logger.warn('Connection webhook missing connectionId');
         return;
       }
 
-      let eventType: MobileConnectionEvent["eventType"];
+      let eventType: MobileConnectionEvent['eventType'];
 
       // Determine event type based on message type and state
-      if (payload["@type"].includes("invitation")) {
-        eventType = "connection-invitation";
-      } else if (payload["@type"].includes("request")) {
-        eventType = "connection-request";
-      } else if (payload["@type"].includes("response")) {
-        eventType = "connection-response";
-      } else if ("completed" === payload.state || "active" === payload.state) {
-        eventType = "connection-completed";
+      if (payload['@type'].includes('invitation')) {
+        eventType = 'connection-invitation';
+      } else if (payload['@type'].includes('request')) {
+        eventType = 'connection-request';
+      } else if (payload['@type'].includes('response')) {
+        eventType = 'connection-response';
+      } else if ('completed' === payload.state || 'active' === payload.state) {
+        eventType = 'connection-completed';
       } else {
-        eventType = "connection-error";
+        eventType = 'connection-error';
       }
 
       const connectionEvent: MobileConnectionEvent = {
         eventType,
         connectionId,
-        orgId: payload.orgId || "unknown",
+        orgId: payload.orgId || 'unknown',
         userId: this.extractUserIdFromMetadata(payload.metadata),
         deviceId: this.extractDeviceIdFromMetadata(payload.metadata),
         metadata: payload.metadata,
-        timestamp: payload.timestamp,
+        timestamp: payload.timestamp
       };
 
       // Store connection for tracking
-      if (eventType === "connection-completed" && connectionEvent.userId) {
+      if ('connection-completed' === eventType && connectionEvent.userId) {
         this.activeConnections.set(connectionId, connectionEvent.userId);
       }
 
       this.logger.log(`Connection event: ${eventType}`, {
         connectionId,
         state: payload.state,
-        orgId: connectionEvent.orgId,
+        orgId: connectionEvent.orgId
       });
 
       // Emit connection event for mobile services
-      await this.emitWebhookEvent("mobile-connection", connectionEvent);
+      await this.emitWebhookEvent('mobile-connection', connectionEvent);
 
       // Trigger push notification if appropriate
-      if (eventType === "connection-completed") {
+      if ('connection-completed' === eventType) {
         await this.triggerConnectionNotification(connectionEvent);
       }
     } catch (error) {
-      this.logger.error("Failed to handle connection webhook:", error);
+      this.logger.error('Failed to handle connection webhook:', error);
     }
   }
 
@@ -183,60 +183,60 @@ export class RealDIDCommWebhookService {
     payload: DIDCommWebhookPayload
   ): Promise<void> {
     try {
-      const connectionId = payload.connectionId;
+      const { connectionId } = payload;
       if (!connectionId) {
-        this.logger.warn("Credential webhook missing connectionId");
+        this.logger.warn('Credential webhook missing connectionId');
         return;
       }
 
-      let eventType: MobileCredentialEvent["eventType"];
+      let eventType: MobileCredentialEvent['eventType'];
 
       // Determine event type based on message type
-      if (payload["@type"].includes("offer-credential")) {
-        eventType = "credential-offer";
-      } else if (payload["@type"].includes("request-credential")) {
-        eventType = "credential-request";
-      } else if (payload["@type"].includes("issue-credential")) {
-        eventType = "credential-issue";
+      if (payload['@type'].includes('offer-credential')) {
+        eventType = 'credential-offer';
+      } else if (payload['@type'].includes('request-credential')) {
+        eventType = 'credential-request';
+      } else if (payload['@type'].includes('issue-credential')) {
+        eventType = 'credential-issue';
       } else if (
-        payload.state === "done" ||
-        payload.state === "credential-received"
+        'done' === payload.state ||
+        'credential-received' === payload.state
       ) {
-        eventType = "credential-received";
+        eventType = 'credential-received';
       } else {
-        eventType = "credential-error";
+        eventType = 'credential-error';
       }
 
       const credentialEvent: MobileCredentialEvent = {
         eventType,
-        credentialExchangeId: payload.threadId || payload["@id"],
+        credentialExchangeId: payload.threadId || payload['@id'],
         connectionId,
-        orgId: payload.orgId || "unknown",
+        orgId: payload.orgId || 'unknown',
         credentialDefinitionId: this.extractCredDefIdFromMetadata(
           payload.metadata
         ),
         attributes: this.extractAttributesFromMetadata(payload.metadata),
-        timestamp: payload.timestamp,
+        timestamp: payload.timestamp
       };
 
       this.logger.log(`Credential event: ${eventType}`, {
         connectionId,
         credentialExchangeId: credentialEvent.credentialExchangeId,
-        orgId: credentialEvent.orgId,
+        orgId: credentialEvent.orgId
       });
 
       // Emit credential event
-      await this.emitWebhookEvent("mobile-credential", credentialEvent);
+      await this.emitWebhookEvent('mobile-credential', credentialEvent);
 
       // Trigger push notification for credential events
       if (
-        eventType === "credential-offer" ||
-        eventType === "credential-received"
+        'credential-offer' === eventType ||
+        'credential-received' === eventType
       ) {
         await this.triggerCredentialNotification(credentialEvent);
       }
     } catch (error) {
-      this.logger.error("Failed to handle credential webhook:", error);
+      this.logger.error('Failed to handle credential webhook:', error);
     }
   }
 
@@ -249,50 +249,50 @@ export class RealDIDCommWebhookService {
     try {
       const { connectionId } = payload;
       if (!connectionId) {
-        this.logger.warn("Proof webhook missing connectionId");
+        this.logger.warn('Proof webhook missing connectionId');
         return;
       }
 
-      let eventType: MobileProofEvent["eventType"];
+      let eventType: MobileProofEvent['eventType'];
 
       // Determine event type based on message type
-      if (payload["@type"].includes("request-presentation")) {
-        eventType = "proof-request";
-      } else if (payload["@type"].includes("presentation")) {
-        eventType = "proof-presentation";
-      } else if ("verified" === payload.state || "done" === payload.state) {
-        eventType = "proof-verified";
+      if (payload['@type'].includes('request-presentation')) {
+        eventType = 'proof-request';
+      } else if (payload['@type'].includes('presentation')) {
+        eventType = 'proof-presentation';
+      } else if ('verified' === payload.state || 'done' === payload.state) {
+        eventType = 'proof-verified';
       } else {
-        eventType = "proof-error";
+        eventType = 'proof-error';
       }
 
       const proofEvent: MobileProofEvent = {
         eventType,
-        proofExchangeId: payload.threadId || payload["@id"],
+        proofExchangeId: payload.threadId || payload['@id'],
         connectionId,
-        orgId: payload.orgId || "unknown",
+        orgId: payload.orgId || 'unknown',
         proofName: this.extractProofNameFromMetadata(payload.metadata),
         requestedAttributes: this.extractRequestedAttributesFromMetadata(
           payload.metadata
         ),
-        timestamp: payload.timestamp,
+        timestamp: payload.timestamp
       };
 
       this.logger.log(`Proof event: ${eventType}`, {
         connectionId,
         proofExchangeId: proofEvent.proofExchangeId,
-        orgId: proofEvent.orgId,
+        orgId: proofEvent.orgId
       });
 
       // Emit proof event
-      await this.emitWebhookEvent("mobile-proof", proofEvent);
+      await this.emitWebhookEvent('mobile-proof', proofEvent);
 
       // Trigger push notification for proof requests
-      if (eventType === "proof-request") {
+      if ('proof-request' === eventType) {
         await this.triggerProofNotification(proofEvent);
       }
     } catch (error) {
-      this.logger.error("Failed to handle proof webhook:", error);
+      this.logger.error('Failed to handle proof webhook:', error);
     }
   }
 
@@ -303,19 +303,19 @@ export class RealDIDCommWebhookService {
     payload: DIDCommWebhookPayload
   ): Promise<void> {
     try {
-      this.logger.log("Trust ping received:", {
+      this.logger.log('Trust ping received:', {
         connectionId: payload.connectionId,
-        type: payload["@type"],
+        type: payload['@type']
       });
 
       // Emit trust ping event
-      await this.emitWebhookEvent("mobile-trust-ping", {
+      await this.emitWebhookEvent('mobile-trust-ping', {
         connectionId: payload.connectionId,
-        type: payload["@type"],
-        timestamp: payload.timestamp,
+        type: payload['@type'],
+        timestamp: payload.timestamp
       });
     } catch (error) {
-      this.logger.error("Failed to handle trust ping webhook:", error);
+      this.logger.error('Failed to handle trust ping webhook:', error);
     }
   }
 
@@ -385,16 +385,16 @@ export class RealDIDCommWebhookService {
   ): Promise<void> {
     try {
       // Emit notification trigger event - this will be picked up by push notification service
-      await this.emitWebhookEvent("trigger-notification", {
-        type: "connection-established",
+      await this.emitWebhookEvent('trigger-notification', {
+        type: 'connection-established',
         connectionId: event.connectionId,
         orgId: event.orgId,
         userId: event.userId,
         deviceId: event.deviceId,
-        timestamp: event.timestamp,
+        timestamp: event.timestamp
       });
     } catch (error) {
-      this.logger.error("Failed to trigger connection notification:", error);
+      this.logger.error('Failed to trigger connection notification:', error);
     }
   }
 
@@ -403,20 +403,20 @@ export class RealDIDCommWebhookService {
   ): Promise<void> {
     try {
       const notificationType =
-        event.eventType === "credential-offer"
-          ? "credential-offer"
-          : "credential-received";
+        'credential-offer' === event.eventType
+          ? 'credential-offer'
+          : 'credential-received';
 
-      await this.emitWebhookEvent("trigger-notification", {
+      await this.emitWebhookEvent('trigger-notification', {
         type: notificationType,
         connectionId: event.connectionId,
         credentialExchangeId: event.credentialExchangeId,
         orgId: event.orgId,
         credentialDefinitionId: event.credentialDefinitionId,
-        timestamp: event.timestamp,
+        timestamp: event.timestamp
       });
     } catch (error) {
-      this.logger.error("Failed to trigger credential notification:", error);
+      this.logger.error('Failed to trigger credential notification:', error);
     }
   }
 
@@ -424,16 +424,16 @@ export class RealDIDCommWebhookService {
     event: MobileProofEvent
   ): Promise<void> {
     try {
-      await this.emitWebhookEvent("trigger-notification", {
-        type: "proof-request",
+      await this.emitWebhookEvent('trigger-notification', {
+        type: 'proof-request',
         connectionId: event.connectionId,
         proofExchangeId: event.proofExchangeId,
         orgId: event.orgId,
         proofName: event.proofName,
-        timestamp: event.timestamp,
+        timestamp: event.timestamp
       });
     } catch (error) {
-      this.logger.error("Failed to trigger proof notification:", error);
+      this.logger.error('Failed to trigger proof notification:', error);
     }
   }
 

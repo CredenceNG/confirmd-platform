@@ -1,21 +1,21 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class WebhookReceiverService {
-  private readonly logger = new Logger("WebhookReceiverService");
+  private readonly logger = new Logger('WebhookReceiverService');
 
-  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
-    this.logger.log("🎣 WebhookReceiverService initialized");
+  constructor(@Inject('NATS_CLIENT') private readonly natsClient: ClientProxy) {
+    this.logger.log('🎣 WebhookReceiverService initialized');
   }
 
   async processConnectionWebhook(webhookData: any): Promise<void> {
-    this.logger.log("🔗 === PROCESSING CONNECTION WEBHOOK ===");
-    this.logger.log(`📊 Connection State: ${webhookData.state || "unknown"}`);
+    this.logger.log('🔗 === PROCESSING CONNECTION WEBHOOK ===');
+    this.logger.log(`📊 Connection State: ${webhookData.state || 'unknown'}`);
     this.logger.log(
       `🆔 Connection ID: ${
-        webhookData.id || webhookData.connectionId || "unknown"
+        webhookData.id || webhookData.connectionId || 'unknown'
       }`
     );
     this.logger.log(
@@ -33,15 +33,15 @@ export class WebhookReceiverService {
 
       // Forward the webhook to the connection service for processing
       const result = await this.natsClient
-        .send({ cmd: "webhook-get-connection" }, connectionPayload)
+        .send({ cmd: 'webhook-get-connection' }, connectionPayload)
         .toPromise();
 
       this.logger.log(
-        "✅ Connection webhook forwarded to connection service successfully"
+        '✅ Connection webhook forwarded to connection service successfully'
       );
       return result;
     } catch (error) {
-      this.logger.error("❌ Failed to process connection webhook:", error);
+      this.logger.error('❌ Failed to process connection webhook:', error);
       throw error;
     }
   }
@@ -50,7 +50,7 @@ export class WebhookReceiverService {
    * Transform raw webhook data into ICreateConnection format
    */
   private transformWebhookToConnectionPayload(webhookData: any): any {
-    this.logger.log("🔄 === WEBHOOK PAYLOAD TRANSFORMATION ===");
+    this.logger.log('🔄 === WEBHOOK PAYLOAD TRANSFORMATION ===');
     this.logger.log(
       `📋 Raw webhook data: ${JSON.stringify(webhookData, null, 2)}`
     );
@@ -70,7 +70,7 @@ export class WebhookReceiverService {
     if (
       !orgId &&
       webhookData.contextCorrelationId &&
-      webhookData.contextCorrelationId !== "default"
+      'default' !== webhookData.contextCorrelationId
     ) {
       // contextCorrelationId is the tenant ID - we need to map it to orgId
       orgId = webhookData.contextCorrelationId;
@@ -78,10 +78,10 @@ export class WebhookReceiverService {
     }
 
     // If still no orgId, this is a problem - log and use a default
-    if (!orgId || orgId === "unknown-org") {
-      this.logger.warn("⚠️ No valid orgId found in webhook data");
+    if (!orgId || 'unknown-org' === orgId) {
+      this.logger.warn('⚠️ No valid orgId found in webhook data');
       this.logger.warn(
-        `⚠️ Available fields: ${Object.keys(webhookData).join(", ")}`
+        `⚠️ Available fields: ${Object.keys(webhookData).join(', ')}`
       );
       // Set to null so the repository can handle the lookup properly
       orgId = null;
@@ -98,14 +98,14 @@ export class WebhookReceiverService {
         new Date().toISOString(),
       id:
         webhookData.id || webhookData.connectionId || webhookData.connection_id,
-      state: webhookData.state || "unknown",
-      imageUrl: webhookData.imageUrl || webhookData.image_url || "",
+      state: webhookData.state || 'unknown',
+      imageUrl: webhookData.imageUrl || webhookData.image_url || '',
       orgDid: webhookData.orgDid || webhookData.did || webhookData.myDid,
       theirLabel:
         webhookData.theirLabel ||
         webhookData.their_label ||
         webhookData.alias ||
-        "Unknown",
+        'Unknown',
       autoAcceptConnection:
         webhookData.autoAcceptConnection !== undefined
           ? webhookData.autoAcceptConnection
@@ -114,89 +114,89 @@ export class WebhookReceiverService {
         webhookData.outOfBandId ||
         webhookData.outbound_id ||
         webhookData.invitation_msg_id ||
-        "",
+        '',
       orgId,
       contextCorrelationId:
         webhookData.contextCorrelationId ||
         webhookData.context_correlation_id ||
-        "",
+        '',
       // Add required fields for database validation
-      createdBy: webhookData.createdBy || "system-webhook",
-      lastChangedBy: webhookData.lastChangedBy || "system-webhook",
+      createdBy: webhookData.createdBy || 'system-webhook',
+      lastChangedBy: webhookData.lastChangedBy || 'system-webhook'
     };
 
     return {
       connectionDto,
-      orgId,
+      orgId
     };
   }
 
   async processCredentialWebhook(webhookData: any): Promise<void> {
-    this.logger.log("🎓 === PROCESSING CREDENTIAL WEBHOOK ===");
-    this.logger.log(`📊 Credential State: ${webhookData.state || "unknown"}`);
+    this.logger.log('🎓 === PROCESSING CREDENTIAL WEBHOOK ===');
+    this.logger.log(`📊 Credential State: ${webhookData.state || 'unknown'}`);
 
     try {
-      // Forward to issuance service
+      // Forward to issuance service for webhook event processing
       const result = await this.natsClient
-        .send({ cmd: "webhook-credential-received" }, webhookData)
+        .send({ cmd: 'webhook-credential-received' }, webhookData)
         .toPromise();
 
-      this.logger.log("✅ Credential webhook processed successfully");
+      this.logger.log('✅ Credential webhook processed successfully');
       return result;
     } catch (error) {
-      this.logger.error("❌ Failed to process credential webhook:", error);
+      this.logger.error('❌ Failed to process credential webhook:', error);
       throw error;
     }
   }
 
   async processProofWebhook(webhookData: any): Promise<void> {
-    this.logger.log("🔍 === PROCESSING PROOF WEBHOOK ===");
-    this.logger.log(`📊 Proof State: ${webhookData.state || "unknown"}`);
+    this.logger.log('🔍 === PROCESSING PROOF WEBHOOK ===');
+    this.logger.log(`📊 Proof State: ${webhookData.state || 'unknown'}`);
 
     try {
-      // Forward to verification service
+      // Forward to verification service for webhook event processing
       const result = await this.natsClient
-        .send({ cmd: "webhook-proof-received" }, webhookData)
+        .send({ cmd: 'webhook-proof-received' }, webhookData)
         .toPromise();
 
-      this.logger.log("✅ Proof webhook processed successfully");
+      this.logger.log('✅ Proof webhook processed successfully');
       return result;
     } catch (error) {
-      this.logger.error("❌ Failed to process proof webhook:", error);
+      this.logger.error('❌ Failed to process proof webhook:', error);
       throw error;
     }
   }
 
   async processBasicMessageWebhook(webhookData: any): Promise<void> {
-    this.logger.log("💬 === PROCESSING BASIC MESSAGE WEBHOOK ===");
+    this.logger.log('💬 === PROCESSING BASIC MESSAGE WEBHOOK ===');
 
     try {
       // Forward to connection service
       const result = await this.natsClient
-        .send({ cmd: "webhook-basic-message-received" }, webhookData)
+        .send({ cmd: 'webhook-basic-message-received' }, webhookData)
         .toPromise();
 
-      this.logger.log("✅ Basic message webhook processed successfully");
+      this.logger.log('✅ Basic message webhook processed successfully');
       return result;
     } catch (error) {
-      this.logger.error("❌ Failed to process basic message webhook:", error);
+      this.logger.error('❌ Failed to process basic message webhook:', error);
       throw error;
     }
   }
 
   async processQuestionAnswerWebhook(webhookData: any): Promise<void> {
-    this.logger.log("❓ === PROCESSING QUESTION-ANSWER WEBHOOK ===");
+    this.logger.log('❓ === PROCESSING QUESTION-ANSWER WEBHOOK ===');
 
     try {
       // Forward to connection service
       const result = await this.natsClient
-        .send({ cmd: "webhook-question-answer-received" }, webhookData)
+        .send({ cmd: 'webhook-question-answer-received' }, webhookData)
         .toPromise();
 
-      this.logger.log("✅ Question-answer webhook processed successfully");
+      this.logger.log('✅ Question-answer webhook processed successfully');
       return result;
     } catch (error) {
-      this.logger.error("❌ Failed to process question-answer webhook:", error);
+      this.logger.error('❌ Failed to process question-answer webhook:', error);
       throw error;
     }
   }
@@ -205,21 +205,34 @@ export class WebhookReceiverService {
    * Main webhook processing method that routes to specific handlers
    */
   async processWebhookEvent(webhookData: any): Promise<any> {
-    this.logger.log("🎯 === GENERAL WEBHOOK EVENT PROCESSING ===");
+    this.logger.log('🎯 === GENERAL WEBHOOK EVENT PROCESSING ===');
     this.logger.log(`📦 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
 
     try {
       // Determine webhook type based on the data structure
       if (
+        webhookData.credentialId ||
+        webhookData.credential_id ||
+        webhookData.credentialAttributes ||
+        webhookData.credentialExchangeId ||
+        (webhookData.metadata &&
+          webhookData.metadata['_anoncreds/credential']) ||
+        (webhookData.state &&
+          (webhookData.state.includes('offer') ||
+            webhookData.state.includes('credential') ||
+            webhookData.state.includes('issued') ||
+            'done' === webhookData.state) &&
+          (webhookData.threadId || webhookData.thread_id))
+      ) {
+        // Credential-related webhook
+        return await this.processCredentialWebhook(webhookData);
+      } else if (
         webhookData.connectionId ||
         webhookData.connection_id ||
-        webhookData.state
+        (webhookData.state && !webhookData.credentialAttributes)
       ) {
         // Connection-related webhook
         return await this.processConnectionWebhook(webhookData);
-      } else if (webhookData.credentialId || webhookData.credential_id) {
-        // Credential-related webhook
-        return await this.processCredentialWebhook(webhookData);
       } else if (
         webhookData.proofId ||
         webhookData.proof_id ||
@@ -233,12 +246,12 @@ export class WebhookReceiverService {
       } else {
         // Default to basic message or connection webhook
         this.logger.log(
-          "🔄 Unknown webhook type, defaulting to connection processing"
+          '🔄 Unknown webhook type, defaulting to connection processing'
         );
         return await this.processConnectionWebhook(webhookData);
       }
     } catch (error) {
-      this.logger.error("❌ Failed to process webhook event:", error);
+      this.logger.error('❌ Failed to process webhook event:', error);
       throw error;
     }
   }

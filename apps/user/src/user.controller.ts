@@ -10,24 +10,24 @@ import {
   IUserResetPassword,
   IUserDeletedActivity,
   UserKeycloakId,
-  IUserForgotPassword,
-} from "../interfaces/user.interface";
-import { AcceptRejectInvitationDto } from "../dtos/accept-reject-invitation.dto";
-import { Controller } from "@nestjs/common";
-import { MessagePattern } from "@nestjs/microservices";
-import { UserService } from "./user.service";
-import { VerifyEmailTokenDto } from "../dtos/verify-email.dto";
+  IUserForgotPassword
+} from '../interfaces/user.interface';
+import { AcceptRejectInvitationDto } from '../dtos/accept-reject-invitation.dto';
+import { Controller } from '@nestjs/common';
+import { MessagePattern } from '@nestjs/microservices';
+import { UserService } from './user.service';
+import { VerifyEmailTokenDto } from '../dtos/verify-email.dto';
 // eslint-disable-next-line camelcase
-import { user, user_org_roles } from "@prisma/client";
-import { IUsersActivity } from "libs/user-activity/interface";
+import { user, user_org_roles } from '@prisma/client';
+import { IUsersActivity } from 'libs/user-activity/interface';
 import {
   ISendVerificationEmail,
   ISignInUser,
   IVerifyUserEmail,
   IUserInvitations,
   IResetPasswordResponse,
-  ISignUpUserResponse,
-} from "@credebl/common/interfaces/user.interface";
+  ISignUpUserResponse
+} from '@credebl/common/interfaces/user.interface';
 // import { AddPasskeyDetailsDto } from 'apps/api-gateway/src/user/dto/add-user.dto';
 
 @Controller()
@@ -39,7 +39,7 @@ export class UserController {
    * @param email
    * @returns User's verification email sent status
    */
-  @MessagePattern({ cmd: "send-verification-mail" })
+  @MessagePattern({ cmd: 'send-verification-mail' })
   async sendVerificationMail(payload: {
     userEmailVerification: ISendVerificationEmail;
   }): Promise<ISendVerificationEmail> {
@@ -52,7 +52,7 @@ export class UserController {
    * @param verificationcode
    * @returns User's email verification status
    */
-  @MessagePattern({ cmd: "user-email-verification" })
+  @MessagePattern({ cmd: 'user-email-verification' })
   async verifyEmail(payload: {
     param: VerifyEmailTokenDto;
   }): Promise<IVerifyUserEmail> {
@@ -63,74 +63,74 @@ export class UserController {
    * @returns User's access token details
    */
 
-  @MessagePattern({ cmd: "user-holder-login" })
+  @MessagePattern({ cmd: 'user-holder-login' })
   async login(payload: IUserSignIn): Promise<ISignInUser> {
     const loginRes = await this.userService.login(payload);
     return loginRes;
   }
 
-  @MessagePattern({ cmd: "refresh-token-details" })
+  @MessagePattern({ cmd: 'refresh-token-details' })
   async refreshTokenDetails(refreshToken: string): Promise<ISignInUser> {
     return this.userService.refreshTokenDetails(refreshToken);
   }
 
-  @MessagePattern({ cmd: "user-reset-password" })
+  @MessagePattern({ cmd: 'user-reset-password' })
   async resetPassword(
     payload: IUserResetPassword
   ): Promise<IResetPasswordResponse> {
     return this.userService.resetPassword(payload);
   }
 
-  @MessagePattern({ cmd: "user-set-token-password" })
+  @MessagePattern({ cmd: 'user-set-token-password' })
   async resetTokenPassword(
     payload: IUserResetPassword
   ): Promise<IResetPasswordResponse> {
     return this.userService.resetTokenPassword(payload);
   }
 
-  @MessagePattern({ cmd: "user-forgot-password" })
+  @MessagePattern({ cmd: 'user-forgot-password' })
   async forgotPassword(
     payload: IUserForgotPassword
   ): Promise<IResetPasswordResponse> {
     return this.userService.forgotPassword(payload);
   }
 
-  @MessagePattern({ cmd: "get-user-profile" })
+  @MessagePattern({ cmd: 'get-user-profile' })
   async getProfile(payload: { id }): Promise<IUsersProfile> {
     const userProfile = await this.userService.getProfile(payload);
     return userProfile;
   }
 
-  @MessagePattern({ cmd: "get-user-public-profile" })
+  @MessagePattern({ cmd: 'get-user-public-profile' })
   async getPublicProfile(payload: { username }): Promise<IUsersProfile> {
     return this.userService.getPublicProfile(payload);
   }
   /**
    * @returns User details
    */
-  @MessagePattern({ cmd: "update-user-profile" })
+  @MessagePattern({ cmd: 'update-user-profile' })
   async updateUserProfile(payload: {
     updateUserProfileDto: UpdateUserProfile;
   }): Promise<user> {
     return this.userService.updateUserProfile(payload.updateUserProfileDto);
   }
 
-  @MessagePattern({ cmd: "get-user-by-supabase" })
+  @MessagePattern({ cmd: 'get-user-by-supabase' })
   async findSupabaseUser(payload: { id }): Promise<object> {
     return this.userService.findSupabaseUser(payload);
   }
 
-  @MessagePattern({ cmd: "get-user-by-keycloak" })
+  @MessagePattern({ cmd: 'get-user-by-keycloak' })
   async findKeycloakUser(payload: { id }): Promise<object> {
     return this.userService.findKeycloakUser(payload);
   }
 
-  @MessagePattern({ cmd: "get-user-by-mail" })
+  @MessagePattern({ cmd: 'get-user-by-mail' })
   async findUserByEmail(payload: { email }): Promise<object> {
     return this.userService.findUserByEmail(payload);
   }
 
-  @MessagePattern({ cmd: "get-user-by-user-id" })
+  @MessagePattern({ cmd: 'get-user-by-user-id' })
   async findUserByUserId(id: string): Promise<object> {
     return this.userService.findUserByUserId(id);
   }
@@ -138,7 +138,7 @@ export class UserController {
   /**
    * @returns Organization invitation data
    */
-  @MessagePattern({ cmd: "get-org-invitations" })
+  @MessagePattern({ cmd: 'get-org-invitations' })
   async invitations(payload: {
     id;
     status;
@@ -154,7 +154,7 @@ export class UserController {
    * @param payload
    * @returns Organization invitation status  fetch-organization-users
    */
-  @MessagePattern({ cmd: "accept-reject-invitations" })
+  @MessagePattern({ cmd: 'accept-reject-invitations' })
   async acceptRejectInvitations(payload: {
     acceptRejectInvitation: AcceptRejectInvitationDto;
     userId: string;
@@ -170,7 +170,7 @@ export class UserController {
    * @param payload
    * @returns organization users list
    */
-  @MessagePattern({ cmd: "fetch-organization-user" })
+  @MessagePattern({ cmd: 'fetch-organization-user' })
   async getOrganizationUsers(
     payload: { orgId: string } & Payload
   ): Promise<IOrgUsers> {
@@ -186,7 +186,7 @@ export class UserController {
    * @param payload
    * @returns organization users list
    */
-  @MessagePattern({ cmd: "fetch-users" })
+  @MessagePattern({ cmd: 'fetch-users' })
   async get(payload: {
     pageNumber: number;
     pageSize: number;
@@ -204,7 +204,7 @@ export class UserController {
    * @param email
    * @returns User's email exist status
    * */
-  @MessagePattern({ cmd: "check-user-exist" })
+  @MessagePattern({ cmd: 'check-user-exist' })
   async checkUserExist(payload: {
     userEmail: string;
   }): Promise<ICheckUserDetails> {
@@ -214,7 +214,7 @@ export class UserController {
    * @body userInfo
    * @returns User's registration status
    */
-  @MessagePattern({ cmd: "add-user" })
+  @MessagePattern({ cmd: 'add-user' })
   async addUserDetailsInKeyCloak(payload: {
     userInfo: IUserInformation;
   }): Promise<ISignUpUserResponse> {
@@ -222,7 +222,7 @@ export class UserController {
   }
 
   // Fetch Users recent activities
-  @MessagePattern({ cmd: "get-user-activity" })
+  @MessagePattern({ cmd: 'get-user-activity' })
   async getUserActivity(payload: {
     userId: string;
     limit: number;
@@ -230,7 +230,7 @@ export class UserController {
     return this.userService.getUserActivity(payload.userId, payload.limit);
   }
 
-  @MessagePattern({ cmd: "add-passkey" })
+  @MessagePattern({ cmd: 'add-passkey' })
   async addPasskey(payload: {
     userEmail: string;
     userInfo: any;
@@ -240,7 +240,7 @@ export class UserController {
   /**
    * @returns platform settings updated status
    */
-  @MessagePattern({ cmd: "update-platform-settings" })
+  @MessagePattern({ cmd: 'update-platform-settings' })
   async updatePlatformSettings(payload: {
     platformSettings: PlatformSettings;
   }): Promise<string> {
@@ -249,12 +249,12 @@ export class UserController {
   /**
    * @returns platform settings
    */
-  @MessagePattern({ cmd: "fetch-platform-settings" })
+  @MessagePattern({ cmd: 'fetch-platform-settings' })
   async getPlatformSettings(): Promise<object> {
     return this.userService.getPlatformSettings();
   }
 
-  @MessagePattern({ cmd: "org-deleted-activity" })
+  @MessagePattern({ cmd: 'org-deleted-activity' })
   async updateOrgDeletedActivity(payload: {
     orgId;
     userId;
@@ -273,25 +273,25 @@ export class UserController {
     );
   }
 
-  @MessagePattern({ cmd: "get-user-details-by-userId" })
+  @MessagePattern({ cmd: 'get-user-details-by-userId' })
   async getUserDetailsByUserId(payload: { userId: string }): Promise<string> {
     const { userId } = payload;
     return this.userService.getUserDetails(userId);
   }
 
-  @MessagePattern({ cmd: "get-user-keycloak-id" })
+  @MessagePattern({ cmd: 'get-user-keycloak-id' })
   async getUserKeycloakIdByEmail(
     userEmails: string[]
   ): Promise<UserKeycloakId[]> {
     return this.userService.getUserKeycloakIdByEmail(userEmails);
   }
 
-  @MessagePattern({ cmd: "get-user-info-by-user-email-keycloak" })
+  @MessagePattern({ cmd: 'get-user-info-by-user-email-keycloak' })
   async getUserByUserIdInKeycloak(payload: { email }): Promise<string> {
     return this.userService.getUserByUserIdInKeycloak(payload.email);
   }
 
-  @MessagePattern({ cmd: "get-user-organizations" })
+  @MessagePattern({ cmd: 'get-user-organizations' })
   // eslint-disable-next-line camelcase
   async getuserOrganizationByUserId(payload: {
     userId: string;

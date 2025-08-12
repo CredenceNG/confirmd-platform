@@ -425,14 +425,17 @@ export class VerificationController {
   }
 
   /**
+   * @deprecated This direct webhook endpoint is being replaced by centralized webhook processing
+   * via WebhookReceiverService. This endpoint is kept for backward compatibility.
+   * 
    * Receive webhook proof presentation
    * @param orgId The ID of the organization
    * @returns Proof presentation details
    */
   @Post('wh/:orgId/proofs')
   @ApiOperation({
-    summary: 'Receive webhook proof presentation',
-    description: 'Handle proof presentations for a specified organization via a webhook.'
+    summary: 'Receive webhook proof presentation (DEPRECATED)',
+    description: 'Handle proof presentations for a specified organization via a webhook. Use centralized webhook processing instead.'
   })
   @ApiExcludeEndpoint()
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Created', type: ApiResponseDto })
@@ -443,6 +446,7 @@ export class VerificationController {
     @Body() proofPresentationPayload: WebhookPresentationProofDto,
     @Res() res: Response
   ): Promise<Response> {
+    this.logger.warn(`⚠️  DEPRECATED: Direct proof webhook endpoint used.`);
     proofPresentationPayload.type = 'Verification';
 
     if (orgId && 'default' === proofPresentationPayload.contextCorrelationId) {
@@ -466,13 +470,8 @@ export class VerificationController {
         this.logger.debug(`error in getting webhook url ::: ${JSON.stringify(error)}`);
       });
 
-    if (webhookUrl) {
-      await this.verificationService
-        ._postWebhookResponse(webhookUrl, { data: proofPresentationPayload })
-        .catch((error) => {
-          this.logger.debug(`error in posting webhook response to webhook url ::: ${JSON.stringify(error)}`);
-        });
-    }
+    // NOTE: Removed backward webhook communication as our centralized WebhookReceiverService 
+    // already handles all webhook processing and routing
     return res.status(HttpStatus.CREATED).json(finalResponse);
   }
 

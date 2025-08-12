@@ -17,7 +17,7 @@ export class NotificationService extends BaseService {
      * @returns Stored notification data
      */
     async registerOrgWebhookEndpoint(registerOrgWebhhookEndpointDto: RegisterOrgWebhhookEndpointDto): Promise<INotification> {
-        return this.natsClient.sendNatsMessage(this.serviceProxy, 'register-org-webhook-endpoint-for-notification', registerOrgWebhhookEndpointDto);
+        return this.natsClient.sendNatsMessage(this.serviceProxy as any, 'register-org-webhook-endpoint-for-notification', registerOrgWebhhookEndpointDto);
     }
 
     /**
@@ -26,6 +26,6 @@ export class NotificationService extends BaseService {
      * @returns Get notification details
      */
     async sendNotification(notificationRequestBody: SendNotificationDto): Promise<INotification> {
-        return this.natsClient.sendNatsMessage(this.serviceProxy, 'send-notification', notificationRequestBody);
+        return this.natsClient.sendNatsMessage(this.serviceProxy as any, 'send-notification', notificationRequestBody);
     }
 }

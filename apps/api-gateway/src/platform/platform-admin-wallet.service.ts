@@ -3,18 +3,18 @@ import {
   Inject,
   Logger,
   BadRequestException,
-  ConflictException,
-} from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import { BaseService } from "../../../../libs/service/base.service";
-import { NATSClient } from "@credebl/common/NATSClient";
+  ConflictException
+} from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { BaseService } from '../../../../libs/service/base.service';
+import { NATSClient } from '@credebl/common/NATSClient';
 import {
   CreatePlatformAdminWalletDto,
   ConfigurePlatformAdminWalletDto,
   PlatformAdminWalletStatusDto,
   PlatformAdminWalletType,
-  PlatformAdminWalletNetwork,
-} from "./dto/platform-admin-wallet.dto";
+  PlatformAdminWalletNetwork
+} from './dto/platform-admin-wallet.dto';
 
 export interface IPlatformAdminWalletCreationResponse {
   walletId: string;
@@ -47,14 +47,14 @@ interface IUser {
 
 @Injectable()
 export class PlatformAdminWalletService extends BaseService {
-  protected readonly logger = new Logger("PlatformAdminWalletService");
+  protected readonly logger = new Logger('PlatformAdminWalletService');
 
   constructor(
-    @Inject("NATS_CLIENT")
+    @Inject('NATS_CLIENT')
     private readonly platformAdminWalletServiceProxy: ClientProxy,
     private readonly natsClient: NATSClient
   ) {
-    super("PlatformAdminWalletService");
+    super('PlatformAdminWalletService');
   }
 
   /**
@@ -78,7 +78,7 @@ export class PlatformAdminWalletService extends BaseService {
       );
       if (existingWallet) {
         throw new ConflictException(
-          "Platform admin wallet already exists for this user"
+          'Platform admin wallet already exists for this user'
         );
       }
 
@@ -96,12 +96,12 @@ export class PlatformAdminWalletService extends BaseService {
           createWalletDto.walletType || PlatformAdminWalletType.DEDICATED,
         network:
           createWalletDto.network || PlatformAdminWalletNetwork.INDICIO_TESTNET,
-        webhookEndpoint: `${process.env.API_GATEWAY_PROTOCOL || "http"}://${
-          process.env.API_GATEWAY_HOST || "localhost"
-        }:${process.env.API_GATEWAY_PORT || "5000"}/platform-admin/webhooks`,
+        webhookEndpoint: `${process.env.API_GATEWAY_PROTOCOL || 'http'}://${
+          process.env.API_GATEWAY_HOST || 'localhost'
+        }:${process.env.API_GATEWAY_PORT || '5000'}/platform-admin/webhooks`,
         clientSocketId: createWalletDto.clientSocketId,
         config: createWalletDto.config,
-        userId: user.id,
+        userId: user.id
       };
 
       this.logger.log(
@@ -110,8 +110,8 @@ export class PlatformAdminWalletService extends BaseService {
 
       // Send wallet provision request via NATS
       const walletCreationResponse = await this.natsClient.sendNatsMessage(
-        this.platformAdminWalletServiceProxy,
-        "platform-admin-wallet-provision",
+        this.platformAdminWalletServiceProxy as any,
+        'platform-admin-wallet-provision',
         walletProvisionPayload
       );
 
@@ -121,10 +121,10 @@ export class PlatformAdminWalletService extends BaseService {
 
       return {
         walletId: walletName,
-        agentEndpoint: walletCreationResponse?.agentEndpoint || "pending",
-        status: "PROVISIONING",
-        message: "Platform admin wallet creation initiated successfully",
-        agentSpinupStatus: 1,
+        agentEndpoint: walletCreationResponse?.agentEndpoint || 'pending',
+        status: 'PROVISIONING',
+        message: 'Platform admin wallet creation initiated successfully',
+        agentSpinupStatus: 1
       };
     } catch (error) {
       this.logger.error(
@@ -149,14 +149,14 @@ export class PlatformAdminWalletService extends BaseService {
 
       // Get wallet status via NATS
       const walletStatus = await this.natsClient.sendNatsMessage(
-        this.platformAdminWalletServiceProxy,
-        "platform-admin-wallet-status",
+        this.platformAdminWalletServiceProxy as any,
+        'platform-admin-wallet-status',
         { userId: user.id }
       );
 
       if (!walletStatus) {
         throw new BadRequestException(
-          "Platform admin wallet not found for this user"
+          'Platform admin wallet not found for this user'
         );
       }
 
@@ -165,7 +165,7 @@ export class PlatformAdminWalletService extends BaseService {
         endpoint: walletStatus.endpoint,
         createdAt: walletStatus.createdAt,
         updatedAt: walletStatus.updatedAt,
-        additionalInfo: walletStatus.additionalInfo,
+        additionalInfo: walletStatus.additionalInfo
       };
     } catch (error) {
       this.logger.error(
@@ -192,18 +192,18 @@ export class PlatformAdminWalletService extends BaseService {
 
       // Send configuration request via NATS
       const configurationResult = await this.natsClient.sendNatsMessage(
-        this.platformAdminWalletServiceProxy,
-        "platform-admin-wallet-configure",
+        this.platformAdminWalletServiceProxy as any,
+        'platform-admin-wallet-configure',
         {
           userId: user.id,
           config: configureWalletDto.config,
-          clientSocketId: configureWalletDto.clientSocketId,
+          clientSocketId: configureWalletDto.clientSocketId
         }
       );
 
       if (!configurationResult?.success) {
         throw new BadRequestException(
-          "Failed to configure platform admin wallet"
+          'Failed to configure platform admin wallet'
         );
       }
 
@@ -213,7 +213,7 @@ export class PlatformAdminWalletService extends BaseService {
 
       return {
         success: true,
-        message: "Platform admin wallet configured successfully",
+        message: 'Platform admin wallet configured successfully'
       };
     } catch (error) {
       this.logger.error(
@@ -233,8 +233,8 @@ export class PlatformAdminWalletService extends BaseService {
   ): Promise<unknown> {
     try {
       const existingWallet = await this.natsClient.sendNatsMessage(
-        this.platformAdminWalletServiceProxy,
-        "platform-admin-wallet-check-existing",
+        this.platformAdminWalletServiceProxy as any,
+        'platform-admin-wallet-check-existing',
         { userId }
       );
       return existingWallet;
@@ -254,7 +254,7 @@ export class PlatformAdminWalletService extends BaseService {
   private generateWalletName(user: IUser): string {
     const timestamp = Date.now();
     const userIdentifier =
-      user.email?.split("@")[0] || user.id?.substring(0, 8) || "admin";
+      user.email?.split('@')[0] || user.id?.substring(0, 8) || 'admin';
     return `platform-admin-${userIdentifier}-${timestamp}`;
   }
 
@@ -264,8 +264,8 @@ export class PlatformAdminWalletService extends BaseService {
    */
   private generateWalletPassword(): string {
     const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let password = "";
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
     for (let i = 0; 32 > i; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }

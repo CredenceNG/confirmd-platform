@@ -23,13 +23,13 @@ RUN pnpm i --ignore-scripts
 # Copy the rest of the application code
 COPY . .
 
-# Try building with TypeScript compiler directly instead of nest build
-RUN npx tsc --build apps/organization/tsconfig.app.json --verbose || \
-    echo "TypeScript build failed, will compile at runtime"
+# Generate Prisma client before building (required for TypeScript compilation)
+RUN cd libs/prisma-service && \
+    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma generate --schema=./prisma/schema.prisma && \
+    cd ../..
 
-# Fallback: copy source files for runtime compilation
-RUN mkdir -p dist/apps/organization && \
-    cp -r apps/organization/src dist/apps/organization/ || echo "Source copy completed"
+# Build the organization service
+RUN pnpm run build organization
 
 
 # Stage 2: Create the final image
@@ -51,7 +51,5 @@ COPY --from=build /app/node_modules  ./node_modules
 # Set the command to run the microservice with proper setup
 CMD ["sh", "-c", "cd libs/prisma-service && \
     PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma migrate deploy --schema=./prisma/schema.prisma && \
-    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma generate --schema=./prisma/schema.prisma && \
     cd ../.. && \
-    (test -f dist/apps/organization/main.js || pnpm run build organization) && \
     node dist/apps/organization/main.js"]

@@ -1,12 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { promises as fs } from "fs";
-import * as path from "path";
+import { Injectable, Logger } from '@nestjs/common';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class LocalFileService {
   private readonly logger = new Logger(LocalFileService.name);
   private readonly uploadDir =
-    process.env.LOCAL_UPLOAD_DIR || "./uploads/org-logos";
+    process.env.LOCAL_UPLOAD_DIR || './uploads/org-logos';
 
   constructor() {
     this.ensureUploadDirectory();
@@ -26,16 +26,16 @@ export class LocalFileService {
 
   async saveOrgLogo(
     orgLogo: string,
-    filename: string = "orgLogo"
+    filename: string = 'orgLogo'
   ): Promise<string> {
     try {
       // Extract base64 data from the logo string
-      const [, base64Data] = orgLogo.split(",");
+      const [, base64Data] = orgLogo.split(',');
       if (!base64Data) {
-        throw new Error("Invalid base64 image data");
+        throw new Error('Invalid base64 image data');
       }
 
-      const imageBuffer = Buffer.from(base64Data, "base64");
+      const imageBuffer = Buffer.from(base64Data, 'base64');
       const timestamp = Date.now();
       const fileName = `${filename}-${timestamp}.png`;
       const filePath = path.join(this.uploadDir, fileName);
@@ -66,14 +66,14 @@ export class LocalFileService {
       let fileName: string;
 
       // Handle both absolute URLs and relative paths
-      if (logoUrl.startsWith("http://") || logoUrl.startsWith("https://")) {
+      if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
         // Extract filename from absolute URL
         const urlPath = new URL(logoUrl).pathname;
-        if (!urlPath.includes("/uploads/org-logos/")) {
+        if (!urlPath.includes('/uploads/org-logos/')) {
           return; // Not a local org logo file, skip deletion
         }
         fileName = path.basename(urlPath);
-      } else if (logoUrl.startsWith("/uploads/org-logos/")) {
+      } else if (logoUrl.startsWith('/uploads/org-logos/')) {
         // Handle relative path
         fileName = path.basename(logoUrl);
       } else {
@@ -101,14 +101,14 @@ export class LocalFileService {
       let fileName: string;
 
       // Handle both absolute URLs and relative paths
-      if (logoUrl.startsWith("http://") || logoUrl.startsWith("https://")) {
+      if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
         // Extract filename from absolute URL
         const urlPath = new URL(logoUrl).pathname;
-        if (!urlPath.includes("/uploads/org-logos/")) {
+        if (!urlPath.includes('/uploads/org-logos/')) {
           return false; // Not a local org logo file
         }
         fileName = path.basename(urlPath);
-      } else if (logoUrl.startsWith("/uploads/org-logos/")) {
+      } else if (logoUrl.startsWith('/uploads/org-logos/')) {
         // Handle relative path
         fileName = path.basename(logoUrl);
       } else {

@@ -11,14 +11,20 @@ services:
       - '5000:5000'
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./uploads:/app/uploads:ro
     healthcheck:
       test: ['CMD', 'nginx', '-t']
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      default:
+        aliases:
+          - platform.confamd.com
+          - api.confamd.com
 
   postgres:
-    image: postgres:13
+    image: postgres:15
     container_name: confirmd-platform-postgres-1
     restart: always
     environment:
@@ -34,6 +40,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  adminer:
+    image: adminer
+    container_name: confirmd-platform-adminer
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - '8080:8080'
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
 
   nats:
     container_name: nats
@@ -64,20 +81,26 @@ services:
     environment:
       - MINIO_ROOT_USER=dev-access-key
       - MINIO_ROOT_PASSWORD=dev-secret-key
-      - MINIO_SERVER_URL=https://minio.confamd.com
-      - MINIO_BROWSER_REDIRECT_URL=https://minio-console.confamd.com
+      - MINIO_SERVER_URL=http://minio:9000
+      - MINIO_BROWSER_REDIRECT_URL=http://minio:9001
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: ['CMD', 'curl', '-f', 'http://minio:9000/minio/health/live']
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      default:
+        aliases:
+          - minio.confamd.com
+          - minio-console.confamd.com
   api-gateway:
     depends_on:
       - nats # Use depends_on instead of needs
       - redis
+      - postgres # Add postgres dependency
     build:
       context: ./ # Adjust the context path as needed
       dockerfile: Dockerfiles/Dockerfile.api-gateway.dev
@@ -144,6 +167,7 @@ services:
   connection:
     depends_on:
       - nats # Use depends_on instead of needs
+      - postgres
       - api-gateway
       - utility
       - user
@@ -154,13 +178,14 @@ services:
       - ./.env
   issuance:
     depends_on:
-      - nats # Use depends_on instead of needs
+      - nats
       - redis
+      - postgres # Add this
       - api-gateway
       - user
       - connection
     build:
-      context: ./ # Adjust the context path as needed
+      context: ./
       dockerfile: Dockerfiles/Dockerfile.issuance
     env_file:
       - ./.env
@@ -203,7 +228,8 @@ services:
       - /app/dist
   verification:
     depends_on:
-      - nats # Use depends_on instead of needs
+      - nats
+      - postgres # Add this
       - api-gateway
       - user
       - connection
@@ -211,7 +237,7 @@ services:
       - ledger
       - organization
     build:
-      context: ./ # Adjust the context path as needed
+      context: ./
       dockerfile: Dockerfiles/Dockerfile.verification
     env_file:
       - ./.env
@@ -261,6 +287,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     volumes_from:
       - agent-provisioning
+    extra_hosts:
+      - 'platform-admin-agent:host-gateway'
   cloud-wallet:
     depends_on:
       - nats
@@ -291,9 +319,10 @@ services:
   webhook:
     depends_on:
       - nats
+      - postgres # Add this
       - api-gateway
     build:
-      context: ./ # Adjust the context path as needed
+      context: ./
       dockerfile: Dockerfiles/Dockerfile.webhook
     env_file:
       - ./.env
@@ -303,16 +332,25 @@ services:
     container_name: confirmd-platform-cloudflared
     restart: always
     depends_on:
+      - nginx-proxy
       - minio
-      # Added platform-admin dependency since it's running separately
-      # Platform admin runs manually on port 8002
+      - api-gateway
     volumes:
-      - /Users/itopa/.cloudflared:/etc/cloudflared
-    command: tunnel --config /etc/cloudflared/config.yml --no-autoupdate run 00af0aa6-02a4-4c6d-8c8b-ad566348a8c0
+      - /Users/itopa/.cloudflared:/home/nonroot/.cloudflared:ro
+      - ./config/cloudflared-config.yml:/home/nonroot/.cloudflared/config.yml:ro
+    command: tunnel --config /home/nonroot/.cloudflared/config.yml --no-autoupdate run
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     networks:
       - default
+    healthcheck:
+      test: ['CMD', 'cloudflared', 'tunnel', 'ingress', 'validate', '-f', '/home/nonroot/.cloudflared/config.yml']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    environment:
+      - TUNNEL_METRICS=0.0.0.0:8080 # Optional: Enable metrics
 
   # Platform admin now running correctly as: f856e3a4-b09c-4356-82de-b105594eec43_platform-admin
   # Container started manually with proper configuration

@@ -306,51 +306,54 @@ export class ConnectionController {
     }
 
     /**
- * Catch connection webhook responses
- * @param connectionDto The details of the connection
- * @param orgId The ID of the organization
- * @returns Callback URL for connection and created connections details
- */
-  @Post('wh/:orgId/connections/')
-  @ApiExcludeEndpoint()
-  @ApiOperation({
-    summary: 'Catch connection webhook responses',
-    description: 'Receive connection webhook responses for the organization.'
-  })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Created', type: ApiResponseDto })
-  async getConnectionWebhook(
-    @Body() connectionDto: ConnectionDto,
-    @Param('orgId') orgId: string,
-    @Res() res: Response
-  ): Promise<Response> {
-    connectionDto.type = 'Connection';
-    this.logger.debug(`connectionDto ::: ${JSON.stringify(connectionDto)} ${orgId}`);
-  
-    if (orgId && 'default' === connectionDto?.contextCorrelationId) {
-      connectionDto.orgId = orgId;
+     * @deprecated This direct webhook endpoint is being replaced by centralized webhook processing
+     * via WebhookReceiverService. This endpoint is kept for backward compatibility but should
+     * not be used for new integrations.
+     * 
+     * Catch connection webhook responses
+     * @param connectionDto The details of the connection
+     * @param orgId The ID of the organization
+     * @returns Callback URL for connection and created connections details
+     */
+    @Post('wh/:orgId/connections/')
+    @ApiExcludeEndpoint()
+    @ApiOperation({
+        summary: 'Catch connection webhook responses (DEPRECATED)',
+        description: 'Receive connection webhook responses for the organization. Use centralized webhook processing instead.'
+    })
+    @ApiResponse({ status: HttpStatus.CREATED, description: 'Created', type: ApiResponseDto })
+    async getConnectionWebhook(
+        @Body() connectionDto: ConnectionDto,
+        @Param('orgId') orgId: string,
+        @Res() res: Response
+    ): Promise<Response> {
+        // Route this through our centralized webhook processing
+        this.logger.warn(`⚠️  DEPRECATED: Direct webhook endpoint used. Routing through centralized processing.`);
+        
+        connectionDto.type = 'Connection';
+        this.logger.debug(`connectionDto ::: ${JSON.stringify(connectionDto)} ${orgId}`);
+      
+        if (orgId && 'default' === connectionDto?.contextCorrelationId) {
+            connectionDto.orgId = orgId;
+        }
+
+        // Process through existing service but note this is deprecated
+        const connectionData = await this.connectionService.getConnectionWebhook(connectionDto, orgId).catch(error => {
+            this.logger.debug(`error in saving connection webhook ::: ${JSON.stringify(error)}`);
+        });
+        
+        const finalResponse: IResponse = {
+            statusCode: HttpStatus.CREATED,
+            message: ResponseMessages.connection.success.create,
+            data: connectionData
+        };
+        return res.status(HttpStatus.CREATED).json(finalResponse);
     }
 
-    const connectionData = await this.connectionService.getConnectionWebhook(connectionDto, orgId).catch(error => {
-        this.logger.debug(`error in saving connection webhook ::: ${JSON.stringify(error)}`);
-     });
-    const finalResponse: IResponse = {
-      statusCode: HttpStatus.CREATED,
-      message: ResponseMessages.connection.success.create,
-      data: connectionData
-    };
-    const webhookUrl = await this.connectionService._getWebhookUrl(connectionDto?.contextCorrelationId, orgId).catch(error => {
-        this.logger.debug(`error in getting webhook url ::: ${JSON.stringify(error)}`); 
-        
-    });
-    if (webhookUrl) {      
-        await this.connectionService._postWebhookResponse(webhookUrl, { data: connectionDto }).catch(error => {
-            this.logger.debug(`error in posting webhook  response to webhook url ::: ${JSON.stringify(error)}`);
-        });
-    } 
-    return res.status(HttpStatus.CREATED).json(finalResponse);
-  }
-
 /**
+ * @deprecated This direct webhook endpoint is being replaced by centralized webhook processing
+ * via WebhookReceiverService. This endpoint is kept for backward compatibility.
+ * 
  * Catch question-answer webhook responses
  * @param questionAnswerWebhookDto The details of the question-answer webhook
  * @param orgId The ID of the organization
@@ -359,8 +362,8 @@ export class ConnectionController {
   @Post('wh/:orgId/question-answer/')
   @ApiExcludeEndpoint()
   @ApiOperation({
-    summary: 'Catch question-answer webhook responses',
-    description: 'Receive question-answer webhook responses for the organization.'
+    summary: 'Catch question-answer webhook responses (DEPRECATED)',
+    description: 'Receive question-answer webhook responses for the organization. Use centralized webhook processing instead.'
   })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Created', type: ApiResponseDto })
   async getQuestionAnswerWebhook(
@@ -368,6 +371,8 @@ export class ConnectionController {
     @Param('orgId') orgId: string,
     @Res() res: Response
   ): Promise<Response> {
+    this.logger.warn(`⚠️  DEPRECATED: Direct question-answer webhook endpoint used.`);
+    
     questionAnswerWebhookDto.type = 'question-answer';
     this.logger.debug(`questionAnswer ::: ${JSON.stringify(questionAnswerWebhookDto)} ${orgId}`);
   
@@ -376,16 +381,6 @@ export class ConnectionController {
       message: ResponseMessages.connection.success.create,
       data: ''
     };
-    const webhookUrl = await this.connectionService._getWebhookUrl(questionAnswerWebhookDto?.contextCorrelationId, orgId).catch(error => {
-        this.logger.debug(`error in getting webhook url ::: ${JSON.stringify(error)}`);
-  
-    });
-    
-    if (webhookUrl) {
-        await this.connectionService._postWebhookResponse(webhookUrl, { data: questionAnswerWebhookDto }).catch(error => {
-            this.logger.debug(`error in posting webhook  response to webhook url ::: ${JSON.stringify(error)}`);
-        });
-    } 
     return res.status(HttpStatus.CREATED).json(finalResponse);
   }
   /**

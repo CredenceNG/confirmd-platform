@@ -9,31 +9,31 @@ import {
   Query,
   Res,
   UnauthorizedException,
-  UseFilters,
-} from "@nestjs/common";
-import { AuthzService } from "./authz.service";
-import { CommonService } from "../../../../libs/common/src/common.service";
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ApiResponseDto } from "../dtos/apiResponse.dto";
-import { UserEmailVerificationDto } from "../user/dto/create-user.dto";
-import IResponseType from "@credebl/common/interfaces/response.interface";
-import { ResponseMessages } from "@credebl/common/response-messages";
-import { Response } from "express";
-import { EmailVerificationDto } from "../user/dto/email-verify.dto";
-import { AuthTokenResponse } from "./dtos/auth-token-res.dto";
-import { LoginUserDto } from "../user/dto/login-user.dto";
-import { AddUserDetailsDto } from "../user/dto/add-user.dto";
-import { CustomExceptionFilter } from "apps/api-gateway/common/exception-handler";
-import { ResetPasswordDto } from "./dtos/reset-password.dto";
-import { ForgotPasswordDto } from "./dtos/forgot-password.dto";
-import { ResetTokenPasswordDto } from "./dtos/reset-token-password";
-import { RefreshTokenDto } from "./dtos/refresh-token.dto";
+  UseFilters
+} from '@nestjs/common';
+import { AuthzService } from './authz.service';
+import { CommonService } from '../../../../libs/common/src/common.service';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiResponseDto } from '../dtos/apiResponse.dto';
+import { UserEmailVerificationDto } from '../user/dto/create-user.dto';
+import IResponseType from '@credebl/common/interfaces/response.interface';
+import { ResponseMessages } from '@credebl/common/response-messages';
+import { Response } from 'express';
+import { EmailVerificationDto } from '../user/dto/email-verify.dto';
+import { AuthTokenResponse } from './dtos/auth-token-res.dto';
+import { LoginUserDto } from '../user/dto/login-user.dto';
+import { AddUserDetailsDto } from '../user/dto/add-user.dto';
+import { CustomExceptionFilter } from 'apps/api-gateway/common/exception-handler';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { ResetTokenPasswordDto } from './dtos/reset-token-password';
+import { RefreshTokenDto } from './dtos/refresh-token.dto';
 
-@Controller("auth")
-@ApiTags("auth")
+@Controller('auth')
+@ApiTags('auth')
 @UseFilters(CustomExceptionFilter)
 export class AuthzController {
-  private logger = new Logger("AuthzController");
+  private logger = new Logger('AuthzController');
 
   constructor(
     private readonly authzService: AuthzService,
@@ -47,16 +47,16 @@ export class AuthzController {
    * @param verificationcode The verification code sent to the user's email.
    * @returns Returns the email verification status.
    */
-  @Get("/verify")
+  @Get('/verify')
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: ApiResponseDto,
+    description: 'Success',
+    type: ApiResponseDto
   })
   @ApiOperation({
-    summary: "Verify user’s email",
+    summary: 'Verify user’s email',
     description:
-      "Checks if the provided verification code is valid for the given email.",
+      'Checks if the provided verification code is valid for the given email.'
   })
   async verifyEmail(
     @Query() query: EmailVerificationDto,
@@ -65,7 +65,7 @@ export class AuthzController {
     await this.authzService.verifyEmail(query);
     const finalResponse: IResponseType = {
       statusCode: HttpStatus.OK,
-      message: ResponseMessages.user.success.emaiVerified,
+      message: ResponseMessages.user.success.emaiVerified
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -77,15 +77,15 @@ export class AuthzController {
    * @body UserEmailVerificationDto.
    * @returns The status of the verification email.
    */
-  @Post("/verification-mail")
+  @Post('/verification-mail')
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: "Created",
-    type: ApiResponseDto,
+    description: 'Created',
+    type: ApiResponseDto
   })
   @ApiOperation({
-    summary: "Send verification email",
-    description: "Send verification email to new user",
+    summary: 'Send verification email',
+    description: 'Send verification email to new user'
   })
   async create(
     @Body() userEmailVerification: UserEmailVerificationDto,
@@ -94,7 +94,7 @@ export class AuthzController {
     await this.authzService.sendVerificationMail(userEmailVerification);
     const finalResponse: IResponseType = {
       statusCode: HttpStatus.CREATED,
-      message: ResponseMessages.user.success.sendVerificationCode,
+      message: ResponseMessages.user.success.sendVerificationCode
     };
     return res.status(HttpStatus.CREATED).json(finalResponse);
   }
@@ -105,15 +105,15 @@ export class AuthzController {
    * @body AddUserDetailsDto
    * @returns User's registration status and user details
    */
-  @Post("/signup")
+  @Post('/signup')
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: "Created",
-    type: ApiResponseDto,
+    description: 'Created',
+    type: ApiResponseDto
   })
   @ApiOperation({
-    summary: "Register new user to platform",
-    description: "Register new user to platform with the provided details.",
+    summary: 'Register new user to platform',
+    description: 'Register new user to platform with the provided details.'
   })
   async addUserDetails(
     @Body() userInfo: AddUserDetailsDto,
@@ -123,7 +123,7 @@ export class AuthzController {
     const finalResponse = {
       statusCode: HttpStatus.CREATED,
       message: ResponseMessages.user.success.create,
-      data: userData,
+      data: userData
     };
     return res.status(HttpStatus.CREATED).json(finalResponse);
   }
@@ -133,15 +133,15 @@ export class AuthzController {
    * @body LoginUserDto
    * @returns User's access token details
    */
-  @Post("/signin")
+  @Post('/signin')
   @ApiOperation({
-    summary: "Authenticate the user for the access",
-    description: "Allows registered user to sign.",
+    summary: 'Authenticate the user for the access',
+    description: 'Allows registered user to sign.'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: AuthTokenResponse,
+    description: 'Success',
+    type: AuthTokenResponse
   })
   @ApiBody({ type: LoginUserDto })
   async login(
@@ -159,7 +159,7 @@ export class AuthzController {
       const finalResponse: IResponseType = {
         statusCode: HttpStatus.OK,
         message: ResponseMessages.user.success.login,
-        data: userData,
+        data: userData
       };
 
       return res.status(HttpStatus.OK).json(finalResponse);
@@ -174,16 +174,16 @@ export class AuthzController {
    * @body ResetPasswordDto
    * @returns The password reset status.
    */
-  @Post("/reset-password")
+  @Post('/reset-password')
   @ApiOperation({
-    summary: "Reset password",
+    summary: 'Reset password',
     description:
-      "Allows users to reset a new password which should be different form existing password.",
+      'Allows users to reset a new password which should be different form existing password.'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: ApiResponseDto,
+    description: 'Success',
+    type: ApiResponseDto
   })
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,
@@ -193,7 +193,7 @@ export class AuthzController {
     const finalResponse: IResponseType = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.resetPassword,
-      data: userData,
+      data: userData
     };
     return res.status(HttpStatus.OK).json(finalResponse);
   }
@@ -204,15 +204,15 @@ export class AuthzController {
    * @body ForgotPasswordDto
    * @returns Status message indicating whether the reset link was sent successfully.
    */
-  @Post("/forgot-password")
+  @Post('/forgot-password')
   @ApiOperation({
-    summary: "Forgot password",
-    description: "Sends a password reset link to the user’s email.",
+    summary: 'Forgot password',
+    description: 'Sends a password reset link to the user’s email.'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: ApiResponseDto,
+    description: 'Success',
+    type: ApiResponseDto
   })
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
@@ -222,7 +222,7 @@ export class AuthzController {
     const finalResponse: IResponseType = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.resetPasswordLink,
-      data: userData,
+      data: userData
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -235,19 +235,19 @@ export class AuthzController {
    * @body ResetTokenPasswordDto
    * @returns Status message indicating whether the password reset was successful.
    */
-  @Post("/password-reset/:email")
+  @Post('/password-reset/:email')
   @ApiOperation({
-    summary: "Reset password with verification token",
+    summary: 'Reset password with verification token',
     description:
-      "Resets a user’s password using a verification token sent to their email",
+      'Resets a user’s password using a verification token sent to their email'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: ApiResponseDto,
+    description: 'Success',
+    type: ApiResponseDto
   })
   async resetNewPassword(
-    @Param("email") email: string,
+    @Param('email') email: string,
     @Body() resetTokenPasswordDto: ResetTokenPasswordDto,
     @Res() res: Response
   ): Promise<Response> {
@@ -258,7 +258,7 @@ export class AuthzController {
     const finalResponse: IResponseType = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.resetPassword,
-      data: userData,
+      data: userData
     };
     return res.status(HttpStatus.OK).json(finalResponse);
   }
@@ -269,15 +269,15 @@ export class AuthzController {
    * @body RefreshTokenDto
    * @returns New access token and its details.
    */
-  @Post("/refresh-token")
+  @Post('/refresh-token')
   @ApiOperation({
-    summary: "Token from refresh token",
-    description: "Generates a new access token using a refresh token.",
+    summary: 'Token from refresh token',
+    description: 'Generates a new access token using a refresh token.'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: ApiResponseDto,
+    description: 'Success',
+    type: ApiResponseDto
   })
   async refreshToken(
     @Body() refreshTokenDto: RefreshTokenDto,
@@ -289,7 +289,7 @@ export class AuthzController {
     const finalResponse: IResponseType = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.refreshToken,
-      data: tokenData,
+      data: tokenData
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);

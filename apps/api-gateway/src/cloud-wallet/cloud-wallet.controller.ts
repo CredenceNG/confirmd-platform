@@ -34,6 +34,88 @@ export class CloudWalletController {
     constructor(private readonly cloudWalletService: CloudWalletService) { }
 
     /**
+     * Handle out-of-band (OOB) invitation from mobile apps
+     * @param oob Base64 encoded invitation
+     * @param res Response object
+     * @returns DIDComm handshake response or redirection
+     */
+    @Get('/')
+    @ApiOperation({ summary: 'Handle OOB Invitation', description: 'Endpoint to handle out-of-band DIDComm invitations from mobile apps via query parameter.' })
+    @ApiQuery({ name: 'oob', description: 'Base64 encoded DIDComm invitation', required: false })
+    @ApiResponse({ status: HttpStatus.OK, description: 'OOB invitation processed successfully', type: ApiResponseDto })
+    async handleOOBInvitation(
+        @Query('oob') oob: string,
+        @Res() res: Response
+    ): Promise<Response> {
+        try {
+            if (!oob) {
+                // If no OOB parameter, return a helpful message
+                const response = {
+                    statusCode: HttpStatus.OK,
+                    message: 'Welcome to ConfirmD Platform Cloud Wallet API',
+                    data: {
+                        info: 'To process a DIDComm invitation, include the oob parameter with a base64-encoded invitation',
+                        example: 'https://platform.confamd.com?oob=<base64_encoded_invitation>',
+                        mobileFlow: 'Mobile apps should scan QR codes or click invitation links to trigger DID handshake'
+                    }
+                };
+                return res.status(HttpStatus.OK).json(response);
+            }
+
+            // Process the OOB invitation
+            this.logger.log(`🔗 Processing OOB invitation: ${oob.substring(0, 50)}...`);
+            
+            // Decode the base64 invitation
+            let decodedInvitation;
+            try {
+                const decodedString = Buffer.from(oob, 'base64').toString('utf-8');
+                decodedInvitation = JSON.parse(decodedString);
+                this.logger.log(`📋 Decoded invitation from: ${decodedInvitation.label || 'Unknown'}`);
+            } catch (decodeError) {
+                this.logger.error(`❌ Failed to decode OOB invitation: ${decodeError.message}`);
+                throw new BadRequestException('Invalid OOB invitation format');
+            }
+
+            // Validate invitation structure
+            if (!decodedInvitation['@type'] || !decodedInvitation['@type'].includes('out-of-band')) {
+                throw new BadRequestException('Invalid DIDComm invitation format');
+            }
+
+            // For mobile apps, return the invitation details for processing
+            // Mobile apps typically expect either:
+            // 1. A JSON response with invitation details
+            // 2. A deep link redirect to the mobile app
+            // 3. Instructions for manual processing
+
+            const response = {
+                statusCode: HttpStatus.OK,
+                message: 'DIDComm invitation received successfully',
+                data: {
+                    invitation: decodedInvitation,
+                    instructions: {
+                        mobileApp: 'Use this invitation data to establish a DIDComm connection',
+                        endpoint: '/receive-invitation-url',
+                        method: 'POST',
+                        requiredAuth: 'JWT token required for authenticated users'
+                    },
+                    deepLink: `didcomm://invitation?oob=${oob}` // Standard deep link format
+                }
+            };
+
+            return res.status(HttpStatus.OK).json(response);
+
+        } catch (error) {
+            this.logger.error(`❌ Error processing OOB invitation: ${error.message}`);
+            const errorResponse = {
+                statusCode: HttpStatus.BAD_REQUEST,
+                message: 'Failed to process OOB invitation',
+                data: { error: error.message }
+            };
+            return res.status(HttpStatus.BAD_REQUEST).json(errorResponse);
+        }
+    }
+
+    /**
         * Configure cloud base wallet 
         * @param cloudBaseWalletConfigure
         * @param user 

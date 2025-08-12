@@ -186,7 +186,7 @@ export class SignRawDataDto {
 @RewriteValidationOptions({ whitelist: false })
 export class SignDataDto {
   @ApiProperty({
-    description: "Type of data being signed. Use 'jsonLd' for W3C credentials or 'rawData' for any other JSON.",
+    description: 'Type of data being signed. Use \'jsonLd\' for W3C credentials or \'rawData\' for any other JSON.',
     enum: ['jsonLd', 'rawData']
   })
   @IsIn(['jsonLd', 'rawData'])

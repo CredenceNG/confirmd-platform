@@ -1,11 +1,11 @@
-import { NestFactory } from "@nestjs/core";
-import { HttpExceptionFilter } from "libs/http-exception.filter";
-import { Logger } from "@nestjs/common";
-import { MicroserviceOptions, Transport } from "@nestjs/microservices";
-import { WebhookModule } from "../src/webhook.module";
-import { getNatsOptions } from "@credebl/common/nats.config";
-import { CommonConstants } from "@credebl/common/common.constant";
-import NestjsLoggerServiceAdapter from "@credebl/logger/nestjsLoggerServiceAdapter";
+import { NestFactory } from '@nestjs/core';
+import { HttpExceptionFilter } from 'libs/http-exception.filter';
+import { Logger } from '@nestjs/common';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { WebhookModule } from '../src/webhook.module';
+import { getNatsOptions } from '@credebl/common/nats.config';
+import { CommonConstants } from '@credebl/common/common.constant';
+import NestjsLoggerServiceAdapter from '@credebl/logger/nestjsLoggerServiceAdapter';
 
 const logger = new Logger();
 
@@ -17,9 +17,9 @@ async function bootstrap(): Promise<void> {
 
   // Enable CORS for external webhook calls
   httpApp.enableCors({
-    origin: "*", // Allow external agents to send webhooks
-    methods: ["POST"],
-    allowedHeaders: ["Content-Type"],
+    origin: '*', // Allow external agents to send webhooks
+    methods: ['POST'],
+    allowedHeaders: ['Content-Type']
   });
 
   // Start HTTP server for external webhooks
@@ -37,7 +37,7 @@ async function bootstrap(): Promise<void> {
       options: getNatsOptions(
         CommonConstants.WEBHOOK_SERVICE,
         process.env.ISSUANCE_NKEY_SEED
-      ),
+      )
     }
   );
   natsApp.useLogger(natsApp.get(NestjsLoggerServiceAdapter));
@@ -45,7 +45,7 @@ async function bootstrap(): Promise<void> {
 
   await natsApp.listen();
   logger.log(
-    "🔗 Webhook-Service NATS microservice listening for internal communication"
+    '🔗 Webhook-Service NATS microservice listening for internal communication'
   );
 }
 bootstrap();

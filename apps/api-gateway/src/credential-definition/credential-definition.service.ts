@@ -20,21 +20,21 @@ export class CredentialDefinitionService extends BaseService {
 
   createCredentialDefinition(credDef: CreateCredentialDefinitionDto, user: IUserRequestInterface): Promise<ICredDef> {
     const payload = { credDef, user };   
-    return this.natsClient.sendNatsMessage(this.credDefServiceProxy, 'create-credential-definition', payload);
+    return this.natsClient.sendNatsMessage(this.credDefServiceProxy as any, 'create-credential-definition', payload);
   }
 
   getCredentialDefinitionById(credentialDefinitionId: string, orgId: string): Promise<object> {
     const payload = { credentialDefinitionId, orgId };
-    return this.natsClient.sendNatsMessage(this.credDefServiceProxy, 'get-credential-definition-by-id', payload);
+    return this.natsClient.sendNatsMessage(this.credDefServiceProxy as any, 'get-credential-definition-by-id', payload);
   }
 
   getAllCredDefs(credDefSearchCriteria: GetAllCredDefsDto, user: IUserRequestInterface, orgId: string): Promise<ICredDefData> {
     const payload = { credDefSearchCriteria, user, orgId };
-    return this.natsClient.sendNatsMessage(this.credDefServiceProxy, 'get-all-credential-definitions', payload);
+    return this.natsClient.sendNatsMessage(this.credDefServiceProxy as any, 'get-all-credential-definitions', payload);
   }
 
   getCredentialDefinitionBySchemaId(schemaId: string): Promise<ICredDefs> {
     const payload = { schemaId };
-    return this.natsClient.sendNatsMessage(this.credDefServiceProxy, 'get-all-credential-definitions-by-schema-id', payload);
+    return this.natsClient.sendNatsMessage(this.credDefServiceProxy as any, 'get-all-credential-definitions-by-schema-id', payload);
   }
 }

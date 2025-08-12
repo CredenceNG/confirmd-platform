@@ -490,7 +490,7 @@ export class IssuanceService {
   async natsCallAgent(pattern: IPattern, payload: ISendOfferNatsPayload): Promise<ICreateOfferResponse> {
     try {
       const createOffer = await this.natsClient
-        .send<ICreateOfferResponse>(this.issuanceServiceProxy, pattern, payload)
+        .send<ICreateOfferResponse>(this.issuanceServiceProxy as any, pattern, payload)
 
         .catch((error) => {
           this.logger.error(`catch: ${JSON.stringify(error)}`);
@@ -625,7 +625,7 @@ export class IssuanceService {
     const pattern = { cmd: 'get-schemas-details-by-name' };
     const payload = { schemaName, orgId };
     const schemaDetails = await this.natsClient
-      .send<ISchemaId[]>(this.issuanceServiceProxy, pattern, payload)
+      .send<ISchemaId[]>(this.issuanceServiceProxy as any, pattern, payload)
 
       .catch((error) => {
         this.logger.error(`catch: ${JSON.stringify(error)}`);
@@ -719,11 +719,13 @@ export class IssuanceService {
 
   async getIssueCredentialWebhook(payload: IssueCredentialWebhookPayload): Promise<object> {
     try {
+      this.logger.debug('🔍 getIssueCredentialWebhook called with payload:', JSON.stringify(payload, null, 2));
       const agentDetails = await this.issuanceRepository.saveIssuedCredentialDetails(payload);
+      this.logger.debug('📊 Database save completed with result:', JSON.stringify(agentDetails, null, 2));
       return agentDetails;
     } catch (error) {
       this.logger.error(
-        `[getIssueCredentialsbyCredentialRecordId] - error in get credentials : ${JSON.stringify(error)}`
+        `[getIssueCredentialWebhook] - error in save credentials : ${JSON.stringify(error)}`
       );
       throw new RpcException(error.response ? error.response : error);
     }
@@ -1438,8 +1440,7 @@ export class IssuanceService {
         if (previewRequest.searchByText) {
           const searchTerm = previewRequest.searchByText.toLowerCase();
           filteredData = parsedData.filter(
-            (item) =>
-              item.email_identifier.toLowerCase().includes(searchTerm) || item.name.toLowerCase().includes(searchTerm)
+            (item) => item.email_identifier.toLowerCase().includes(searchTerm) || item.name.toLowerCase().includes(searchTerm)
           );
         }
 
@@ -1527,7 +1528,7 @@ export class IssuanceService {
       templateIds
     };
     const schemaDetails = await this.natsClient
-      .send<ISchemaDetail[]>(this.issuanceServiceProxy, pattern, payload)
+      .send<ISchemaDetail[]>(this.issuanceServiceProxy as any, pattern, payload)
 
       .catch((error) => {
         this.logger.error(`catch: ${JSON.stringify(error)}`);
@@ -2005,7 +2006,7 @@ export class IssuanceService {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const message = await this.natsClient.send<any>(this.issuanceServiceProxy, pattern, payload);
+      const message = await this.natsClient.send<any>(this.issuanceServiceProxy as any, pattern, payload);
       return message;
     } catch (error) {
       this.logger.error(`catch: ${JSON.stringify(error)}`);
@@ -2032,8 +2033,7 @@ export class IssuanceService {
         const batchStartTime = Date.now();
 
         // Create an array of limited promises for the current batch
-        const saveFileDetailsPromises = batch.map((element) =>
-          limit(() => {
+        const saveFileDetailsPromises = batch.map((element) => limit(() => {
             const credentialPayload = {
               credential_data: element,
               schemaId: parsedFileDetails.schemaLedgerId,
@@ -2137,6 +2137,61 @@ export class IssuanceService {
     } catch (error) {
       this.logger.error(`error in getFileDetailsAndFileDataByFileId : ${error}`);
       throw new RpcException(error.response);
+    }
+  }
+
+  /**
+   * Process credential webhook events
+   * @param webhookData Webhook payload from agent
+   */
+  async processCredentialWebhookEvent(webhookData: any): Promise<void> {
+    try {
+      this.logger.log('🎓 Processing credential webhook event');
+      this.logger.log(`📊 Credential State: ${webhookData.state || 'unknown'}`);
+      this.logger.log(`🆔 Credential Exchange ID: ${webhookData.id || 'unknown'}`);
+      
+      // Log the webhook data for debugging
+      this.logger.debug(`📦 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+      
+      // Transform the webhook data into the expected payload format for the existing webhook handler
+      const issueCredentialPayload: IssueCredentialWebhookPayload = {
+        issueCredentialDto: {
+          createDateTime: webhookData.createdAt || webhookData.updatedAt || new Date().toISOString(),
+          connectionId: webhookData.connectionId,
+          threadId: webhookData.threadId,
+          protocolVersion: webhookData.protocolVersion || '1.0',
+          credentialAttributes: webhookData.credentialAttributes || [],
+          orgId: webhookData.orgId || 'default',
+          schemaId: webhookData.schemaId || '',
+          credDefId: webhookData.credDefId || '',
+          id: webhookData.id,
+          state: webhookData.state,
+          contextCorrelationId: webhookData.contextCorrelationId || 'default',
+          metadata: webhookData.metadata || {}
+        },
+        id: webhookData.orgId || 'default'
+      };
+
+      // Extract schema and credential definition IDs from credential data if available
+      if (webhookData.credentialData?.offer?.indy?.schema_id) {
+        issueCredentialPayload.issueCredentialDto.schemaId = webhookData.credentialData.offer.indy.schema_id;
+      }
+      if (webhookData.credentialData?.offer?.indy?.cred_def_id) {
+        issueCredentialPayload.issueCredentialDto.credDefId = webhookData.credentialData.offer.indy.cred_def_id;
+      }
+
+      // Use the existing webhook processing method to save to database
+      this.logger.log('💾 Processing webhook through existing handler');
+      this.logger.debug('🔍 Payload being sent to getIssueCredentialWebhook:', JSON.stringify(issueCredentialPayload, null, 2));
+      
+      const result = await this.getIssueCredentialWebhook(issueCredentialPayload);
+      
+      this.logger.log('✅ Credential webhook event processed successfully');
+      this.logger.debug('📊 Database save result:', JSON.stringify(result, null, 2));
+      
+    } catch (error) {
+      this.logger.error('❌ Failed to process credential webhook event:', error);
+      throw new RpcException(error.response ? error.response : error);
     }
   }
 }

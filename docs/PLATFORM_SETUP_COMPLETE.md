@@ -54,6 +54,12 @@ Frontend → AES Encrypt Password → API Gateway → Decrypt Password → Forwa
 - `KEYCLOAK_DOMAIN`: External Keycloak server at `https://manager.credence.ng/`
 - Database credentials for local PostgreSQL
 
+### Agent Endpoint Configuration
+
+- **Platform Admin Agent**: `http://platform-admin-agent:8002` (internal Docker network)
+- **API Gateway Access**: Exposed through nginx-proxy as `http://api-gateway:5000/api`
+- **External Access**: Available via nginx reverse proxy for external API calls
+
 ### Wallet Creation Flow
 
 1. **API Request**: `POST /orgs/{orgId}/agents/wallet` with proper authentication

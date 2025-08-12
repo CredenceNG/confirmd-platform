@@ -1,35 +1,35 @@
-import { Controller } from "@nestjs/common";
-import { SchemaService } from "./schema.service";
-import { MessagePattern } from "@nestjs/microservices";
+import { Controller } from '@nestjs/common';
+import { SchemaService } from './schema.service';
+import { MessagePattern } from '@nestjs/microservices';
 import {
   ISchema,
   ISchemaCredDeffSearchInterface,
   ISchemaExist,
   ISchemaSearchPayload,
-  SaveSchemaPayload,
-} from "./interfaces/schema-payload.interface";
-import { Prisma, schema } from "@prisma/client";
+  SaveSchemaPayload
+} from './interfaces/schema-payload.interface';
+import { Prisma, schema } from '@prisma/client';
 import {
   ICredDefWithPagination,
   ISchemaData,
   ISchemaDetails,
-  ISchemasWithPagination,
-} from "@credebl/common/interfaces/schema.interface";
-import { IschemaPayload } from "./interfaces/schema.interface";
-import { ISchemaId } from "./schema.interface";
-import { UpdateSchemaDto } from "apps/api-gateway/src/schema/dtos/update-schema-dto";
+  ISchemasWithPagination
+} from '@credebl/common/interfaces/schema.interface';
+import { IschemaPayload } from './interfaces/schema.interface';
+import { ISchemaId } from './schema.interface';
+import { UpdateSchemaDto } from 'apps/api-gateway/src/schema/dtos/update-schema-dto';
 
-@Controller("schema")
+@Controller('schema')
 export class SchemaController {
   constructor(private readonly schemaService: SchemaService) {}
 
-  @MessagePattern({ cmd: "create-schema" })
+  @MessagePattern({ cmd: 'create-schema' })
   async createSchema(payload: IschemaPayload): Promise<ISchemaData> {
     const { schemaDetails, user, orgId } = payload;
     return this.schemaService.createSchema(schemaDetails, user, orgId);
   }
 
-  @MessagePattern({ cmd: "get-schemas-details" })
+  @MessagePattern({ cmd: 'get-schemas-details' })
   async getSchemasDetails(payload: {
     templateIds: string[];
   }): Promise<schema[]> {
@@ -37,7 +37,7 @@ export class SchemaController {
     return this.schemaService.getSchemaDetails(templateIds);
   }
 
-  @MessagePattern({ cmd: "get-schemas-details-by-name" })
+  @MessagePattern({ cmd: 'get-schemas-details-by-name' })
   async getSchemasDetailsBySchemaName(payload: {
     schemaName: string;
     orgId: string;
@@ -46,13 +46,13 @@ export class SchemaController {
     return this.schemaService.getSchemaDetailsBySchemaName(schemaName, orgId);
   }
 
-  @MessagePattern({ cmd: "get-schema-by-id" })
+  @MessagePattern({ cmd: 'get-schema-by-id' })
   async getSchemaById(payload: ISchema): Promise<schema> {
     const { schemaId, orgId } = payload;
     return this.schemaService.getSchemaById(schemaId, orgId);
   }
 
-  @MessagePattern({ cmd: "get-schemas" })
+  @MessagePattern({ cmd: 'get-schemas' })
   async getSchemas(
     schemaSearch: ISchemaSearchPayload
   ): Promise<ISchemasWithPagination> {
@@ -60,14 +60,14 @@ export class SchemaController {
     return this.schemaService.getSchemas(schemaSearchCriteria, orgId);
   }
 
-  @MessagePattern({ cmd: "get-cred-def-list-by-schemas-id" })
+  @MessagePattern({ cmd: 'get-cred-def-list-by-schemas-id' })
   async getcredDefListBySchemaId(
     payload: ISchemaCredDeffSearchInterface
   ): Promise<ICredDefWithPagination> {
     return this.schemaService.getcredDefListBySchemaId(payload);
   }
 
-  @MessagePattern({ cmd: "get-all-schemas" })
+  @MessagePattern({ cmd: 'get-all-schemas' })
   async getAllSchema(
     schemaSearch: ISchemaSearchPayload
   ): Promise<ISchemaDetails> {
@@ -75,7 +75,7 @@ export class SchemaController {
     return this.schemaService.getAllSchema(schemaSearchCriteria);
   }
 
-  @MessagePattern({ cmd: "schema-exist" })
+  @MessagePattern({ cmd: 'schema-exist' })
   async schemaExist(payload: ISchemaExist): Promise<
     {
       id: string;
@@ -96,24 +96,24 @@ export class SchemaController {
     return this.schemaService.schemaExist(payload);
   }
 
-  @MessagePattern({ cmd: "archive-schemas" })
+  @MessagePattern({ cmd: 'archive-schemas' })
   async archiveSchemas(payload: { did: string }): Promise<Prisma.BatchPayload> {
     return this.schemaService.archiveSchemas(payload.did);
   }
 
-  @MessagePattern({ cmd: "store-schema-record" })
+  @MessagePattern({ cmd: 'store-schema-record' })
   async saveSchemaRecord(payload: SaveSchemaPayload): Promise<schema> {
     return this.schemaService.storeSchemaDetails(payload.schemaDetails);
   }
 
-  @MessagePattern({ cmd: "get-schema-record-by-schema-id" })
+  @MessagePattern({ cmd: 'get-schema-record-by-schema-id' })
   async getSchemaRecordBySchemaId(payload: {
     schemaId: string;
   }): Promise<schema> {
     return this.schemaService.getSchemaBySchemaId(payload.schemaId);
   }
 
-  @MessagePattern({ cmd: "update-schema" })
+  @MessagePattern({ cmd: 'update-schema' })
   updateSchema(payload: { schemaDetails: UpdateSchemaDto }): Promise<object> {
     return this.schemaService.updateSchema(payload.schemaDetails);
   }

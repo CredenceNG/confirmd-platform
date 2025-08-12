@@ -1,35 +1,35 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import { BaseService } from "libs/service/base.service";
-import { AcceptRejectInvitationDto } from "./dto/accept-reject-invitation.dto";
-import { GetAllInvitationsDto } from "./dto/get-all-invitations.dto";
-import { UpdateUserProfileDto } from "./dto/update-user-profile.dto";
-import { AddPasskeyDetailsDto } from "./dto/add-user.dto";
-import { UpdatePlatformSettingsDto } from "./dto/update-platform-settings.dto";
+import { Inject, Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { BaseService } from 'libs/service/base.service';
+import { AcceptRejectInvitationDto } from './dto/accept-reject-invitation.dto';
+import { GetAllInvitationsDto } from './dto/get-all-invitations.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { AddPasskeyDetailsDto } from './dto/add-user.dto';
+import { UpdatePlatformSettingsDto } from './dto/update-platform-settings.dto';
 import {
   IUsersProfile,
-  ICheckUserDetails,
-} from "apps/user/interfaces/user.interface";
-import { IUsersActivity } from "libs/user-activity/interface";
-import { IUserInvitations } from "@credebl/common/interfaces/user.interface";
-import { user } from "@prisma/client";
-import { PaginationDto } from "@credebl/common/dtos/pagination.dto";
-import { NATSClient } from "@credebl/common/NATSClient";
+  ICheckUserDetails
+} from 'apps/user/interfaces/user.interface';
+import { IUsersActivity } from 'libs/user-activity/interface';
+import { IUserInvitations } from '@credebl/common/interfaces/user.interface';
+import { user } from '@prisma/client';
+import { PaginationDto } from '@credebl/common/dtos/pagination.dto';
+import { NATSClient } from '@credebl/common/NATSClient';
 
 @Injectable()
 export class UserService extends BaseService {
   constructor(
-    @Inject("NATS_CLIENT") private readonly serviceProxy: ClientProxy,
+    @Inject('NATS_CLIENT') private readonly serviceProxy: ClientProxy,
     private readonly natsClient: NATSClient
   ) {
-    super("User Service");
+    super('User Service');
   }
 
   async getProfile(id: string): Promise<IUsersProfile> {
     const payload = { id };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-user-profile",
+      this.serviceProxy as any,
+      'get-user-profile',
       payload
     );
   }
@@ -37,8 +37,8 @@ export class UserService extends BaseService {
   async getPublicProfile(username: string): Promise<object> {
     const payload = { username };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-user-public-profile",
+      this.serviceProxy as any,
+      'get-user-public-profile',
       payload
     );
   }
@@ -48,8 +48,8 @@ export class UserService extends BaseService {
   ): Promise<user> {
     const payload = { updateUserProfileDto };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "update-user-profile",
+      this.serviceProxy as any,
+      'update-user-profile',
       payload
     );
   }
@@ -57,8 +57,8 @@ export class UserService extends BaseService {
   async findUserinSupabase(id: string): Promise<object> {
     const payload = { id };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-user-by-supabase",
+      this.serviceProxy as any,
+      'get-user-by-supabase',
       payload
     );
   }
@@ -66,8 +66,8 @@ export class UserService extends BaseService {
   async findUserinKeycloak(id: string): Promise<object> {
     const payload = { id };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-user-by-keycloak",
+      this.serviceProxy as any,
+      'get-user-by-keycloak',
       payload
     );
   }
@@ -80,8 +80,8 @@ export class UserService extends BaseService {
     const { pageNumber, pageSize, search } = getAllInvitationsDto;
     const payload = { id, status, pageNumber, pageSize, search };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-org-invitations",
+      this.serviceProxy as any,
+      'get-org-invitations',
       payload
     );
   }
@@ -92,8 +92,8 @@ export class UserService extends BaseService {
   ): Promise<string> {
     const payload = { acceptRejectInvitation, userId };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "accept-reject-invitations",
+      this.serviceProxy as any,
+      'accept-reject-invitations',
       payload
     );
   }
@@ -102,8 +102,8 @@ export class UserService extends BaseService {
     const { pageNumber, pageSize, search } = paginationDto;
     const payload = { pageNumber, pageSize, search };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "fetch-users",
+      this.serviceProxy as any,
+      'fetch-users',
       payload
     );
   }
@@ -111,8 +111,8 @@ export class UserService extends BaseService {
   async checkUserExist(userEmail: string): Promise<ICheckUserDetails> {
     const payload = { userEmail };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "check-user-exist",
+      this.serviceProxy as any,
+      'check-user-exist',
       payload
     );
   }
@@ -123,8 +123,8 @@ export class UserService extends BaseService {
   ): Promise<IUsersActivity[]> {
     const payload = { userId, limit };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-user-activity",
+      this.serviceProxy as any,
+      'get-user-activity',
       payload
     );
   }
@@ -135,8 +135,8 @@ export class UserService extends BaseService {
   ): Promise<string> {
     const payload = { userEmail, userInfo };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "add-passkey",
+      this.serviceProxy as any,
+      'add-passkey',
       payload
     );
   }
@@ -146,25 +146,25 @@ export class UserService extends BaseService {
   ): Promise<string> {
     const payload = { platformSettings };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "update-platform-settings",
+      this.serviceProxy as any,
+      'update-platform-settings',
       payload
     );
   }
 
   async getPlatformSettings(): Promise<object> {
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "fetch-platform-settings",
-      ""
+      this.serviceProxy as any,
+      'fetch-platform-settings',
+      ''
     );
   }
 
   async getUserByUserIdInKeycloak(email: string): Promise<object> {
     const payload = { email };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-user-info-by-user-email-keycloak",
+      this.serviceProxy as any,
+      'get-user-info-by-user-email-keycloak',
       payload
     );
   }
@@ -175,7 +175,7 @@ export class UserService extends BaseService {
   async testPlatformAdminAuth(userId: string): Promise<unknown> {
     const payload = { userId };
 
-    return this.serviceProxy.send({ cmd: "test-platform-admin-auth" }, payload);
+    return this.serviceProxy.send({ cmd: 'test-platform-admin-auth' }, payload);
   }
 
   /**
@@ -184,8 +184,8 @@ export class UserService extends BaseService {
   async createUser(userData: object): Promise<object> {
     const payload = { userData };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "create-user",
+      this.serviceProxy as any,
+      'create-user',
       payload
     );
   }
@@ -196,8 +196,8 @@ export class UserService extends BaseService {
   async updateUserById(id: string, userData: object): Promise<object> {
     const payload = { id, userData };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "update-user-by-id",
+      this.serviceProxy as any,
+      'update-user-by-id',
       payload
     );
   }
@@ -208,8 +208,8 @@ export class UserService extends BaseService {
   async deleteUserById(id: string): Promise<object> {
     const payload = { id };
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "delete-user-by-id",
+      this.serviceProxy as any,
+      'delete-user-by-id',
       payload
     );
   }
@@ -219,8 +219,8 @@ export class UserService extends BaseService {
    */
   async getUserStats(): Promise<object> {
     return this.natsClient.sendNatsMessage(
-      this.serviceProxy,
-      "get-user-stats",
+      this.serviceProxy as any,
+      'get-user-stats',
       {}
     );
   }

@@ -35,7 +35,7 @@ export class VerificationService extends BaseService {
     orgId: string
   ): Promise<IProofPresentationList> {
     const payload = { proofRequestsSearchCriteria, user, orgId };
-    return this.natsClient.sendNatsMessage(this.verificationServiceProxy, 'get-all-proof-presentations', payload);
+    return this.natsClient.sendNatsMessage(this.verificationServiceProxy as any, 'get-all-proof-presentations', payload);
   }
 
   /**
@@ -47,7 +47,7 @@ export class VerificationService extends BaseService {
   getProofPresentationById(proofId: string, orgId: string, user: IUserRequest): Promise<IProofPresentation> {
     const payload = { proofId, orgId, user };
     return this.natsClient.sendNatsMessage(
-      this.verificationServiceProxy,
+      this.verificationServiceProxy as any,
       'get-proof-presentations-by-proofId',
       payload
     );
@@ -61,7 +61,7 @@ export class VerificationService extends BaseService {
   getPresentationDetailsByIssuerId(issuerId: string, user: IUserRequest): Promise<number> {
     const payload = { issuerId, user };
     return this.natsClient.sendNatsMessage(
-      this.verificationServiceProxy,
+      this.verificationServiceProxy as any,
       'get-proof-presentation-details-by-issuerId',
       payload
     );
@@ -74,7 +74,7 @@ export class VerificationService extends BaseService {
    */
   sendProofRequest(requestProofDto: RequestProofDtoV1 | RequestProofDtoV2, user: IUserRequest): Promise<IProofRequest> {
     const payload = { requestProofDto, user };
-    return this.natsClient.sendNatsMessage(this.verificationServiceProxy, 'send-proof-request', payload);
+    return this.natsClient.sendNatsMessage(this.verificationServiceProxy as any, 'send-proof-request', payload);
   }
 
   /**
@@ -85,12 +85,12 @@ export class VerificationService extends BaseService {
    */
   verifyPresentation(proofId: string, orgId: string, user: IUserRequest): Promise<IPresentation> {
     const payload = { proofId, orgId, user };
-    return this.natsClient.sendNatsMessage(this.verificationServiceProxy, 'verify-presentation', payload);
+    return this.natsClient.sendNatsMessage(this.verificationServiceProxy as any, 'verify-presentation', payload);
   }
 
   webhookProofPresentation(orgId: string, proofPresentationPayload: WebhookPresentationProofDto): Promise<object> {
     const payload = { orgId, proofPresentationPayload };
-    return this.natsClient.sendNatsMessage(this.verificationServiceProxy, 'webhook-proof-presentation', payload);
+    return this.natsClient.sendNatsMessage(this.verificationServiceProxy as any, 'webhook-proof-presentation', payload);
   }
 
   /**
@@ -104,14 +104,18 @@ export class VerificationService extends BaseService {
     user: IUserRequest
   ): Promise<object> {
     const payload = { outOfBandRequestProof, user };
-    return this.natsClient.sendNatsMessage(this.verificationServiceProxy, 'send-out-of-band-proof-request', payload);
+    return this.natsClient.sendNatsMessage(this.verificationServiceProxy as any, 'send-out-of-band-proof-request', payload);
   }
 
   getVerifiedProofDetails(proofId: string, orgId: string, user: IUserRequest): Promise<IProofPresentationDetails[]> {
     const payload = { proofId, orgId, user };
-    return this.natsClient.sendNatsMessage(this.verificationServiceProxy, 'get-verified-proof-details', payload);
+    return this.natsClient.sendNatsMessage(this.verificationServiceProxy as any, 'get-verified-proof-details', payload);
   }
 
+  /**
+   * @deprecated This method is no longer used since we moved to centralized webhook processing
+   * via WebhookReceiverService. Kept for backward compatibility.
+   */
   async _getWebhookUrl(tenantId?: string, orgId?: string): Promise<string> {
     const pattern = { cmd: 'get-webhookurl' };
     const payload = { tenantId, orgId };
@@ -126,6 +130,10 @@ export class VerificationService extends BaseService {
     }
   }
 
+  /**
+   * @deprecated This method is no longer used since we moved to centralized webhook processing
+   * via WebhookReceiverService. Kept for backward compatibility.
+   */
   async _postWebhookResponse(webhookUrl: string, data: object): Promise<string> {
     const pattern = { cmd: 'post-webhook-response-to-webhook-url' };
     const payload = { webhookUrl, data };
@@ -142,6 +150,6 @@ export class VerificationService extends BaseService {
 
   async deleteVerificationRecords(orgId: string, userDetails: user): Promise<IVerificationRecords> {
     const payload = { orgId, userDetails };
-    return this.natsClient.sendNatsMessage(this.verificationServiceProxy, 'delete-verification-records', payload);
+    return this.natsClient.sendNatsMessage(this.verificationServiceProxy as any, 'delete-verification-records', payload);
   }
 }

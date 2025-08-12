@@ -183,6 +183,8 @@ export class IssuanceRepository {
   // eslint-disable-next-line camelcase
   async saveIssuedCredentialDetails(payload: IssueCredentialWebhookPayload): Promise<credentials> {
     try {
+      this.logger.debug('🔍 saveIssuedCredentialDetails called with payload:', JSON.stringify(payload, null, 2));
+      
       let organisationId: string;
       const { issueCredentialDto, id } = payload;
 
@@ -192,6 +194,8 @@ export class IssuanceRepository {
       } else {
         organisationId = id;
       }
+
+      this.logger.debug(`🏢 Organization ID resolved: ${organisationId}`);
 
       let schemaId = '';
 
@@ -211,6 +215,9 @@ export class IssuanceRepository {
       if (issueCredentialDto?.metadata?.['_anoncreds/credential']?.credentialDefinitionId) {
         credDefId = issueCredentialDto?.metadata?.['_anoncreds/credential']?.credentialDefinitionId;
       }
+
+      this.logger.debug(`📋 Schema ID: ${schemaId}, Cred Def ID: ${credDefId}`);
+      this.logger.debug(`🔗 Thread ID: ${issueCredentialDto?.threadId}, State: ${issueCredentialDto?.state}`);
 
       const credentialDetails = await this.prisma.credentials.upsert({
         where: {
@@ -239,6 +246,7 @@ export class IssuanceRepository {
         }
       });
 
+      this.logger.debug('✅ Database upsert completed:', JSON.stringify(credentialDetails, null, 2));
       return credentialDetails;
     } catch (error) {
       this.logger.error(`Error in get saveIssuedCredentialDetails: ${error.message} `);

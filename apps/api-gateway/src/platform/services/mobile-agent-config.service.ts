@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import * as crypto from "crypto";
+import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import * as crypto from 'crypto';
 import {
   MobileAgentConfig,
   MobileWebhookRouting,
@@ -10,16 +10,16 @@ import {
   MobileFeaturesConfig,
   MobileNotificationTemplate,
   NotificationDeliveryPreferences,
-  MobileWebhookEventType,
-} from "../interfaces/mobile-agent.interfaces";
+  MobileWebhookEventType
+} from '../interfaces/mobile-agent.interfaces';
 
 @Injectable()
 export class MobileAgentConfigService {
-  private readonly logger = new Logger("MobileAgentConfigService");
+  private readonly logger = new Logger('MobileAgentConfigService');
 
-  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
+  constructor(@Inject('NATS_CLIENT') private readonly natsClient: ClientProxy) {
     this.logger.log(
-      "🚀 MobileAgentConfigService initialized - Enhanced mobile agent configuration management ready"
+      '🚀 MobileAgentConfigService initialized - Enhanced mobile agent configuration management ready'
     );
   }
 
@@ -43,7 +43,7 @@ export class MobileAgentConfigService {
         ...this.getDefaultMobileConfig(organizationId),
         ...currentConfig,
         ...config,
-        organizationId, // Ensure org ID is always set
+        organizationId // Ensure org ID is always set
       };
 
       // Validate configuration
@@ -51,7 +51,7 @@ export class MobileAgentConfigService {
 
       // Save configuration via NATS
       const savedConfig = await this.natsClient
-        .send({ cmd: "save-mobile-agent-config" }, updatedConfig)
+        .send({ cmd: 'save-mobile-agent-config' }, updatedConfig)
         .toPromise();
 
       // Update agent with new configuration
@@ -63,7 +63,7 @@ export class MobileAgentConfigService {
       return savedConfig;
     } catch (error) {
       this.logger.error(
-        "❌ Failed to update mobile agent configuration:",
+        '❌ Failed to update mobile agent configuration:',
         error
       );
       throw error;
@@ -82,13 +82,13 @@ export class MobileAgentConfigService {
 
     try {
       const config = await this.natsClient
-        .send({ cmd: "get-mobile-agent-config" }, { organizationId })
+        .send({ cmd: 'get-mobile-agent-config' }, { organizationId })
         .toPromise();
 
       // Return default config if none exists
       return config || this.getDefaultMobileConfig(organizationId);
     } catch (error) {
-      this.logger.error("❌ Failed to get mobile agent configuration:", error);
+      this.logger.error('❌ Failed to get mobile agent configuration:', error);
       return this.getDefaultMobileConfig(organizationId);
     }
   }
@@ -114,14 +114,14 @@ export class MobileAgentConfigService {
         retryPolicy: routing.retryPolicy || {
           maxRetries: 3,
           retryDelayMs: 1000,
-          exponentialBackoff: true,
+          exponentialBackoff: true
         },
-        authentication: routing.authentication,
+        authentication: routing.authentication
       };
 
       // Save routing configuration
       const savedRouting = await this.natsClient
-        .send({ cmd: "save-mobile-webhook-routing" }, fullRouting)
+        .send({ cmd: 'save-mobile-webhook-routing' }, fullRouting)
         .toPromise();
 
       this.logger.log(
@@ -129,7 +129,7 @@ export class MobileAgentConfigService {
       );
       return savedRouting;
     } catch (error) {
-      this.logger.error("❌ Failed to setup mobile webhook routing:", error);
+      this.logger.error('❌ Failed to setup mobile webhook routing:', error);
       throw error;
     }
   }
@@ -156,13 +156,13 @@ export class MobileAgentConfigService {
           this.getDefaultDeliveryPreferences(),
         fcmConfig: notificationConfig.fcmConfig,
         apnsConfig: notificationConfig.apnsConfig,
-        websocketConfig: notificationConfig.websocketConfig,
+        websocketConfig: notificationConfig.websocketConfig
       };
 
       // Save notification configuration
       const savedConfig = await this.natsClient
         .send(
-          { cmd: "save-mobile-notification-config" },
+          { cmd: 'save-mobile-notification-config' },
           fullNotificationConfig
         )
         .toPromise();
@@ -172,7 +172,7 @@ export class MobileAgentConfigService {
       );
       return savedConfig;
     } catch (error) {
-      this.logger.error("❌ Failed to configure mobile notifications:", error);
+      this.logger.error('❌ Failed to configure mobile notifications:', error);
       throw error;
     }
   }
@@ -200,13 +200,11 @@ export class MobileAgentConfigService {
         // Mobile-optimized connection settings
         autoAcceptConnections: mobileConfig?.autoAcceptConnections ?? true,
         autoAcceptCredentials:
-          mobileConfig?.autoAcceptCredentials ?? "contentApproved",
-        autoAcceptProofs: mobileConfig?.autoAcceptProofs ?? "contentApproved",
+          mobileConfig?.autoAcceptCredentials ?? 'contentApproved',
+        autoAcceptProofs: mobileConfig?.autoAcceptProofs ?? 'contentApproved',
 
         // Enhanced mobile endpoints
-        endpoints: mobileConfig?.endpoints || [
-          this.getDefaultAgentEndpoint(organizationId),
-        ],
+        endpoints: mobileConfig?.endpoints || [this.getDefaultAgentEndpoint(organizationId)],
         webhookUrl: `${process.env.API_GATEWAY_URL}/mobile/webhooks/${organizationId}`,
 
         // Mobile-specific network configuration
@@ -217,19 +215,19 @@ export class MobileAgentConfigService {
         // Mobile-optimized transport settings
         inboundTransport: [
           {
-            transport: "http",
-            port: this.getAvailablePort(),
+            transport: 'http',
+            port: this.getAvailablePort()
           },
           {
-            transport: "ws", // WebSocket for real-time mobile communication
-            port: this.getAvailablePort() + 1,
-          },
+            transport: 'ws', // WebSocket for real-time mobile communication
+            port: this.getAvailablePort() + 1
+          }
         ],
-        outboundTransport: ["http", "ws"],
+        outboundTransport: ['http', 'ws'],
 
         // Mobile-specific features
         tenancy: true, // Enable multi-tenancy for mobile wallets
-        logLevel: "production" === process.env.NODE_ENV ? 1 : 3,
+        logLevel: 'production' === process.env.NODE_ENV ? 1 : 3,
 
         // Mobile wallet compatibility settings
         connectionImageUrl: mobileConfig?.mobileFeatures
@@ -246,8 +244,8 @@ export class MobileAgentConfigService {
           maxConnectionsCache:
             mobileConfig?.mobileFeatures?.maxConnectionsCache ?? 100,
           connectionTimeout:
-            mobileConfig?.mobileFeatures?.connectionTimeout ?? 30000,
-        },
+            mobileConfig?.mobileFeatures?.connectionTimeout ?? 30000
+        }
       };
 
       this.logger.log(
@@ -256,7 +254,7 @@ export class MobileAgentConfigService {
       return deploymentConfig;
     } catch (error) {
       this.logger.error(
-        "❌ Failed to generate mobile agent deployment config:",
+        '❌ Failed to generate mobile agent deployment config:',
         error
       );
       throw error;
@@ -272,35 +270,35 @@ export class MobileAgentConfigService {
     const errors: string[] = [];
 
     if (!config.organizationId) {
-      errors.push("Organization ID is required");
+      errors.push('Organization ID is required');
     }
 
     if (!config.agentLabel || 3 > config.agentLabel.length) {
-      errors.push("Agent label must be at least 3 characters long");
+      errors.push('Agent label must be at least 3 characters long');
     }
 
     if (!config.endpoints || 0 === config.endpoints.length) {
-      errors.push("At least one endpoint is required");
+      errors.push('At least one endpoint is required');
     }
 
     // Validate webhook URL format
     if (config.webhookUrl && !this.isValidUrl(config.webhookUrl)) {
-      errors.push("Invalid webhook URL format");
+      errors.push('Invalid webhook URL format');
     }
 
     // Validate mobile webhook URL format
     if (config.mobileWebhookUrl && !this.isValidUrl(config.mobileWebhookUrl)) {
-      errors.push("Invalid mobile webhook URL format");
+      errors.push('Invalid mobile webhook URL format');
     }
 
     // Validate supported wallets
     if (0 === config.walletCompatibility.supportedWallets.length) {
-      errors.push("At least one supported wallet must be specified");
+      errors.push('At least one supported wallet must be specified');
     }
 
     if (0 < errors.length) {
       throw new Error(
-        `Mobile agent configuration validation failed: ${errors.join(", ")}`
+        `Mobile agent configuration validation failed: ${errors.join(', ')}`
       );
     }
   }
@@ -319,7 +317,7 @@ export class MobileAgentConfigService {
     try {
       // Send configuration update to agent service
       await this.natsClient
-        .send({ cmd: "update-agent-mobile-config" }, { organizationId, config })
+        .send({ cmd: 'update-agent-mobile-config' }, { organizationId, config })
         .toPromise();
 
       this.logger.log(
@@ -327,7 +325,7 @@ export class MobileAgentConfigService {
       );
     } catch (error) {
       this.logger.error(
-        "❌ Failed to apply mobile configuration to agent:",
+        '❌ Failed to apply mobile configuration to agent:',
         error
       );
       throw error;
@@ -342,23 +340,23 @@ export class MobileAgentConfigService {
       organizationId,
       agentLabel: `${organizationId}_mobile_agent`,
       autoAcceptConnections: true,
-      autoAcceptCredentials: "contentApproved",
-      autoAcceptProofs: "contentApproved",
+      autoAcceptCredentials: 'contentApproved',
+      autoAcceptProofs: 'contentApproved',
       webhookUrl: `${process.env.API_GATEWAY_URL}/webhooks/${organizationId}`,
       mobileWebhookUrl: `${process.env.API_GATEWAY_URL}/mobile/webhooks/${organizationId}`,
       endpoints: [this.getDefaultAgentEndpoint(organizationId)],
       ledgerConfig: this.getDefaultLedgerConfig(),
       walletCompatibility: {
-        supportedWallets: ["ariesBifold", "trinsic", "lissi"],
-        protocolVersions: ["didcomm/1.0", "didcomm/2.0"],
-        transportMethods: ["http", "websocket"],
-        credentialFormats: ["indy", "anoncreds"],
+        supportedWallets: ['ariesBifold', 'trinsic', 'lissi'],
+        protocolVersions: ['didcomm/1.0', 'didcomm/2.0'],
+        transportMethods: ['http', 'websocket'],
+        credentialFormats: ['indy', 'anoncreds']
       },
       enableRealTimeNotifications: true,
       websocketEndpoint: `${
-        process.env.WEBSOCKET_URL || "ws://localhost:3001"
+        process.env.WEBSOCKET_URL || 'ws://localhost:3001'
       }/mobile/${organizationId}`,
-      mobileFeatures: this.getDefaultMobileFeatures(),
+      mobileFeatures: this.getDefaultMobileFeatures()
     };
   }
 
@@ -368,20 +366,20 @@ export class MobileAgentConfigService {
   private getDefaultLedgerConfig(): MobileLedgerConfig[] {
     return [
       {
-        name: "Indicio TestNet",
+        name: 'Indicio TestNet',
         genesisUrl:
-          "https://raw.githubusercontent.com/Indicio-tech/indicio-network/main/genesis_files/pool_transactions_testnet_genesis",
-        namespace: "indicio:testnet",
+          'https://raw.githubusercontent.com/Indicio-tech/indicio-network/main/genesis_files/pool_transactions_testnet_genesis',
+        namespace: 'indicio:testnet',
         isProduction: false,
-        mobileOptimized: true,
+        mobileOptimized: true
       },
       {
-        name: "BCovrin Test",
-        genesisUrl: "http://test.bcovrin.vonx.io/genesis",
-        namespace: "bcovrin:test",
+        name: 'BCovrin Test',
+        genesisUrl: 'http://test.bcovrin.vonx.io/genesis',
+        namespace: 'bcovrin:test',
         isProduction: false,
-        mobileOptimized: true,
-      },
+        mobileOptimized: true
+      }
     ];
   }
 
@@ -396,7 +394,7 @@ export class MobileAgentConfigService {
       enableOfflineMode: false,
       maxConnectionsCache: 100,
       connectionTimeout: 30000,
-      retryAttempts: 3,
+      retryAttempts: 3
     };
   }
 
@@ -407,22 +405,22 @@ export class MobileAgentConfigService {
     return [
       {
         eventType: MobileWebhookEventType.MOBILE_CONNECTION_REQUEST,
-        title: "New Connection Request",
-        body: "You have received a new connection request",
-        priority: "high",
+        title: 'New Connection Request',
+        body: 'You have received a new connection request',
+        priority: 'high'
       },
       {
         eventType: MobileWebhookEventType.MOBILE_CREDENTIAL_OFFER,
-        title: "Credential Offer",
-        body: "You have received a new credential offer",
-        priority: "high",
+        title: 'Credential Offer',
+        body: 'You have received a new credential offer',
+        priority: 'high'
       },
       {
         eventType: MobileWebhookEventType.MOBILE_PROOF_REQUEST,
-        title: "Proof Request",
-        body: "You have received a proof request",
-        priority: "high",
-      },
+        title: 'Proof Request',
+        body: 'You have received a proof request',
+        priority: 'high'
+      }
     ];
   }
 
@@ -434,7 +432,7 @@ export class MobileAgentConfigService {
       enablePushNotifications: false,
       enableWebSocketNotifications: true,
       enableEmailNotifications: false,
-      maxNotificationsPerHour: 10,
+      maxNotificationsPerHour: 10
     };
   }
 
@@ -452,12 +450,12 @@ export class MobileAgentConfigService {
 
   private getDefaultAgentEndpoint(organizationId: string): string {
     return `${
-      process.env.AGENT_ENDPOINT_BASE || "https://agents.confamd.com"
+      process.env.AGENT_ENDPOINT_BASE || 'https://agents.confamd.com'
     }/${organizationId}`;
   }
 
   private generateSecureWalletKey(): string {
-    return crypto.randomBytes(32).toString("hex");
+    return crypto.randomBytes(32).toString('hex');
   }
 
   private getAvailablePort(): number {
@@ -470,10 +468,10 @@ export class MobileAgentConfigService {
   ): Promise<{ name: string }> {
     try {
       return await this.natsClient
-        .send({ cmd: "get-organization-details" }, { organizationId })
+        .send({ cmd: 'get-organization-details' }, { organizationId })
         .toPromise();
     } catch (error) {
-      this.logger.error("Failed to get organization details:", error);
+      this.logger.error('Failed to get organization details:', error);
       return { name: `org_${organizationId}` };
     }
   }
@@ -486,7 +484,7 @@ export class MobileAgentConfigService {
     return ledgerConfigs.map((config) => ({
       genesisTransactions: config.genesisUrl,
       indyNamespace: config.namespace,
-      isProduction: config.isProduction,
+      isProduction: config.isProduction
     }));
   }
 }

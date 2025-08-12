@@ -14,7 +14,7 @@ COPY package.json pnpm-lock.yaml ./
 
 # Install all dependencies (including dev dependencies)
 ENV PUPPETEER_SKIP_DOWNLOAD=true
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy configuration files
 COPY nest-cli.json tsconfig*.json ./

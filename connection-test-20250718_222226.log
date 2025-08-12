@@ -1,9 +1,0 @@
-[2025-07-18 22:22:26] 🚀 Starting connection URL monitoring for orgId: test-org-id
-[2025-07-18 22:22:26] 📁 Log file: connection-test-20250718_222226.log
-[2025-07-18 22:22:26] 🌐 API Base URL: http://localhost:5000
-[2025-07-18 22:22:26] 🧪 Testing connection creation endpoint: http://localhost:5000/orgs/test-org-id/connections
-[2025-07-18 22:22:26] 📦 Request payload:
-[2025-07-18 22:22:26] 🚀 Making POST request...
-[2025-07-18 22:22:26] 📊 HTTP Status: 401
-[2025-07-18 22:22:26] ❌ Request failed with status: 401
-[2025-07-18 22:22:26] 📱 Response: {"statusCode":401,"message":"Authentication failed","error":"Unauthorized"}

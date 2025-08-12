@@ -119,7 +119,53 @@ export class WebhookController {
   }
 
   /**
-   * Receive webhook events from external agents
+   * Receive webhook events from Credo Controller (root webhook endpoint)
+   * @param body The webhook payload  
+   * @param res The response object
+   * @returns Success response
+   */
+  @Post()
+  @ApiOperation({
+    summary: 'Receive Webhook Events from Credo Controller',
+    description: 'Root webhook endpoint for receiving all webhook events from Credo Controller and external agents.'
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Webhook event processed successfully' })
+  async receiveRootWebhookEvent(
+    @Body() body: any,
+    @Res() res: Response
+  ): Promise<Response> {
+    this.logger.log('🎯 === ROOT WEBHOOK EVENT RECEIVED ===');
+    this.logger.log(`📨 Event Body: ${JSON.stringify(body, null, 2)}`);
+    this.logger.log(`📊 Headers: ${JSON.stringify(res.req.headers, null, 2)}`);
+    
+    try {
+      // Process the webhook event using WebhookReceiverService
+      const result = await this.webhookReceiverService.processWebhookEvent(body);
+      
+      this.logger.log('✅ Root webhook event processed successfully');
+      
+      const finalResponse: IResponse = {
+        statusCode: HttpStatus.OK,
+        message: 'Root webhook event processed successfully',
+        data: result
+      };
+
+      return res.status(HttpStatus.OK).json(finalResponse);
+    } catch (error) {
+      this.logger.error('❌ Root webhook event processing failed:', error);
+      
+      const errorResponse: IResponse = {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Root webhook event processing failed',
+        data: null
+      };
+
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
+    }
+  }
+
+  /**
+   * Receive webhook events from external agents with topic
    * @param topic The webhook topic (e.g., 'connections', 'credentials', etc.)
    * @param body The webhook payload
    * @param res The response object
@@ -127,8 +173,8 @@ export class WebhookController {
    */
   @Post('/topic')
   @ApiOperation({
-    summary: 'Receive Webhook Events',
-    description: 'Endpoint for receiving webhook events from external agents and clients.'
+    summary: 'Receive Webhook Events with Topic',
+    description: 'Endpoint for receiving webhook events from external agents and clients with specific topics.'
   })
   @ApiResponse({ status: HttpStatus.OK, description: 'Webhook event processed successfully' })
   async receiveWebhookEvent(

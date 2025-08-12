@@ -1,3 +1,4 @@
 {
+  "webhookUrl": "http://host.docker.internal:5000/webhooks",
   "port": 8002
 }

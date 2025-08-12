@@ -10,7 +10,7 @@ export class SupabaseService {
     ) { }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getClient(): SupabaseClient<any, "public", any> {
+    getClient(): SupabaseClient<any, 'public', any> {
         this.logger.log('getting supabase client...');
 
         if (this.clientInstance) {

@@ -21,27 +21,27 @@ export class SchemaService extends BaseService {
 
   createSchema(schemaDetails: GenericSchemaDTO, user: IUserRequestInterface, orgId: string): Promise<ISchemaData> {
     const payload = { schemaDetails, user, orgId };
-    return this.natsClient.sendNatsMessage(this.schemaServiceProxy, 'create-schema', payload);
+    return this.natsClient.sendNatsMessage(this.schemaServiceProxy as any, 'create-schema', payload);
   }
 
   
   getSchemaById(schemaId: string, orgId: string): Promise<ISchemaInfo> {
     const payload = { schemaId, orgId };
-    return this.natsClient.sendNatsMessage(this.schemaServiceProxy, 'get-schema-by-id', payload);
+    return this.natsClient.sendNatsMessage(this.schemaServiceProxy as any, 'get-schema-by-id', payload);
   }
 
   getSchemas(schemaSearchCriteria: ISchemaSearchPayload, user: IUserRequestInterface, orgId: string): Promise<ISchemasWithPagination> {
     const schemaSearch = { schemaSearchCriteria, user, orgId };
-    return this.natsClient.sendNatsMessage(this.schemaServiceProxy, 'get-schemas', schemaSearch);
+    return this.natsClient.sendNatsMessage(this.schemaServiceProxy as any, 'get-schemas', schemaSearch);
   }
 
   getcredDefListBySchemaId(schemaSearchCriteria: GetCredentialDefinitionBySchemaIdDto, user: IUserRequestInterface): Promise<ICredDefWithPagination> {
     const payload = { schemaSearchCriteria, user };
-    return this.natsClient.sendNatsMessage(this.schemaServiceProxy, 'get-cred-def-list-by-schemas-id', payload);
+    return this.natsClient.sendNatsMessage(this.schemaServiceProxy as any, 'get-cred-def-list-by-schemas-id', payload);
   }
 
   updateSchema(schemaDetails: UpdateSchemaDto): Promise<UpdateSchemaResponse> {
     const payload = { schemaDetails };
-    return this.natsClient.sendNatsMessage(this.schemaServiceProxy, 'update-schema', payload);
+    return this.natsClient.sendNatsMessage(this.schemaServiceProxy as any, 'update-schema', payload);
   }
 }

@@ -30,42 +30,42 @@ export class AuthzService extends BaseService {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getUserByKeycloakUserId(keycloakUserId: string): Promise<any> {
-    return this.natsClient.sendNats(this.authServiceProxy, 'get-user-by-keycloakUserId', keycloakUserId);
+    return this.natsClient.sendNats(this.authServiceProxy as any, 'get-user-by-keycloakUserId', keycloakUserId);
   }
 
   async sendVerificationMail(userEmailVerification: UserEmailVerificationDto): Promise<ISendVerificationEmail> {
     const payload = { userEmailVerification };
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'send-verification-mail', payload);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'send-verification-mail', payload);
   }
 
   async verifyEmail(param: EmailVerificationDto): Promise<IVerifyUserEmail> {
     const payload = { param };
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'user-email-verification', payload);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'user-email-verification', payload);
   }
 
   async login(email: string, password?: string, clientId?: string, clientSecret?: string, isPasskey = false): Promise<ISignInUser> {
     const payload = { email, password, isPasskey, clientId, clientSecret };
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'user-holder-login', payload);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'user-holder-login', payload);
   }
   
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<IResetPasswordResponse> {
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'user-reset-password', resetPasswordDto);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'user-reset-password', resetPasswordDto);
   }
   
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<IResetPasswordResponse> {
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'user-forgot-password', forgotPasswordDto);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'user-forgot-password', forgotPasswordDto);
   }
 
   async resetNewPassword(resetTokenPasswordDto: ResetTokenPasswordDto): Promise<IResetPasswordResponse> {
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'user-set-token-password', resetTokenPasswordDto);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'user-set-token-password', resetTokenPasswordDto);
   }
 
   async refreshToken(refreshToken: string): Promise<ISignInUser> {
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'refresh-token-details', refreshToken);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'refresh-token-details', refreshToken);
   }
 
   async addUserDetails(userInfo: AddUserDetailsDto): Promise<ISignUpUserResponse> {
     const payload = { userInfo };
-    return this.natsClient.sendNatsMessage(this.authServiceProxy, 'add-user', payload);
+    return this.natsClient.sendNatsMessage(this.authServiceProxy as any, 'add-user', payload);
   }
 }

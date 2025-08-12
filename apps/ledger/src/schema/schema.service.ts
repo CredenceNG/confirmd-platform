@@ -123,8 +123,7 @@ export class SchemaService extends BaseService {
               });
             }
 
-            const attributeDisplayNamesLowerCase = trimmedAttributes.map((attribute) =>
-              attribute.displayName.toLocaleLowerCase()
+            const attributeDisplayNamesLowerCase = trimmedAttributes.map((attribute) => attribute.displayName.toLocaleLowerCase()
             );
             const duplicateAttributeDisplayNames = attributeDisplayNamesLowerCase.filter(
               (value, index, element) => element.indexOf(value) !== index

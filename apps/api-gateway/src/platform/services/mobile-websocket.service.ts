@@ -1,14 +1,14 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
   OnGatewayConnection,
-  OnGatewayDisconnect,
-} from "@nestjs/websockets";
+  OnGatewayDisconnect
+} from '@nestjs/websockets';
 // import { Server, Socket } from "socket.io"; // Disabled until dependencies available
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 
 // Mock types for Socket.IO until dependencies are available
 type Server = any;
@@ -23,7 +23,7 @@ export interface MobileNotificationPayload {
   credentialId?: string;
   data: Record<string, unknown>;
   timestamp: string;
-  priority: "high" | "normal" | "low";
+  priority: 'high' | 'normal' | 'low';
 }
 
 export interface MobileSocketConnection {
@@ -32,7 +32,7 @@ export interface MobileSocketConnection {
   userId?: string;
   connectionId?: string;
   deviceInfo?: {
-    platform: "ios" | "android" | "web";
+    platform: 'ios' | 'android' | 'web';
     walletType: string;
     userAgent: string;
   };
@@ -42,27 +42,26 @@ export interface MobileSocketConnection {
 
 @WebSocketGateway({
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-    credentials: true,
+    origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true
   },
-  namespace: "/mobile",
+  namespace: '/mobile'
 })
 @Injectable()
 export class MobileWebSocketService
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private readonly logger = new Logger("MobileWebSocketService");
+  private readonly logger = new Logger('MobileWebSocketService');
   private connectedClients = new Map<string, MobileSocketConnection>();
   private organizationSockets = new Map<string, Set<string>>(); // orgId -> socketIds
   private connectionSockets = new Map<string, Set<string>>(); // connectionId -> socketIds
 
-  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
+  constructor(@Inject('NATS_CLIENT') private readonly natsClient: ClientProxy) {
     this.logger.log(
-      "🚀 MobileWebSocketService initialized - Real-time mobile communication ready"
+      '🚀 MobileWebSocketService initialized - Real-time mobile communication ready'
     );
   }
 
@@ -80,7 +79,7 @@ export class MobileWebSocketService
         connectionId,
         platform,
         walletType,
-        userAgent,
+        userAgent
       } = client.handshake.query;
 
       // Validate required parameters
@@ -99,12 +98,12 @@ export class MobileWebSocketService
         userId: userId as string,
         connectionId: connectionId as string,
         deviceInfo: {
-          platform: (platform as "ios" | "android" | "web") || "web",
-          walletType: (walletType as string) || "unknown",
-          userAgent: (userAgent as string) || "unknown",
+          platform: (platform as 'ios' | 'android' | 'web') || 'web',
+          walletType: (walletType as string) || 'unknown',
+          userAgent: (userAgent as string) || 'unknown'
         },
         connectedAt: new Date().toISOString(),
-        lastActivity: new Date().toISOString(),
+        lastActivity: new Date().toISOString()
       };
 
       // Store connection
@@ -133,11 +132,11 @@ export class MobileWebSocketService
       }
 
       // Send welcome message
-      client.emit("mobile:connected", {
-        status: "connected",
+      client.emit('mobile:connected', {
+        status: 'connected',
         organizationId: connection.organizationId,
         capabilities: this.getMobileCapabilities(),
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
 
       // Track connection analytics
@@ -206,7 +205,7 @@ export class MobileWebSocketService
   /**
    * Handle mobile wallet status updates
    */
-  @SubscribeMessage("mobile:status")
+  @SubscribeMessage('mobile:status')
   async handleMobileStatus(
     client: Socket,
     payload: { status: string; data?: Record<string, unknown> }
@@ -226,23 +225,23 @@ export class MobileWebSocketService
     // Broadcast status to organization
     this.server
       .to(`org:${connection.organizationId}`)
-      .emit("mobile:status:update", {
+      .emit('mobile:status:update', {
         socketId: client.id,
         organizationId: connection.organizationId,
         connectionId: connection.connectionId,
         status: payload.status,
         data: payload.data,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
 
     // Send to backend for processing
     await this.natsClient
       .send(
-        { cmd: "mobile-status-update" },
+        { cmd: 'mobile-status-update' },
         {
           connection,
           status: payload.status,
-          data: payload.data,
+          data: payload.data
         }
       )
       .toPromise();
@@ -251,7 +250,7 @@ export class MobileWebSocketService
   /**
    * Handle mobile invitation acceptance
    */
-  @SubscribeMessage("mobile:invitation:accept")
+  @SubscribeMessage('mobile:invitation:accept')
   async handleInvitationAccept(
     client: Socket,
     payload: { invitationId: string; data?: Record<string, unknown> }
@@ -270,32 +269,32 @@ export class MobileWebSocketService
     // Process invitation acceptance
     await this.natsClient
       .send(
-        { cmd: "mobile-invitation-accept" },
+        { cmd: 'mobile-invitation-accept' },
         {
           connection,
           invitationId: payload.invitationId,
-          data: payload.data,
+          data: payload.data
         }
       )
       .toPromise();
 
     // Confirm to mobile client
-    client.emit("mobile:invitation:accepted", {
+    client.emit('mobile:invitation:accepted', {
       invitationId: payload.invitationId,
-      status: "processing",
-      timestamp: new Date().toISOString(),
+      status: 'processing',
+      timestamp: new Date().toISOString()
     });
   }
 
   /**
    * Handle mobile credential responses
    */
-  @SubscribeMessage("mobile:credential:response")
+  @SubscribeMessage('mobile:credential:response')
   async handleCredentialResponse(
     client: Socket,
     payload: {
       credentialId: string;
-      action: "accept" | "reject";
+      action: 'accept' | 'reject';
       data?: Record<string, unknown>;
     }
   ): Promise<void> {
@@ -313,22 +312,22 @@ export class MobileWebSocketService
     // Process credential response
     await this.natsClient
       .send(
-        { cmd: "mobile-credential-response" },
+        { cmd: 'mobile-credential-response' },
         {
           connection,
           credentialId: payload.credentialId,
           action: payload.action,
-          data: payload.data,
+          data: payload.data
         }
       )
       .toPromise();
 
     // Confirm to mobile client
-    client.emit("mobile:credential:response:confirmed", {
+    client.emit('mobile:credential:response:confirmed', {
       credentialId: payload.credentialId,
       action: payload.action,
-      status: "processing",
-      timestamp: new Date().toISOString(),
+      status: 'processing',
+      timestamp: new Date().toISOString()
     });
   }
 
@@ -354,7 +353,7 @@ export class MobileWebSocketService
     // Send to all organization sockets
     this.server
       .to(`org:${organizationId}`)
-      .emit("mobile:notification", notification);
+      .emit('mobile:notification', notification);
 
     this.logger.log(
       `✅ Notification sent to ${socketIds.size} mobile clients in organization: ${organizationId}`
@@ -383,7 +382,7 @@ export class MobileWebSocketService
     // Send to all connection sockets
     this.server
       .to(`connection:${connectionId}`)
-      .emit("mobile:notification", notification);
+      .emit('mobile:notification', notification);
 
     this.logger.log(
       `✅ Notification sent to ${socketIds.size} mobile clients for connection: ${connectionId}`
@@ -407,7 +406,7 @@ export class MobileWebSocketService
       return;
     }
 
-    socket.emit("mobile:notification", notification);
+    socket.emit('mobile:notification', notification);
 
     this.logger.log(`✅ Notification sent to socket: ${socketId}`);
   }
@@ -420,7 +419,7 @@ export class MobileWebSocketService
       `📢 Broadcasting notification to all mobile clients - ${notification.eventType}`
     );
 
-    this.server.emit("mobile:notification", notification);
+    this.server.emit('mobile:notification', notification);
 
     this.logger.log(
       `✅ Notification broadcasted to ${this.connectedClients.size} mobile clients`
@@ -438,7 +437,7 @@ export class MobileWebSocketService
       connectionTracking: true,
       backgroundSync: true,
       pushNotifications: false, // Will be enabled in Step 4
-      offlineMode: false,
+      offlineMode: false
     };
   }
 
@@ -451,16 +450,16 @@ export class MobileWebSocketService
     try {
       await this.natsClient
         .send(
-          { cmd: "track-mobile-connection" },
+          { cmd: 'track-mobile-connection' },
           {
-            type: "websocket_connect",
+            type: 'websocket_connect',
             connection,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date().toISOString()
           }
         )
         .toPromise();
     } catch (error) {
-      this.logger.error("Error tracking mobile connection:", error);
+      this.logger.error('Error tracking mobile connection:', error);
     }
   }
 
@@ -473,17 +472,17 @@ export class MobileWebSocketService
     try {
       await this.natsClient
         .send(
-          { cmd: "track-mobile-disconnection" },
+          { cmd: 'track-mobile-disconnection' },
           {
-            type: "websocket_disconnect",
+            type: 'websocket_disconnect',
             connection,
             duration: Date.now() - new Date(connection.connectedAt).getTime(),
-            timestamp: new Date().toISOString(),
+            timestamp: new Date().toISOString()
           }
         )
         .toPromise();
     } catch (error) {
-      this.logger.error("Error tracking mobile disconnection:", error);
+      this.logger.error('Error tracking mobile disconnection:', error);
     }
   }
 
@@ -500,7 +499,7 @@ export class MobileWebSocketService
       totalConnections: this.connectedClients.size,
       connectionsByOrganization: {} as Record<string, number>,
       connectionsByWallet: {} as Record<string, number>,
-      connectionsByPlatform: {} as Record<string, number>,
+      connectionsByPlatform: {} as Record<string, number>
     };
 
     for (const connection of this.connectedClients.values()) {
@@ -509,12 +508,12 @@ export class MobileWebSocketService
         (stats.connectionsByOrganization[connection.organizationId] || 0) + 1;
 
       // Count by wallet type
-      const walletType = connection.deviceInfo?.walletType || "unknown";
+      const walletType = connection.deviceInfo?.walletType || 'unknown';
       stats.connectionsByWallet[walletType] =
         (stats.connectionsByWallet[walletType] || 0) + 1;
 
       // Count by platform
-      const platform = connection.deviceInfo?.platform || "unknown";
+      const platform = connection.deviceInfo?.platform || 'unknown';
       stats.connectionsByPlatform[platform] =
         (stats.connectionsByPlatform[platform] || 0) + 1;
     }

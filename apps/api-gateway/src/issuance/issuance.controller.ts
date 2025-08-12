@@ -942,6 +942,9 @@ export class IssuanceController {
   }
 
   /**
+   * @deprecated This direct webhook endpoint is being replaced by centralized webhook processing
+   * via WebhookReceiverService. This endpoint is kept for backward compatibility.
+   * 
    * Catch issue credential webhook responses
    * @param issueCredentialDto The details of the issued credential
    * @param id The ID of the organization
@@ -951,14 +954,16 @@ export class IssuanceController {
   @Post('wh/:id/credentials')
   @ApiExcludeEndpoint()
   @ApiOperation({
-    summary: 'Catch issue credential webhook responses',
-    description: 'Callback URL for issue credential'
+    summary: 'Catch issue credential webhook responses (DEPRECATED)',
+    description: 'Callback URL for issue credential. Use centralized webhook processing instead.'
   })
   async getIssueCredentialWebhook(
     @Body() issueCredentialDto: IssuanceDto,
     @Param('id') id: string,
     @Res() res: Response
   ): Promise<Response> {
+    this.logger.warn(`⚠️  DEPRECATED: Direct credential webhook endpoint used.`);
+    
     issueCredentialDto.type = 'Issuance';
 
     if (id && 'default' === issueCredentialDto.contextCorrelationId) {
@@ -981,13 +986,8 @@ export class IssuanceController {
       .catch((error) => {
         this.logger.debug(`error in getting webhook url ::: ${JSON.stringify(error)}`);
       });
-    if (webhookUrl) {
-      const plainIssuanceDto = JSON.parse(JSON.stringify(issueCredentialDto));
-
-      await this.issueCredentialService._postWebhookResponse(webhookUrl, { data: plainIssuanceDto }).catch((error) => {
-        this.logger.debug(`error in posting webhook  response to webhook url ::: ${JSON.stringify(error)}`);
-      });
-    }
+    // NOTE: Removed backward webhook communication as our centralized WebhookReceiverService 
+    // already handles all webhook processing and routing
     return res.status(HttpStatus.CREATED).json(finalResponse);
   }
 

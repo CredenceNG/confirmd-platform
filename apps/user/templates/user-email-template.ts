@@ -8,7 +8,7 @@ export class URLUserEmailTemplate {
     platformName: string
   ): string {
     // Use FRONT_END_URL as base URL when redirectUrl is a wildcard "*" or invalid
-    const baseUrl = redirectUrl === '*' || !redirectUrl || redirectUrl === '' ? process.env.FRONT_END_URL : redirectUrl;
+    const baseUrl = '*' === redirectUrl || !redirectUrl || '' === redirectUrl ? process.env.FRONT_END_URL : redirectUrl;
 
     const apiUrl = new URL(
       clientId === process.env.KEYCLOAK_MANAGEMENT_CLIENT_ID ? '/verify-email-success' : '',

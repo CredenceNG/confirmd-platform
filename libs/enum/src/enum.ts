@@ -122,8 +122,7 @@ const transitionMap: { [key in Invitation]: Invitation[] } = {
   [Invitation.REJECTED]: []
 };
 
-export const transition = (currentStatus: Invitation, nextStatus: Invitation): boolean =>
-  transitionMap[currentStatus].includes(nextStatus);
+export const transition = (currentStatus: Invitation, nextStatus: Invitation): boolean => transitionMap[currentStatus].includes(nextStatus);
 
 export enum SchemaType {
   INDY = 'indy',

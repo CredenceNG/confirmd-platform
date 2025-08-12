@@ -79,7 +79,7 @@ export class MobilePushNotificationService {
   private async initializeFirebase(): Promise<void> {
     try {
       // Check if Firebase is already initialized
-      if (admin.apps.length > 0) {
+      if (0 < admin.apps.length) {
         this.isFirebaseInitialized = true;
         this.logger.log('Firebase Admin already initialized');
         return;
@@ -90,7 +90,7 @@ export class MobilePushNotificationService {
       if (serviceAccount) {
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
-          projectId: process.env.FIREBASE_PROJECT_ID,
+          projectId: process.env.FIREBASE_PROJECT_ID
         });
         this.isFirebaseInitialized = true;
         this.logger.log('Firebase Admin SDK initialized successfully');
@@ -120,7 +120,7 @@ export class MobilePushNotificationService {
         return {
           projectId: process.env.FIREBASE_PROJECT_ID,
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL
         };
       }
 
@@ -146,8 +146,8 @@ export class MobilePushNotificationService {
         requiresAction: true,
         actionButtons: [
           { actionId: 'accept', title: 'Accept', icon: 'check' },
-          { actionId: 'decline', title: 'Decline', icon: 'close' },
-        ],
+          { actionId: 'decline', title: 'Decline', icon: 'close' }
+        ]
       },
       {
         templateId: 'connection-established',
@@ -156,7 +156,7 @@ export class MobilePushNotificationService {
         body: 'Successfully connected with {organizationName}',
         category: 'connection',
         priority: 'normal',
-        requiresAction: false,
+        requiresAction: false
       },
       {
         templateId: 'credential-offer',
@@ -168,8 +168,8 @@ export class MobilePushNotificationService {
         requiresAction: true,
         actionButtons: [
           { actionId: 'accept', title: 'Accept', icon: 'check' },
-          { actionId: 'decline', title: 'Decline', icon: 'close' },
-        ],
+          { actionId: 'decline', title: 'Decline', icon: 'close' }
+        ]
       },
       {
         templateId: 'credential-received',
@@ -178,7 +178,7 @@ export class MobilePushNotificationService {
         body: 'You have successfully received a {credentialType} credential',
         category: 'credential',
         priority: 'normal',
-        requiresAction: false,
+        requiresAction: false
       },
       {
         templateId: 'proof-request',
@@ -190,8 +190,8 @@ export class MobilePushNotificationService {
         requiresAction: true,
         actionButtons: [
           { actionId: 'present', title: 'Present Proof', icon: 'share' },
-          { actionId: 'decline', title: 'Decline', icon: 'close' },
-        ],
+          { actionId: 'decline', title: 'Decline', icon: 'close' }
+        ]
       },
       {
         templateId: 'basic-message',
@@ -200,8 +200,8 @@ export class MobilePushNotificationService {
         body: 'You have a new message from {senderName}',
         category: 'message',
         priority: 'normal',
-        requiresAction: false,
-      },
+        requiresAction: false
+      }
     ];
 
     templates.forEach((template) => {
@@ -230,7 +230,7 @@ export class MobilePushNotificationService {
         appVersion,
         isActive: true,
         registeredAt: new Date().toISOString(),
-        lastSeen: new Date().toISOString(),
+        lastSeen: new Date().toISOString()
       };
 
       this.devices.set(deviceId, device);
@@ -238,13 +238,13 @@ export class MobilePushNotificationService {
       this.logger.log(`Mobile device registered for push notifications`, {
         deviceId,
         userId,
-        platform,
+        platform
       });
 
       // Emit device registration event
       await this.emitNotificationEvent('device-registered', {
         device,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
       this.logger.error('Failed to register mobile device:', error);
@@ -267,7 +267,7 @@ export class MobilePushNotificationService {
         // Emit device unregistration event
         await this.emitNotificationEvent('device-unregistered', {
           deviceId,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         });
       }
     } catch (error) {
@@ -310,8 +310,8 @@ export class MobilePushNotificationService {
           templateId,
           category: template.category,
           priority: template.priority,
-          requiresAction: template.requiresAction.toString(),
-        },
+          requiresAction: template.requiresAction.toString()
+        }
       };
 
       return await this.sendPushNotification(device.fcmToken, payload);
@@ -319,7 +319,7 @@ export class MobilePushNotificationService {
       this.logger.error('Failed to send notification from template:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -336,14 +336,13 @@ export class MobilePushNotificationService {
         (device) => device.userId === userId && device.isActive
       );
 
-      if (userDevices.length === 0) {
+      if (0 === userDevices.length) {
         this.logger.warn(`No active devices found for user: ${userId}`);
         return [];
       }
 
       const results = await Promise.all(
-        userDevices.map((device) =>
-          this.sendPushNotification(device.fcmToken, payload)
+        userDevices.map((device) => this.sendPushNotification(device.fcmToken, payload)
         )
       );
 
@@ -354,8 +353,8 @@ export class MobilePushNotificationService {
       return [
         {
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
       ];
     }
   }
@@ -378,7 +377,7 @@ export class MobilePushNotificationService {
         notification: {
           title: payload.title,
           body: payload.body,
-          imageUrl: payload.icon,
+          imageUrl: payload.icon
         },
         data: payload.data || {},
         android: {
@@ -386,59 +385,59 @@ export class MobilePushNotificationService {
             icon: payload.icon || 'ic_notification',
             sound: payload.sound || 'default',
             tag: payload.tag,
-            clickAction: payload.clickAction,
+            clickAction: payload.clickAction
           },
-          priority: 'high',
+          priority: 'high'
         },
         apns: {
           payload: {
             aps: {
               alert: {
                 title: payload.title,
-                body: payload.body,
+                body: payload.body
               },
               badge: payload.badge ? parseInt(payload.badge, 10) : undefined,
-              sound: payload.sound || 'default',
-            },
-          },
-        },
+              sound: payload.sound || 'default'
+            }
+          }
+        }
       };
 
       const messageId = await admin.messaging().send(message);
       
       this.logger.log(`Push notification sent successfully: ${messageId}`, {
-        fcmToken: fcmToken.substring(0, 20) + '...',
-        title: payload.title,
+        fcmToken: `${fcmToken.substring(0, 20)}...`,
+        title: payload.title
       });
 
       // Emit notification sent event
       await this.emitNotificationEvent('notification-sent', {
         messageId,
-        fcmToken: fcmToken.substring(0, 20) + '...',
+        fcmToken: `${fcmToken.substring(0, 20)}...`,
         payload,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
 
       return {
         success: true,
         messageId,
-        deviceToken: fcmToken,
+        deviceToken: fcmToken
       };
     } catch (error) {
       this.logger.error('Failed to send push notification:', error);
       
       // Emit notification error event
       await this.emitNotificationEvent('notification-error', {
-        fcmToken: fcmToken.substring(0, 20) + '...',
+        fcmToken: `${fcmToken.substring(0, 20)}...`,
         payload,
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
 
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        deviceToken: fcmToken,
+        deviceToken: fcmToken
       };
     }
   }
@@ -543,11 +542,11 @@ export class MobilePushNotificationService {
     const mockMessageId = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     this.logger.log('📱 MOCK PUSH NOTIFICATION:', {
-      fcmToken: fcmToken.substring(0, 20) + '...',
+      fcmToken: `${fcmToken.substring(0, 20)}...`,
       title: payload.title,
       body: payload.body,
       data: payload.data,
-      messageId: mockMessageId,
+      messageId: mockMessageId
     });
 
     // Simulate network delay
@@ -556,7 +555,7 @@ export class MobilePushNotificationService {
     return {
       success: true,
       messageId: mockMessageId,
-      deviceToken: fcmToken,
+      deviceToken: fcmToken
     };
   }
 

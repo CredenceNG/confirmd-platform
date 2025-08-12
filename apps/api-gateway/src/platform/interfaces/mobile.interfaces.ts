@@ -2,6 +2,9 @@ export interface MobileInvitationData {
   type: string;
   id: string;
   url?: string;
+  label?: string;
+  imageUrl?: string;
+  accept?: string[];
   services?: any[];
   handshake_protocols?: string[];
   request_attach?: any[];

@@ -27,11 +27,17 @@ TENANT=${13}
 AFJ_VERSION=${14}
 INDY_LEDGER=${15}
 
-# Use PLATFORM_URL environment variable instead of hardcoded EXTERNAL_IP
+# Use PLATFORM_URL environment variable for DIDComm endpoints
 if [ -n "$PLATFORM_URL" ]; then
+    # For DIDComm service endpoints, use the full PLATFORM_URL
+    DIDCOMM_ENDPOINT="$PLATFORM_URL"
+    # For internal Docker networking, extract domain:port from PLATFORM_URL
     EXTERNAL_IP=$(extract_base_url "$PLATFORM_URL")
-    echo "Using PLATFORM_URL: $PLATFORM_URL -> $EXTERNAL_IP"
+    echo "Using PLATFORM_URL: $PLATFORM_URL"
+    echo "DIDComm endpoint: $DIDCOMM_ENDPOINT"
+    echo "Internal networking: $EXTERNAL_IP"
 else
+    DIDCOMM_ENDPOINT="${PROTOCOL}://${EXTERNAL_IP}:${INBOUND_PORT}"
     echo "PLATFORM_URL not set, using provided EXTERNAL_IP: $EXTERNAL_IP"
 fi
 
@@ -118,9 +124,16 @@ else
   mkdir -p ${PWD}/agent-provisioning/AFJ/agent-config
 fi
 
-AGENT_ENDPOINT="${PROTOCOL}://${EXTERNAL_IP}:${INBOUND_PORT}"
+# Use DIDCOMM_ENDPOINT if set, otherwise fallback to internal endpoint
+if [ -n "$DIDCOMM_ENDPOINT" ] && [ "$DIDCOMM_ENDPOINT" != "${PROTOCOL}://${EXTERNAL_IP}:${INBOUND_PORT}" ]; then
+    AGENT_ENDPOINT="$DIDCOMM_ENDPOINT"
+    echo "Using DIDComm endpoint: $AGENT_ENDPOINT"
+else
+    AGENT_ENDPOINT="${PROTOCOL}://${EXTERNAL_IP}:${INBOUND_PORT}"
+    echo "Using internal endpoint: $AGENT_ENDPOINT"
+fi
 
-echo "-----$AGENT_ENDPOINT----"
+echo "-----Final AGENT_ENDPOINT: $AGENT_ENDPOINT----"
 CONFIG_FILE="${PWD}/agent-provisioning/AFJ/agent-config/${AGENCY}_${CONTAINER_NAME}.json"
 
 # Check if the file exists

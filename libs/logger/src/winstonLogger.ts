@@ -33,7 +33,7 @@ export default class WinstonLogger implements Logger {
   public constructor(
     @Inject(WinstonLoggerTransportsKey) transports: winston.transport[]
   ) {
-    if(esTransport){
+    if (esTransport) {
       transports.push(esTransport);
     }
     
@@ -82,7 +82,7 @@ export default class WinstonLogger implements Logger {
           fillExcept: ['timestamp', 'level', 'message']
         }),
         // Format the log as JSON
-        winston.format.json(),
+        winston.format.json()
       ),
       transports,
       exceptionHandlers: transports
@@ -96,7 +96,7 @@ export default class WinstonLogger implements Logger {
     profile?: string
   ) : void {
     const logData = {
-      level: level,
+      level,
       message: message instanceof Error ? message.message : message,
       error: message instanceof Error ? message : undefined,
       ...data
@@ -138,5 +138,4 @@ export default class WinstonLogger implements Logger {
     this.logger.profile(id);
   }
 }
-
 

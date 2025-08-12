@@ -7,8 +7,8 @@ export interface MobileAgentConfig {
 
   // Mobile-optimized connection settings
   autoAcceptConnections: boolean;
-  autoAcceptCredentials: "always" | "contentApproved" | "never";
-  autoAcceptProofs: "always" | "contentApproved" | "never";
+  autoAcceptCredentials: 'always' | 'contentApproved' | 'never';
+  autoAcceptProofs: 'always' | 'contentApproved' | 'never';
 
   // Mobile-specific endpoints
   webhookUrl: string;
@@ -66,16 +66,16 @@ export interface MobileWebhookData {
 }
 
 export enum MobileWebhookEventType {
-  MOBILE_CONNECTION_REQUEST = "mobile-connection-request",
-  MOBILE_CONNECTION_RESPONSE = "mobile-connection-response",
-  MOBILE_CREDENTIAL_OFFER = "mobile-credential-offer",
-  MOBILE_CREDENTIAL_REQUEST = "mobile-credential-request",
-  MOBILE_CREDENTIAL_ISSUED = "mobile-credential-issued",
-  MOBILE_PROOF_REQUEST = "mobile-proof-request",
-  MOBILE_PROOF_PRESENTATION = "mobile-proof-presentation",
-  MOBILE_WALLET_CONNECTED = "mobile-wallet-connected",
-  MOBILE_WALLET_DISCONNECTED = "mobile-wallet-disconnected",
-  MOBILE_ERROR = "mobile-error",
+  MOBILE_CONNECTION_REQUEST = 'mobile-connection-request',
+  MOBILE_CONNECTION_RESPONSE = 'mobile-connection-response',
+  MOBILE_CREDENTIAL_OFFER = 'mobile-credential-offer',
+  MOBILE_CREDENTIAL_REQUEST = 'mobile-credential-request',
+  MOBILE_CREDENTIAL_ISSUED = 'mobile-credential-issued',
+  MOBILE_PROOF_REQUEST = 'mobile-proof-request',
+  MOBILE_PROOF_PRESENTATION = 'mobile-proof-presentation',
+  MOBILE_WALLET_CONNECTED = 'mobile-wallet-connected',
+  MOBILE_WALLET_DISCONNECTED = 'mobile-wallet-disconnected',
+  MOBILE_ERROR = 'mobile-error',
 }
 
 export interface MobileWebhookEventData {
@@ -92,7 +92,7 @@ export interface MobileWebhookEventData {
 export interface MobileContext {
   walletType: string; // 'ariesBifold', 'trinsic', etc.
   walletVersion: string;
-  platformType: "ios" | "android" | "web";
+  platformType: 'ios' | 'android' | 'web';
   deviceId?: string;
   userAgent?: string;
   deepLinkOrigin?: string;
@@ -123,7 +123,7 @@ export interface WebhookRetryPolicy {
 }
 
 export interface WebhookAuthentication {
-  type: "bearer" | "hmac" | "basic";
+  type: 'bearer' | 'hmac' | 'basic';
   credentials: string;
   additionalHeaders?: Record<string, string>;
 }
@@ -174,7 +174,7 @@ export interface MobileNotificationTemplate {
   body: string;
   actionUrl?: string;
   iconUrl?: string;
-  priority: "high" | "normal" | "low";
+  priority: 'high' | 'normal' | 'low';
   sound?: string;
   category?: string;
 }

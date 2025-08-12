@@ -52,9 +52,9 @@ export function orderValues(key, order = 'asc') {
 
 
 export function convertUrlToDeepLinkUrl(url: string): string {
-  const deepLinkDomain = process.env.DEEPLINK_DOMAIN
-  if(!deepLinkDomain) {
-    throw new NotFoundException(ResponseMessages.shorteningUrl.error.deepLinkDomainNotFound)
+  const deepLinkDomain = process.env.DEEPLINK_DOMAIN;
+  if (!deepLinkDomain) {
+    throw new NotFoundException(ResponseMessages.shorteningUrl.error.deepLinkDomainNotFound);
   }
   const deepLinkUrl = deepLinkDomain.concat(url);
   return deepLinkUrl;

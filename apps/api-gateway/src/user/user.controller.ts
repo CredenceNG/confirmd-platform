@@ -12,9 +12,9 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
-  Delete,
-} from "@nestjs/common";
-import { UserService } from "./user.service";
+  Delete
+} from '@nestjs/common';
+import { UserService } from './user.service';
 import {
   ApiBearerAuth,
   ApiExcludeEndpoint,
@@ -24,47 +24,47 @@ import {
   ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
-} from "@nestjs/swagger";
-import { ApiResponseDto } from "../dtos/apiResponse.dto";
-import { UnauthorizedErrorDto } from "../dtos/unauthorized-error.dto";
-import { ForbiddenErrorDto } from "../dtos/forbidden-error.dto";
-import { Response } from "express";
-import { CommonService } from "@credebl/common";
-import IResponse from "@credebl/common/interfaces/response.interface";
-import { ResponseMessages } from "@credebl/common/response-messages";
-import { user } from "@prisma/client";
-import { AuthGuard } from "@nestjs/passport";
-import { User } from "../authz/decorators/user.decorator";
-import { AcceptRejectInvitationDto } from "./dto/accept-reject-invitation.dto";
-import { Invitation } from "@credebl/enum/enum";
-import { IUserRequestInterface } from "./interfaces";
-import { GetAllInvitationsDto } from "./dto/get-all-invitations.dto";
-import { UpdateUserProfileDto } from "./dto/update-user-profile.dto";
-import { CustomExceptionFilter } from "apps/api-gateway/common/exception-handler";
-import { AddPasskeyDetailsDto } from "./dto/add-user.dto";
-import { EmailValidator } from "../dtos/email-validator.dto";
-import { UpdatePlatformSettingsDto } from "./dto/update-platform-settings.dto";
-import { Roles } from "../authz/decorators/roles.decorator";
-import { OrgRolesGuard } from "../authz/guards/org-roles.guard";
-import { OrgRoles } from "libs/org-roles/enums";
-import { AwsService } from "@credebl/aws/aws.service";
-import { PaginationDto } from "@credebl/common/dtos/pagination.dto";
-import { UserAccessGuard } from "../authz/guards/user-access-guard";
-import { TrimStringParamPipe } from "@credebl/common/cast.helper";
+  ApiUnauthorizedResponse
+} from '@nestjs/swagger';
+import { ApiResponseDto } from '../dtos/apiResponse.dto';
+import { UnauthorizedErrorDto } from '../dtos/unauthorized-error.dto';
+import { ForbiddenErrorDto } from '../dtos/forbidden-error.dto';
+import { Response } from 'express';
+import { CommonService } from '@credebl/common';
+import IResponse from '@credebl/common/interfaces/response.interface';
+import { ResponseMessages } from '@credebl/common/response-messages';
+import { user } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
+import { User } from '../authz/decorators/user.decorator';
+import { AcceptRejectInvitationDto } from './dto/accept-reject-invitation.dto';
+import { Invitation } from '@credebl/enum/enum';
+import { IUserRequestInterface } from './interfaces';
+import { GetAllInvitationsDto } from './dto/get-all-invitations.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { CustomExceptionFilter } from 'apps/api-gateway/common/exception-handler';
+import { AddPasskeyDetailsDto } from './dto/add-user.dto';
+import { EmailValidator } from '../dtos/email-validator.dto';
+import { UpdatePlatformSettingsDto } from './dto/update-platform-settings.dto';
+import { Roles } from '../authz/decorators/roles.decorator';
+import { OrgRolesGuard } from '../authz/guards/org-roles.guard';
+import { OrgRoles } from 'libs/org-roles/enums';
+import { AwsService } from '@credebl/aws/aws.service';
+import { PaginationDto } from '@credebl/common/dtos/pagination.dto';
+import { UserAccessGuard } from '../authz/guards/user-access-guard';
+import { TrimStringParamPipe } from '@credebl/common/cast.helper';
 
 @UseFilters(CustomExceptionFilter)
-@Controller("users")
-@ApiTags("users")
+@Controller('users')
+@ApiTags('users')
 @ApiUnauthorizedResponse({
   status: HttpStatus.UNAUTHORIZED,
-  description: "Unauthorized",
-  type: UnauthorizedErrorDto,
+  description: 'Unauthorized',
+  type: UnauthorizedErrorDto
 })
 @ApiForbiddenResponse({
   status: HttpStatus.FORBIDDEN,
-  description: "Forbidden",
-  type: ForbiddenErrorDto,
+  description: 'Forbidden',
+  type: ForbiddenErrorDto
 })
 export class UserController {
   constructor(
@@ -80,28 +80,28 @@ export class UserController {
    * @param res
    * @returns Users list of organization
    */
-  @Get("/public-profiles")
+  @Get('/public-profiles')
   @ApiExcludeEndpoint()
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: ApiResponseDto,
+    description: 'Success',
+    type: ApiResponseDto
   })
-  @ApiOperation({ summary: "Get users list", description: "Get users list." })
+  @ApiOperation({ summary: 'Get users list', description: 'Get users list.' })
   @ApiQuery({
-    name: "pageNumber",
+    name: 'pageNumber',
     type: Number,
-    required: false,
+    required: false
   })
   @ApiQuery({
-    name: "pageSize",
+    name: 'pageSize',
     type: Number,
-    required: false,
+    required: false
   })
   @ApiQuery({
-    name: "search",
+    name: 'search',
     type: String,
-    required: false,
+    required: false
   })
   async get(
     @User() user: IUserRequestInterface,
@@ -112,7 +112,7 @@ export class UserController {
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.fetchUsers,
-      data: users,
+      data: users
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -124,20 +124,20 @@ export class UserController {
    * @param username The username of the user.
    * @returns Public profile information.
    */
-  @Get("public-profiles/:username")
+  @Get('public-profiles/:username')
   @ApiExcludeEndpoint()
   @ApiOperation({
-    summary: "Fetch user details",
+    summary: 'Fetch user details',
     description:
-      "Retrieve publicly available details of a user using their username.",
+      'Retrieve publicly available details of a user using their username.'
   })
   @ApiParam({
-    name: "username",
+    name: 'username',
     type: String,
-    required: false,
+    required: false
   })
   async getPublicProfile(
-    @Param("username") username: string,
+    @Param('username') username: string,
     @Res() res: Response
   ): Promise<object> {
     const userData = await this.userService.getPublicProfile(username);
@@ -145,7 +145,7 @@ export class UserController {
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.fetchProfile,
-      data: userData,
+      data: userData
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -156,13 +156,13 @@ export class UserController {
    *
    * @returns The user profile details.
    */
-  @Get("/profile")
+  @Get('/profile')
   @ApiOperation({
-    summary: "Fetch login user details",
+    summary: 'Fetch login user details',
     description:
-      "Retrieves the profile details of the currently logged-in user.",
+      'Retrieves the profile details of the currently logged-in user.'
   })
-  @UseGuards(AuthGuard("jwt"), UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), UserAccessGuard)
   @ApiBearerAuth()
   async getProfile(
     @User() reqUser: user,
@@ -173,7 +173,7 @@ export class UserController {
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.fetchProfile,
-      data: userData,
+      data: userData
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -184,12 +184,12 @@ export class UserController {
    *
    * @returns  The platform settings.
    */
-  @Get("/platform-settings")
+  @Get('/platform-settings')
   @ApiOperation({
-    summary: "Get all platform settings",
-    description: "Retrieves all platform settings.",
+    summary: 'Get all platform settings',
+    description: 'Retrieves all platform settings.'
   })
-  @UseGuards(AuthGuard("jwt"), OrgRolesGuard, UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), OrgRolesGuard, UserAccessGuard)
   @Roles(OrgRoles.PLATFORM_ADMIN)
   @ApiBearerAuth()
   async getPlatformSettings(@Res() res: Response): Promise<Response> {
@@ -198,7 +198,7 @@ export class UserController {
     const finalResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.fetchPlatformSettings,
-      data: settings,
+      data: settings
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -210,16 +210,16 @@ export class UserController {
    * @param limit - Number of activities to fetch.
    * @returns A response containing user activity data.
    */
-  @Get("/activity")
+  @Get('/activity')
   @ApiOperation({
-    summary: "Fetch users activity",
-    description: "Fetch a list of recent activities performed by the user.",
+    summary: 'Fetch users activity',
+    description: 'Fetch a list of recent activities performed by the user.'
   })
-  @UseGuards(AuthGuard("jwt"), UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), UserAccessGuard)
   @ApiBearerAuth()
-  @ApiQuery({ name: "limit", required: true })
+  @ApiQuery({ name: 'limit', required: true })
   async getUserActivities(
-    @Query("limit") limit: number,
+    @Query('limit') limit: number,
     @Res() res: Response,
     @User() reqUser: user
   ): Promise<Response> {
@@ -231,7 +231,7 @@ export class UserController {
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.userActivity,
-      data: userDetails,
+      data: userDetails
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -242,33 +242,33 @@ export class UserController {
    *
    * @returns A paginated list of organization invitations.
    */
-  @Get("/org-invitations")
+  @Get('/org-invitations')
   @ApiOperation({
-    summary: "organization invitations",
+    summary: 'organization invitations',
     description:
-      "Retrieve a list of invitations received to the user to join organizations.",
+      'Retrieve a list of invitations received to the user to join organizations.'
   })
-  @UseGuards(AuthGuard("jwt"), UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), UserAccessGuard)
   @ApiBearerAuth()
   @ApiQuery({
-    name: "pageNumber",
+    name: 'pageNumber',
     type: Number,
-    required: false,
+    required: false
   })
   @ApiQuery({
-    name: "pageSize",
+    name: 'pageSize',
     type: Number,
-    required: false,
+    required: false
   })
   @ApiQuery({
-    name: "search",
+    name: 'search',
     type: String,
-    required: false,
+    required: false
   })
   @ApiQuery({
-    name: "status",
+    name: 'status',
     type: String,
-    required: false,
+    required: false
   })
   async invitations(
     @Query() getAllInvitationsDto: GetAllInvitationsDto,
@@ -290,7 +290,7 @@ export class UserController {
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.fetchInvitations,
-      data: invitations,
+      data: invitations
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -302,11 +302,11 @@ export class UserController {
    * @param email The email address to check.
    * @returns Returns user registration and email verification status.
    */
-  @Get("/:email")
+  @Get('/:email')
   @ApiOperation({
-    summary: "Check user registration and email verification status",
+    summary: 'Check user registration and email verification status',
     description:
-      "Check if a user is already registered and if their email already exists.",
+      'Check if a user is already registered and if their email already exists.'
   })
   async checkUserExist(
     @Param() emailParam: EmailValidator,
@@ -317,7 +317,7 @@ export class UserController {
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.checkEmail,
-      data: userDetails,
+      data: userDetails
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -330,22 +330,22 @@ export class UserController {
    * @body AcceptRejectInvitationDto
    * @returns The status of the organization invitation response.
    */
-  @Post("/org-invitations/:invitationId")
+  @Post('/org-invitations/:invitationId')
   @ApiOperation({
-    summary: "accept/reject organization invitation",
-    description: "Accept or reject an invitation to join an organization.",
+    summary: 'accept/reject organization invitation',
+    description: 'Accept or reject an invitation to join an organization.'
   })
-  @UseGuards(AuthGuard("jwt"), UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), UserAccessGuard)
   @ApiBearerAuth()
   async acceptRejectInvitaion(
     @Body() acceptRejectInvitation: AcceptRejectInvitationDto,
     @Param(
-      "invitationId",
+      'invitationId',
       TrimStringParamPipe,
       new ParseUUIDPipe({
         exceptionFactory: (): Error => {
           throw new BadRequestException(`Invalid format for InvitationId`);
-        },
+        }
       })
     )
     invitationId: string,
@@ -360,7 +360,7 @@ export class UserController {
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.CREATED,
-      message: invitationRes,
+      message: invitationRes
     };
     return res.status(HttpStatus.CREATED).json(finalResponse);
   }
@@ -371,19 +371,19 @@ export class UserController {
    * @body UpdateUserProfileDto
    * @returns A response indicating the success of the update operation.
    */
-  @Put("/")
+  @Put('/')
   @ApiOperation({
-    summary: "Update user profile",
+    summary: 'Update user profile',
     description:
-      "Modify the user profile details such as name, email, or other information.",
+      'Modify the user profile details such as name, email, or other information.'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "Success",
-    type: ApiResponseDto,
+    description: 'Success',
+    type: ApiResponseDto
   })
   @ApiBearerAuth()
-  @UseGuards(AuthGuard("jwt"), UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), UserAccessGuard)
   async updateUserProfile(
     @Body() updateUserProfileDto: UpdateUserProfileDto,
     @User() reqUser: user,
@@ -395,7 +395,7 @@ export class UserController {
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
-      message: ResponseMessages.user.success.update,
+      message: ResponseMessages.user.success.update
     };
     return res.status(HttpStatus.OK).json(finalResponse);
   }
@@ -405,14 +405,14 @@ export class UserController {
    * @returns User's profile update status
    */
 
-  @Put("/password/:email")
+  @Put('/password/:email')
   @ApiOperation({
-    summary: "Store user password details",
-    description: "Securely store and update the user’s password details.",
+    summary: 'Store user password details',
+    description: 'Securely store and update the user’s password details.'
   })
   @ApiExcludeEndpoint()
   @ApiBearerAuth()
-  @UseGuards(AuthGuard("jwt"), UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), UserAccessGuard)
   async addPasskey(
     @Body() userInfo: AddPasskeyDetailsDto,
     @User() reqUser: user,
@@ -425,7 +425,7 @@ export class UserController {
     const finalResponse = {
       statusCode: HttpStatus.OK,
       message: ResponseMessages.user.success.update,
-      data: userDetails,
+      data: userDetails
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -437,13 +437,13 @@ export class UserController {
    *
    * @returns Status of the update operation.
    */
-  @Put("/platform-settings")
+  @Put('/platform-settings')
   @ApiOperation({
-    summary: "Update platform settings",
+    summary: 'Update platform settings',
     description:
-      "Modify platform settings. Only accessible by platform admins.",
+      'Modify platform settings. Only accessible by platform admins.'
   })
-  @UseGuards(AuthGuard("jwt"), OrgRolesGuard, UserAccessGuard)
+  @UseGuards(AuthGuard('jwt'), OrgRolesGuard, UserAccessGuard)
   @Roles(OrgRoles.PLATFORM_ADMIN)
   @ApiBearerAuth()
   async updatePlatformSettings(
@@ -456,7 +456,7 @@ export class UserController {
 
     const finalResponse = {
       statusCode: HttpStatus.OK,
-      message: result,
+      message: result
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -466,7 +466,7 @@ export class UserController {
    * TEST ENDPOINT: Test platform admin authentication
    * This endpoint is for testing the platform admin decryption fix
    */
-  @Post("/test-platform-admin-auth")
+  @Post('/test-platform-admin-auth')
   @ApiExcludeEndpoint()
   async testPlatformAdminAuth(
     @Body() payload: { userId: string },
@@ -476,8 +476,8 @@ export class UserController {
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
-      message: "Platform admin authentication test completed",
-      data: result,
+      message: 'Platform admin authentication test completed',
+      data: result
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -486,25 +486,25 @@ export class UserController {
   /**
    * Get all users with pagination
    */
-  @Get("/")
+  @Get('/')
   @ApiOperation({
-    summary: "Get all users",
-    description: "Retrieve all users with pagination support",
+    summary: 'Get all users',
+    description: 'Retrieve all users with pagination support'
   })
   @ApiQuery({
-    name: "pageNumber",
+    name: 'pageNumber',
     type: Number,
-    required: false,
+    required: false
   })
   @ApiQuery({
-    name: "pageSize",
+    name: 'pageSize',
     type: Number,
-    required: false,
+    required: false
   })
   @ApiQuery({
-    name: "search",
+    name: 'search',
     type: String,
-    required: false,
+    required: false
   })
   async getAllUsers(
     @Query() paginationDto: PaginationDto,
@@ -514,8 +514,8 @@ export class UserController {
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
-      message: "Users fetched successfully",
-      data: users,
+      message: 'Users fetched successfully',
+      data: users
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -524,10 +524,10 @@ export class UserController {
   /**
    * Create a new user
    */
-  @Post("/create")
+  @Post('/create')
   @ApiOperation({
-    summary: "Create a new user",
-    description: "Create a new user with provided data",
+    summary: 'Create a new user',
+    description: 'Create a new user with provided data'
   })
   async createUser(
     @Body() userData: object,
@@ -537,8 +537,8 @@ export class UserController {
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.CREATED,
-      message: "User created successfully",
-      data: result,
+      message: 'User created successfully',
+      data: result
     };
 
     return res.status(HttpStatus.CREATED).json(finalResponse);
@@ -547,18 +547,18 @@ export class UserController {
   /**
    * Update user by ID
    */
-  @Put("/:id")
+  @Put('/:id')
   @ApiOperation({
-    summary: "Update user by ID",
-    description: "Update user information by user ID",
+    summary: 'Update user by ID',
+    description: 'Update user information by user ID'
   })
   @ApiParam({
-    name: "id",
+    name: 'id',
     type: String,
-    required: true,
+    required: true
   })
   async updateUserById(
-    @Param("id") id: string,
+    @Param('id') id: string,
     @Body() userData: object,
     @Res() res: Response
   ): Promise<Response> {
@@ -566,8 +566,8 @@ export class UserController {
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
-      message: "User updated successfully",
-      data: result,
+      message: 'User updated successfully',
+      data: result
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -576,26 +576,26 @@ export class UserController {
   /**
    * Delete user by ID
    */
-  @Delete("/:id")
+  @Delete('/:id')
   @ApiOperation({
-    summary: "Delete user by ID",
-    description: "Delete a user by user ID",
+    summary: 'Delete user by ID',
+    description: 'Delete a user by user ID'
   })
   @ApiParam({
-    name: "id",
+    name: 'id',
     type: String,
-    required: true,
+    required: true
   })
   async deleteUserById(
-    @Param("id") id: string,
+    @Param('id') id: string,
     @Res() res: Response
   ): Promise<Response> {
     const result = await this.userService.deleteUserById(id);
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
-      message: "User deleted successfully",
-      data: result,
+      message: 'User deleted successfully',
+      data: result
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -604,18 +604,18 @@ export class UserController {
   /**
    * Get user statistics
    */
-  @Get("/stats")
+  @Get('/stats')
   @ApiOperation({
-    summary: "Get user statistics",
-    description: "Retrieve user statistics and metrics",
+    summary: 'Get user statistics',
+    description: 'Retrieve user statistics and metrics'
   })
   async getUserStats(@Res() res: Response): Promise<Response> {
     const stats = await this.userService.getUserStats();
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
-      message: "User statistics fetched successfully",
-      data: stats,
+      message: 'User statistics fetched successfully',
+      data: stats
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);
@@ -624,18 +624,18 @@ export class UserController {
   /**
    * TEST ENDPOINT: Get profile without authentication
    */
-  @Get("/test-profile/:userId")
+  @Get('/test-profile/:userId')
   @ApiExcludeEndpoint()
   async testGetProfile(
-    @Param("userId") userId: string,
+    @Param('userId') userId: string,
     @Res() res: Response
   ): Promise<Response> {
     const userData = await this.userService.getProfile(userId);
 
     const finalResponse: IResponse = {
       statusCode: HttpStatus.OK,
-      message: "Test profile fetched successfully",
-      data: userData,
+      message: 'Test profile fetched successfully',
+      data: userData
     };
 
     return res.status(HttpStatus.OK).json(finalResponse);

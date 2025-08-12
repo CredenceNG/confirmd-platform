@@ -26,12 +26,18 @@
     "dev:user": "pnpm run build:libs && nest start user --watch",
     "dev:user:hot": "concurrently \"pnpm run build:libs:watch\" \"nest start user --watch\"",
     "dev:rebuild-user": "docker-compose -f docker-compose-dev.yml build user --no-cache && docker-compose -f docker-compose-dev.yml restart user",
-    "dev:logs-user": "docker-compose -f docker-compose-dev.yml logs -f user"
+    "dev:logs-user": "docker-compose -f docker-compose-dev.yml logs -f user",
+    "cloudflared": "cloudflared tunnel --config cloudflared-config.yml run cardea-main",
+    "cloudflared:start": "cloudflared tunnel --config cloudflared-config.yml run cardea-main",
+    "cloudflared:logs": "cloudflared tunnel --config cloudflared-config.yml --log-level debug run cardea-main"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.858.0",
+    "@aws-sdk/s3-request-presigner": "^3.858.0",
+    "@credo-ts/anoncreds": "^0.5.16",
     "@elastic/ecs-winston-format": "^1.5.3",
     "@nestjs/axios": "^3.0.0",
     "@nestjs/bull": "^10.0.1",
@@ -99,7 +105,7 @@
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
     "pdfkit": "^0.13.0",
-    "pg": "^8.11.2",
+    "pg": "^8.16.3",
     "puppeteer": "^21.5.0",
     "qrcode": "^1.5.3",
     "qs": "^6.11.2",

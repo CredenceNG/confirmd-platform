@@ -37,7 +37,7 @@ export default class LoggerService implements Logger {
     level: LogLevel,
     message: string | Error,
     data?: LogData,
-    profile?: string,
+    profile?: string
   ): void {
     return this.logger.log(level, message, this.getLogData(data), profile);
   }

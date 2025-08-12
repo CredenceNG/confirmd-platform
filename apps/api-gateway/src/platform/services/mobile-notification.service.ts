@@ -1,16 +1,16 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   MobileWebSocketService,
-  MobileNotificationPayload,
-} from "./mobile-websocket.service";
+  MobileNotificationPayload
+} from './mobile-websocket.service';
 // import { MobileFCMService } from "./mobile-fcm.service";
 import {
   MobileWebhookEventType,
   MobileNotificationConfig,
-  NotificationDeliveryPreferences,
-} from "../interfaces/mobile-agent.interfaces";
+  NotificationDeliveryPreferences
+} from '../interfaces/mobile-agent.interfaces';
 
 // Mock FCM Service until dependencies are available
 class MockMobileFCMService {
@@ -54,27 +54,27 @@ export interface NotificationQueue {
   scheduledFor: string;
   attempts: number;
   maxAttempts: number;
-  status: "pending" | "delivered" | "failed" | "cancelled";
+  status: 'pending' | 'delivered' | 'failed' | 'cancelled';
 }
 
 @Injectable()
 export class MobileNotificationService {
-  private readonly logger = new Logger("MobileNotificationService");
+  private readonly logger = new Logger('MobileNotificationService');
   private notificationQueue = new Map<string, NotificationQueue>();
   private deliveryStats = {
     total: 0,
     delivered: 0,
     failed: 0,
-    pending: 0,
+    pending: 0
   };
 
   constructor(
-    @Inject("NATS_CLIENT") private readonly natsClient: ClientProxy,
+    @Inject('NATS_CLIENT') private readonly natsClient: ClientProxy,
     private readonly mobileWebSocketService: MobileWebSocketService,
     private readonly mobileFCMService: MockMobileFCMService = new MockMobileFCMService()
   ) {
     this.logger.log(
-      "🚀 MobileNotificationService initialized - Real-time notification delivery ready"
+      '🚀 MobileNotificationService initialized - Real-time notification delivery ready'
     );
     this.startNotificationProcessor();
   }
@@ -89,7 +89,7 @@ export class MobileNotificationService {
     options?: {
       userId?: string;
       connectionId?: string;
-      priority?: "high" | "normal" | "low";
+      priority?: 'high' | 'normal' | 'low';
       channels?: string[];
       scheduled?: Date;
     }
@@ -112,7 +112,7 @@ export class MobileNotificationService {
         connectionId: options?.connectionId,
         data,
         timestamp: new Date().toISOString(),
-        priority: options?.priority || "normal",
+        priority: options?.priority || 'normal'
       };
 
       // Apply notification template if available
@@ -156,7 +156,7 @@ export class MobileNotificationService {
         delivered: false,
         channels: [],
         timestamp: new Date().toISOString(),
-        errors: [error.message],
+        errors: [error.message]
       };
     }
   }
@@ -168,17 +168,17 @@ export class MobileNotificationService {
     connectionId: string,
     eventType: MobileWebhookEventType,
     data: Record<string, unknown>,
-    priority: "high" | "normal" | "low" = "normal"
+    priority: 'high' | 'normal' | 'low' = 'normal'
   ): Promise<NotificationDeliveryResult> {
     this.logger.log(`📱 Sending notification to connection: ${connectionId}`);
 
     const notification: MobileNotificationPayload = {
       eventType,
-      organizationId: "", // Will be resolved from connection
+      organizationId: '', // Will be resolved from connection
       connectionId,
       data,
       timestamp: new Date().toISOString(),
-      priority,
+      priority
     };
 
     // Resolve organization from connection
@@ -198,8 +198,8 @@ export class MobileNotificationService {
 
     return {
       delivered: true,
-      channels: ["websocket"],
-      timestamp: new Date().toISOString(),
+      channels: ['websocket'],
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -209,16 +209,16 @@ export class MobileNotificationService {
   async broadcastNotification(
     eventType: MobileWebhookEventType,
     data: Record<string, unknown>,
-    priority: "high" | "normal" | "low" = "normal"
+    priority: 'high' | 'normal' | 'low' = 'normal'
   ): Promise<NotificationDeliveryResult> {
     this.logger.log(`📡 Broadcasting notification: ${eventType}`);
 
     const notification: MobileNotificationPayload = {
       eventType,
-      organizationId: "broadcast",
+      organizationId: 'broadcast',
       data,
       timestamp: new Date().toISOString(),
-      priority,
+      priority
     };
 
     // Broadcast via WebSocket
@@ -226,8 +226,8 @@ export class MobileNotificationService {
 
     return {
       delivered: true,
-      channels: ["websocket-broadcast"],
-      timestamp: new Date().toISOString(),
+      channels: ['websocket-broadcast'],
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -242,7 +242,7 @@ export class MobileNotificationService {
     options?: {
       userId?: string;
       connectionId?: string;
-      priority?: "high" | "normal" | "low";
+      priority?: 'high' | 'normal' | 'low';
     }
   ): Promise<string> {
     this.logger.log(
@@ -256,7 +256,7 @@ export class MobileNotificationService {
       connectionId: options?.connectionId,
       data,
       timestamp: new Date().toISOString(),
-      priority: options?.priority || "normal",
+      priority: options?.priority || 'normal'
     };
 
     const queueItem: NotificationQueue = {
@@ -268,7 +268,7 @@ export class MobileNotificationService {
       scheduledFor: scheduledFor.toISOString(),
       attempts: 0,
       maxAttempts: 3,
-      status: "pending",
+      status: 'pending'
     };
 
     this.notificationQueue.set(queueItem.id, queueItem);
@@ -282,8 +282,8 @@ export class MobileNotificationService {
    */
   async cancelNotification(notificationId: string): Promise<boolean> {
     const queueItem = this.notificationQueue.get(notificationId);
-    if (queueItem && "pending" === queueItem.status) {
-      queueItem.status = "cancelled";
+    if (queueItem && 'pending' === queueItem.status) {
+      queueItem.status = 'cancelled';
       this.notificationQueue.delete(notificationId);
       this.deliveryStats.pending--;
       return true;
@@ -313,9 +313,9 @@ export class MobileNotificationService {
         state: eventData.state,
         previousState: eventData.previousState,
         metadata: eventData.metadata,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       },
-      "high"
+      'high'
     );
 
     // Also notify organization
@@ -325,11 +325,11 @@ export class MobileNotificationService {
       {
         connectionId,
         eventData,
-        realTimeUpdate: true,
+        realTimeUpdate: true
       },
       {
         connectionId,
-        priority: "normal",
+        priority: 'normal'
       }
     );
   }
@@ -358,9 +358,9 @@ export class MobileNotificationService {
         state: eventData.state,
         credentialType: eventData.credentialType,
         metadata: eventData.metadata,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       },
-      "high"
+      'high'
     );
 
     // Notify organization
@@ -371,11 +371,11 @@ export class MobileNotificationService {
         credentialId,
         connectionId,
         eventData,
-        realTimeUpdate: true,
+        realTimeUpdate: true
       },
       {
         connectionId,
-        priority: "high",
+        priority: 'high'
       }
     );
   }
@@ -404,10 +404,10 @@ export class MobileNotificationService {
           body: template.body,
           actionUrl: template.actionUrl,
           iconUrl: template.iconUrl,
-          priority: template.priority as "high" | "normal" | "low",
+          priority: template.priority as 'high' | 'normal' | 'low',
           sound: template.sound,
-          category: template.category,
-        },
+          category: template.category
+        }
       };
     }
 
@@ -428,10 +428,10 @@ export class MobileNotificationService {
     // Check quiet hours
     if (preferences.quietHours) {
       const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now
         .getMinutes()
         .toString()
-        .padStart(2, "0")}`;
+        .padStart(2, '0')}`;
 
       if (
         currentTime >= preferences.quietHours.start &&
@@ -478,37 +478,37 @@ export class MobileNotificationService {
           notification.connectionId,
           notification
         );
-        deliveredChannels.push("websocket-connection");
+        deliveredChannels.push('websocket-connection');
       } else {
         await this.mobileWebSocketService.sendToOrganization(
           notification.organizationId,
           notification
         );
-        deliveredChannels.push("websocket-organization");
+        deliveredChannels.push('websocket-organization');
       }
     } catch (error) {
-      this.logger.error("WebSocket delivery failed:", error);
+      this.logger.error('WebSocket delivery failed:', error);
       errors.push(`WebSocket: ${error.message}`);
     }
 
     // Email delivery (if requested and enabled)
-    if (channels?.includes("email")) {
+    if (channels?.includes('email')) {
       try {
         await this.sendEmailNotification(notification);
-        deliveredChannels.push("email");
+        deliveredChannels.push('email');
       } catch (error) {
-        this.logger.error("Email delivery failed:", error);
+        this.logger.error('Email delivery failed:', error);
         errors.push(`Email: ${error.message}`);
       }
     }
 
     // Push notification delivery (if requested and enabled)
-    if (channels?.includes("push")) {
+    if (channels?.includes('push')) {
       try {
         await this.sendPushNotification(notification);
-        deliveredChannels.push("push");
+        deliveredChannels.push('push');
       } catch (error) {
-        this.logger.error("Push notification delivery failed:", error);
+        this.logger.error('Push notification delivery failed:', error);
         errors.push(`Push: ${error.message}`);
       }
     }
@@ -517,7 +517,7 @@ export class MobileNotificationService {
       delivered: 0 < deliveredChannels.length,
       channels: deliveredChannels,
       timestamp: new Date().toISOString(),
-      errors: 0 < errors.length ? errors : undefined,
+      errors: 0 < errors.length ? errors : undefined
     };
   }
 
@@ -539,7 +539,7 @@ export class MobileNotificationService {
       ).toISOString(), // Default 1 minute later
       attempts: 0,
       maxAttempts: 3,
-      status: "pending",
+      status: 'pending'
     };
 
     this.notificationQueue.set(queueItem.id, queueItem);
@@ -549,8 +549,8 @@ export class MobileNotificationService {
 
     return {
       delivered: false,
-      channels: ["queue"],
-      timestamp: new Date().toISOString(),
+      channels: ['queue'],
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -571,7 +571,7 @@ export class MobileNotificationService {
 
     for (const [id, queueItem] of this.notificationQueue.entries()) {
       if (
-        "pending" === queueItem.status &&
+        'pending' === queueItem.status &&
         new Date(queueItem.scheduledFor) <= now
       ) {
         try {
@@ -580,12 +580,12 @@ export class MobileNotificationService {
           const result = await this.deliverNotification(queueItem.notification);
 
           if (result.delivered) {
-            queueItem.status = "delivered";
+            queueItem.status = 'delivered';
             this.notificationQueue.delete(id);
             this.deliveryStats.pending--;
             this.deliveryStats.delivered++;
           } else if (queueItem.attempts >= queueItem.maxAttempts) {
-            queueItem.status = "failed";
+            queueItem.status = 'failed';
             this.notificationQueue.delete(id);
             this.deliveryStats.pending--;
             this.deliveryStats.failed++;
@@ -603,7 +603,7 @@ export class MobileNotificationService {
           queueItem.attempts++;
 
           if (queueItem.attempts >= queueItem.maxAttempts) {
-            queueItem.status = "failed";
+            queueItem.status = 'failed';
             this.notificationQueue.delete(id);
             this.deliveryStats.pending--;
             this.deliveryStats.failed++;
@@ -621,10 +621,10 @@ export class MobileNotificationService {
   ): Promise<MobileNotificationConfig | null> {
     try {
       return await this.natsClient
-        .send({ cmd: "get-mobile-notification-config" }, { organizationId })
+        .send({ cmd: 'get-mobile-notification-config' }, { organizationId })
         .toPromise();
     } catch (error) {
-      this.logger.error("Error getting notification config:", error);
+      this.logger.error('Error getting notification config:', error);
       return null;
     }
   }
@@ -634,10 +634,10 @@ export class MobileNotificationService {
   ): Promise<{ organizationId: string; userId?: string } | null> {
     try {
       return await this.natsClient
-        .send({ cmd: "resolve-connection-organization" }, { connectionId })
+        .send({ cmd: 'resolve-connection-organization' }, { connectionId })
         .toPromise();
     } catch (error) {
-      this.logger.error("Error resolving connection organization:", error);
+      this.logger.error('Error resolving connection organization:', error);
       return null;
     }
   }
@@ -647,7 +647,7 @@ export class MobileNotificationService {
   ): Promise<void> {
     // Placeholder for email notification implementation
     await this.natsClient
-      .send({ cmd: "send-email-notification" }, notification)
+      .send({ cmd: 'send-email-notification' }, notification)
       .toPromise();
   }
 
@@ -661,7 +661,11 @@ export class MobileNotificationService {
         const result = await this.mobileFCMService.sendToDevice();
 
         this.logger.log(
-          `📱 Push notification sent to connection ${notification.connectionId}: ${result.successCount}/${result.successCount + result.failureCount}`
+          `📱 Push notification sent to connection ${
+            notification.connectionId
+          }: ${result.successCount}/${
+            result.successCount + result.failureCount
+          }`
         );
       } else {
         // Send to organization
@@ -676,7 +680,7 @@ export class MobileNotificationService {
         );
       }
     } catch (error) {
-      this.logger.error("Error sending push notification:", error);
+      this.logger.error('Error sending push notification:', error);
       throw error;
     }
   }
@@ -709,16 +713,16 @@ export class MobileNotificationService {
     try {
       await this.natsClient
         .send(
-          { cmd: "track-notification-delivery" },
+          { cmd: 'track-notification-delivery' },
           {
             notification,
             result,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date().toISOString()
           }
         )
         .toPromise();
     } catch (error) {
-      this.logger.error("Error tracking notification delivery:", error);
+      this.logger.error('Error tracking notification delivery:', error);
     }
   }
 
@@ -742,15 +746,15 @@ export class MobileNotificationService {
       totalQueued: this.notificationQueue.size,
       pending: 0,
       processing: 0,
-      failed: 0,
+      failed: 0
     };
 
     for (const item of this.notificationQueue.values()) {
       switch (item.status) {
-        case "pending":
+        case 'pending':
           status.pending++;
           break;
-        case "failed":
+        case 'failed':
           status.failed++;
           break;
         default:

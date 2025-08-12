@@ -151,7 +151,7 @@ export class VerificationService {
       templateIds
     };
     const schemaAndOrgDetails = await this.natsClient
-      .send<ISchemaDetail[]>(this.verificationServiceProxy, pattern, payload)
+      .send<ISchemaDetail[]>(this.verificationServiceProxy as any, pattern, payload)
 
       .catch((error) => {
         this.logger.error(`catch: ${JSON.stringify(error)}`);
@@ -1105,7 +1105,7 @@ export class VerificationService {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const message = await this.natsClient.send<any>(this.verificationServiceProxy, pattern, payload);
+      const message = await this.natsClient.send<any>(this.verificationServiceProxy as any, pattern, payload);
       return message;
     } catch (error) {
       this.logger.error(`catch: ${JSON.stringify(error)}`);
@@ -1138,7 +1138,7 @@ export class VerificationService {
   ): Promise<{
     response: string;
   }> {
-    return from(this.natsClient.send<string>(this.verificationServiceProxy, pattern, payload))
+    return from(this.natsClient.send<string>(this.verificationServiceProxy as any, pattern, payload))
       .pipe(
         map((response) => ({
           response
@@ -1197,17 +1197,47 @@ export class VerificationService {
 
       await this.userActivityRepository._orgDeletedActivity(
         orgId,
-        userDetails,
-        deletedVerificationData,
-        RecordType.VERIFICATION_RECORD
-      );
+      userDetails,
+      deletedVerificationData,
+      RecordType.VERIFICATION_RECORD
+    );
 
-      return deleteProofRecords;
-    } catch (error) {
-      this.logger.error(
-        `[deleteVerificationRecords] - error in deleting verification records: ${JSON.stringify(error)}`
-      );
-      throw new RpcException(error.response ? error.response : error);
-    }
+    return deleteProofRecords;
+  } catch (error) {
+    this.logger.error(
+      `[deleteVerificationRecords] - error in deleting verification records: ${JSON.stringify(error)}`
+    );
+    throw new RpcException(error.response ? error.response : error);
   }
+}
+
+/**
+ * Process proof webhook events
+ * @param webhookData Webhook payload from agent
+ */
+async processProofWebhookEvent(webhookData: any): Promise<void> {
+  try {
+    this.logger.log('🔍 Processing proof webhook event');
+    this.logger.log(`📊 Proof State: ${webhookData.state || 'unknown'}`);
+    this.logger.log(`🆔 Proof Exchange ID: ${webhookData.id || 'unknown'}`);
+    
+    // Log the webhook data for debugging
+    this.logger.debug(`📦 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    
+    // Here you can add specific business logic for proof webhook processing
+    // For example:
+    // - Update proof state in database
+    // - Send notifications to users
+    // - Trigger verification workflows
+    // - Update audit logs
+    
+    // For now, we'll just log the event
+    // TODO: Implement specific proof webhook processing logic
+    
+    this.logger.log('✅ Proof webhook event processed successfully');
+  } catch (error) {
+    this.logger.error('❌ Failed to process proof webhook event:', error);
+    throw new RpcException(error.response ? error.response : error);
+  }
+}
 }

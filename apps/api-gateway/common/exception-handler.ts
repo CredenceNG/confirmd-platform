@@ -3,11 +3,11 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
-} from "@nestjs/common";
-import { BaseExceptionFilter } from "@nestjs/core";
-import { ExceptionResponse } from "./interface";
-import { ResponseMessages } from "@credebl/common/response-messages";
+  Logger
+} from '@nestjs/common';
+import { BaseExceptionFilter } from '@nestjs/core';
+import { ExceptionResponse } from './interface';
+import { ResponseMessages } from '@credebl/common/response-messages';
 
 @Catch()
 export class CustomExceptionFilter extends BaseExceptionFilter {
@@ -19,11 +19,11 @@ export class CustomExceptionFilter extends BaseExceptionFilter {
     let errorResponse;
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
 
-    if (!exception || "{}" === JSON.stringify(exception)) {
+    if (!exception || '{}' === JSON.stringify(exception)) {
       errorResponse = {
         statusCode: status,
-        message: "Something went wrong!",
-        error: ResponseMessages.errorMessages.serverError,
+        message: 'Something went wrong!',
+        error: ResponseMessages.errorMessages.serverError
       };
     }
     if (exception instanceof HttpException) {
@@ -35,7 +35,7 @@ export class CustomExceptionFilter extends BaseExceptionFilter {
       ? exception.getResponse()
       : exception;
 
-    if ("string" === typeof exceptionResponseData) {
+    if ('string' === typeof exceptionResponseData) {
       exceptionResponse.message = exceptionResponseData;
     } else {
       exceptionResponse = exceptionResponseData as unknown as ExceptionResponse;
@@ -43,7 +43,7 @@ export class CustomExceptionFilter extends BaseExceptionFilter {
 
     if (
       exceptionResponse.message &&
-      "string" === typeof exceptionResponse.message &&
+      'string' === typeof exceptionResponse.message &&
       exceptionResponse.message.includes(
         ResponseMessages.nats.error.noSubscribers
       )
@@ -56,10 +56,10 @@ export class CustomExceptionFilter extends BaseExceptionFilter {
         : status,
       message: exceptionResponse.message
         ? exceptionResponse.message
-        : "Something went wrong!",
+        : 'Something went wrong!',
       error: exceptionResponse.error
         ? exceptionResponse.error
-        : ResponseMessages.errorMessages.serverError,
+        : ResponseMessages.errorMessages.serverError
     };
     response.status(errorResponse.statusCode).json(errorResponse);
   }

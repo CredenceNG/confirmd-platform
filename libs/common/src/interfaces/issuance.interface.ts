@@ -94,7 +94,7 @@ export interface IIssuedCredential {
     }
     
     interface ICredential {
-      "@context": string[];
+      '@context': string[];
       type: string[];
       issuer?: {
         id: string;

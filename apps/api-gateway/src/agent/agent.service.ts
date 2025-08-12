@@ -29,7 +29,7 @@ export class AgentService extends BaseService {
     getAllDid(_public: boolean, verkey: string, did: string, user: any) {
         this.logger.log('**** getAllDid called...');
         const payload = { _public, verkey, did, user };
-        return this.natsClient.sendNats(this.agentServiceProxy, 'get-all-did', payload);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'get-all-did', payload);
     }
 
     /**
@@ -37,13 +37,13 @@ export class AgentService extends BaseService {
      */
     createLocalDid(user: any) {
         this.logger.log('**** createLocalDid called...');
-        return this.natsClient.sendNats(this.agentServiceProxy, 'create-local-did', user);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'create-local-did', user);
     }
 
     async walletProvision(walletUserDetails: WalletDetailsDto, user: any) {
         this.logger.log(`**** walletProvision called...${JSON.stringify(walletUserDetails)}`);      
         const payload = { walletUserDetails, user };
-        return await this.natsClient.sendNats(this.agentServiceProxy, 'wallet-provision', payload);       
+        return await this.natsClient.sendNats(this.agentServiceProxy as any, 'wallet-provision', payload);       
     }
 
     /**
@@ -51,7 +51,7 @@ export class AgentService extends BaseService {
      */
     getPublicDid(user: any) {
         this.logger.log('**** getPublicDid called...');
-        return this.natsClient.sendNats(this.agentServiceProxy, 'get-public-did', user);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'get-public-did', user);
     }
 
     /**
@@ -61,7 +61,7 @@ export class AgentService extends BaseService {
     assignPublicDid(id: number, user: any) {
         this.logger.log('**** assignPublicDid called...');
         const payload = { id, user };
-        return this.natsClient.sendNats(this.agentServiceProxy, 'assign-public-did-org', payload);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'assign-public-did-org', payload);
     }
 
 
@@ -75,28 +75,28 @@ export class AgentService extends BaseService {
     registerNym(id: string, user: any) {
         this.logger.log('**** registerNym called...');
         const payload = { id, user };
-        return this.natsClient.sendNats(this.agentServiceProxy, 'register-nym-org', payload);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'register-nym-org', payload);
     }
 
     restartStopAgent(action: string, orgId: string) {
         const payload = { action, orgId };
-        return this.natsClient.sendNats(this.agentServiceProxy, 'restart-stop-agent', payload);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'restart-stop-agent', payload);
     }
 
     getAgentServerStatus(user) {
 
-        return this.natsClient.sendNats(this.agentServiceProxy, 'get-agent-server-status', user);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'get-agent-server-status', user);
     }
 
     pingServiceAgent() {
         this.logger.log('**** pingServiceAgent called...');
         const payload = {};
-        return this.natsClient.sendNats(this.agentServiceProxy, 'ping-agent', payload);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'ping-agent', payload);
     }
 
     agentSpinupStatus(items_per_page: number, page: number, search_text: string, agentStatus: string, sortValue: string, user: any) {
         this.logger.log('**** agentSpinupStatus called...');
         const payload = { items_per_page, page, search_text, agentStatus, sortValue, user };
-        return this.natsClient.sendNats(this.agentServiceProxy, 'get-agent-spinup-status', payload);
+        return this.natsClient.sendNats(this.agentServiceProxy as any, 'get-agent-spinup-status', payload);
     }
 }

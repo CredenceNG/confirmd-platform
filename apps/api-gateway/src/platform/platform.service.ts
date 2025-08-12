@@ -19,27 +19,27 @@ export class PlatformService extends BaseService {
 
     async getAllSchema(schemaSearchCriteria: ISchemaSearchPayload, user: IUserRequestInterface): Promise<ISchemaDetails> {
         const schemaSearch = { schemaSearchCriteria, user };
-        return this.natsClient.sendNatsMessage(this.platformServiceProxy, 'get-all-schemas', schemaSearch);
+        return this.natsClient.sendNatsMessage(this.platformServiceProxy as any, 'get-all-schemas', schemaSearch);
 
     }
 
     async getAllPlatformCredDefs(getAllPlatformCredDefs: GetAllPlatformCredDefsDto, user: IUserRequestInterface): Promise<IPlatformCredDefsData> {
         const credDefs = { ...getAllPlatformCredDefs, user };
-        return this.natsClient.sendNatsMessage(this.platformServiceProxy, 'get-all-platform-cred-defs', credDefs);
+        return this.natsClient.sendNatsMessage(this.platformServiceProxy as any, 'get-all-platform-cred-defs', credDefs);
     }
 
     async getAllLedgers(): Promise<ILedgers> {
         const payload = {};
-        return this.natsClient.sendNatsMessage(this.platformServiceProxy, 'get-all-ledgers', payload);
+        return this.natsClient.sendNatsMessage(this.platformServiceProxy as any, 'get-all-ledgers', payload);
     }
 
     async getNetworkUrl(indyNamespace: string): Promise<INetworkUrl> {
-        return this.natsClient.sendNatsMessage(this.platformServiceProxy, 'get-network-url', indyNamespace);
+        return this.natsClient.sendNatsMessage(this.platformServiceProxy as any, 'get-network-url', indyNamespace);
     }
 
     async getShorteningUrlById(referenceId: string): Promise<string> {
     
         // NATS call
-        return this.natsClient.sendNatsMessage(this.platformServiceProxy, 'get-shortening-url', referenceId);
+        return this.natsClient.sendNatsMessage(this.platformServiceProxy as any, 'get-shortening-url', referenceId);
       }
 }

@@ -21,7 +21,7 @@ services:
       - cache:/data
 
   postgres:
-    image: postgres:13
+    image: postgres:15
     restart: always
     environment:
       POSTGRES_DB: credebl
@@ -199,6 +199,19 @@ services:
     image: ghcr.io/credebl/schema-file-server:latest
     env_file:
       - ./.env
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./config/cloudflared-config.yml:/etc/cloudflared/config.yml:ro
+      - ~/.cloudflared:/home/nonroot/.cloudflared:ro
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+    networks:
+      - default
 
 volumes:
   cache:

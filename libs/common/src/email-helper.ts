@@ -22,15 +22,15 @@ export const sendEmail = async (EmailDto: EmailDto): Promise<boolean> => {
     console.log('📋 Email From:', EmailDto.emailFrom);
     console.log('📨 Email To:', EmailDto.emailTo);
     console.log('📝 Subject:', EmailDto.emailSubject);
-    console.log('🔑 RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
-    console.log('🔍 API Key prefix:', process.env.RESEND_API_KEY?.substring(0, 10) + '...');
+    console.log('🔑 RESEND_API_KEY configured:', Boolean(process.env.RESEND_API_KEY));
+    console.log('🔍 API Key prefix:', `${process.env.RESEND_API_KEY?.substring(0, 10)}...`);
 
     const emailData = {
       from: EmailDto.emailFrom,
       to: EmailDto.emailTo,
       subject: EmailDto.emailSubject,
       text: EmailDto.emailText,
-      html: EmailDto.emailHtml,
+      html: EmailDto.emailHtml
       // Note: Resend has different attachment format than SendGrid
       // attachments: EmailDto.emailAttachments
     };

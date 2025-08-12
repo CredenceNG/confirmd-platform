@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class KeycloakUrlService {
-  private readonly logger = new Logger("KeycloakUrlService");
+  private readonly logger = new Logger('KeycloakUrlService');
 
   async createUserURL(realm: string): Promise<string> {
     return `${process.env.KEYCLOAK_DOMAIN}admin/realms/${realm}/users`;
@@ -45,17 +45,17 @@ export class KeycloakUrlService {
   async GetClientRoleURL(
     realm: string,
     clientid: string,
-    roleName = ""
+    roleName = ''
   ): Promise<string> {
-    if ("" === roleName) {
+    if ('' === roleName) {
       return `${process.env.KEYCLOAK_DOMAIN}admin/realms/${realm}/clients/${clientid}/roles`;
     }
 
     return `${process.env.KEYCLOAK_DOMAIN}admin/realms/${realm}/clients/${clientid}/roles/${roleName}`;
   }
 
-  async GetRealmRoleURL(realm: string, roleName = ""): Promise<string> {
-    if ("" === roleName) {
+  async GetRealmRoleURL(realm: string, roleName = ''): Promise<string> {
+    if ('' === roleName) {
       return `${process.env.KEYCLOAK_DOMAIN}admin/realms/${realm}/roles`;
     }
 

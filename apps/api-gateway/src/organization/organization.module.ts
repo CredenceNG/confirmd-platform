@@ -1,31 +1,31 @@
-import { CommonModule, CommonService } from "@credebl/common";
+import { CommonModule, CommonService } from '@credebl/common';
 
-import { ClientsModule, Transport } from "@nestjs/microservices";
-import { ConfigModule } from "@nestjs/config";
-import { HttpModule } from "@nestjs/axios";
-import { Module } from "@nestjs/common";
-import { OrganizationController } from "./organization.controller";
-import { OrganizationService } from "./organization.service";
-import { getNatsOptions } from "@credebl/common/nats.config";
-import { AwsService } from "@credebl/aws";
-import { CommonConstants } from "@credebl/common/common.constant";
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
+import { Module } from '@nestjs/common';
+import { OrganizationController } from './organization.controller';
+import { OrganizationService } from './organization.service';
+import { getNatsOptions } from '@credebl/common/nats.config';
+import { AwsService } from '@credebl/aws';
+import { CommonConstants } from '@credebl/common/common.constant';
 @Module({
   imports: [
     HttpModule,
     ConfigModule.forRoot(),
     ClientsModule.register([
       {
-        name: "NATS_CLIENT",
+        name: 'NATS_CLIENT',
         transport: Transport.NATS,
         options: getNatsOptions(
           CommonConstants.ORGANIZATION_SERVICE,
           process.env.API_GATEWAY_NKEY_SEED
-        ),
+        )
       },
-      CommonModule,
-    ]),
+      CommonModule
+    ])
   ],
   controllers: [OrganizationController],
-  providers: [OrganizationService, CommonService, AwsService],
+  providers: [OrganizationService, CommonService, AwsService]
 })
 export class OrganizationModule {}

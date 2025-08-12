@@ -91,8 +91,7 @@ export function isSafeString(value: string): boolean {
 }
 
 export const IsNotSQLInjection =
-  (validationOptions?: ValidationOptions): PropertyDecorator =>
-  (object: object, propertyName: string) => {
+  (validationOptions?: ValidationOptions): PropertyDecorator => (object: object, propertyName: string) => {
     registerDecorator({
       name: 'isNotSQLInjection',
       target: object.constructor,

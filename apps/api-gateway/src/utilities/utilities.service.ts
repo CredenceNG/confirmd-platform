@@ -11,12 +11,12 @@ export class UtilitiesService extends BaseService {
   }
 
   async createShorteningUrl(shorteningUrlDto: UtilitiesDto): Promise<string> {
-    return this.natsClient.sendNatsMessage(this.serviceProxy, 'create-shortening-url', shorteningUrlDto);
+    return this.natsClient.sendNatsMessage(this.serviceProxy as any, 'create-shortening-url', shorteningUrlDto);
   }
 
   async storeObject(persistent: boolean, storeObjectDto: StoreObjectDto): Promise<string> {
     const storeObj = storeObjectDto.data;
     const payload = {persistent, storeObj};
-    return this.natsClient.sendNatsMessage(this.serviceProxy, 'store-object-return-url', payload);
+    return this.natsClient.sendNatsMessage(this.serviceProxy as any, 'store-object-return-url', payload);
   }
 }

@@ -5,8 +5,7 @@ import { LogData } from '@credebl/logger/log';
 
 export default class NestjsLoggerServiceAdapter
   extends ConsoleLogger
-  implements LoggerService
-{
+  implements LoggerService {
   public constructor(private readonly logger: Logger) {
     super();
   }
@@ -37,7 +36,7 @@ export default class NestjsLoggerServiceAdapter
 
   private getLogData(...optionalParams: any[]) : LogData  {
     return {
-      sourceClass: optionalParams[0] ? optionalParams[0] : undefined,
+      sourceClass: optionalParams[0] ? optionalParams[0] : undefined
     };
   }
 }

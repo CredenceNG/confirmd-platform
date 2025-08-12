@@ -1,6 +1,6 @@
-import { Resend } from "resend";
-import * as dotenv from "dotenv";
-import { EmailDto } from "./dtos/email.dto";
+import { Resend } from 'resend';
+import * as dotenv from 'dotenv';
+import { EmailDto } from './dtos/email.dto';
 
 dotenv.config();
 
@@ -13,7 +13,7 @@ export const sendEmail = async (EmailDto: EmailDto): Promise<boolean> => {
       to: EmailDto.emailTo,
       subject: EmailDto.emailSubject,
       text: EmailDto.emailText,
-      html: EmailDto.emailHtml,
+      html: EmailDto.emailHtml
       // Note: Resend has different attachment format than SendGrid
       // attachments: EmailDto.emailAttachments
     };
@@ -21,14 +21,14 @@ export const sendEmail = async (EmailDto: EmailDto): Promise<boolean> => {
     const { data, error } = await resend.emails.send(emailData);
 
     if (error) {
-      console.error("❌ Resend email error:", error);
+      console.error('❌ Resend email error:', error);
       return false;
     }
 
-    console.log("✅ Email sent successfully via Resend:", data?.id);
+    console.log('✅ Email sent successfully via Resend:', data?.id);
     return true;
   } catch (error) {
-    console.error("❌ Failed to send email via Resend:", error);
+    console.error('❌ Failed to send email via Resend:', error);
     return false;
   }
 };

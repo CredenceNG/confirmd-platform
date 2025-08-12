@@ -1,22 +1,22 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   MobileWebhookData,
   MobileWebhookEventType,
   MobileWebhookRouting,
   MobileAgentConfig,
   MobileNotificationConfig,
-  MobileContext,
-} from "../interfaces/mobile-agent.interfaces";
+  MobileContext
+} from '../interfaces/mobile-agent.interfaces';
 
 @Injectable()
 export class MobileWebhookService {
-  private readonly logger = new Logger("MobileWebhookService");
+  private readonly logger = new Logger('MobileWebhookService');
 
-  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
+  constructor(@Inject('NATS_CLIENT') private readonly natsClient: ClientProxy) {
     this.logger.log(
-      "🚀 MobileWebhookService initialized - Enhanced mobile webhook processing ready"
+      '🚀 MobileWebhookService initialized - Enhanced mobile webhook processing ready'
     );
   }
 
@@ -24,7 +24,7 @@ export class MobileWebhookService {
    * Enhanced webhook processing specifically optimized for mobile wallet interactions
    */
   async processMobileWebhook(webhookData: MobileWebhookData): Promise<void> {
-    this.logger.log("📱 === PROCESSING MOBILE WEBHOOK ===");
+    this.logger.log('📱 === PROCESSING MOBILE WEBHOOK ===');
     this.logger.log(`🔥 Event Type: ${webhookData.eventType}`);
     this.logger.log(`🏢 Organization: ${webhookData.organizationId}`);
     this.logger.log(`📋 Data: ${JSON.stringify(webhookData.data, null, 2)}`);
@@ -42,9 +42,9 @@ export class MobileWebhookService {
       // Update mobile analytics
       await this.updateMobileAnalytics(webhookData);
 
-      this.logger.log("✅ Mobile webhook processed successfully");
+      this.logger.log('✅ Mobile webhook processed successfully');
     } catch (error) {
-      this.logger.error("❌ Mobile webhook processing failed:", error);
+      this.logger.error('❌ Mobile webhook processing failed:', error);
       await this.handleMobileWebhookError(webhookData, error);
       throw error;
     }
@@ -56,7 +56,7 @@ export class MobileWebhookService {
   private async enrichMobileWebhookData(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.log("🔍 Enriching mobile webhook data with context");
+    this.logger.log('🔍 Enriching mobile webhook data with context');
 
     try {
       // Add mobile context if not present
@@ -72,7 +72,7 @@ export class MobileWebhookService {
         webhookData.data.metadata = {
           ...webhookData.data.metadata,
           mobileConfig: orgMobileConfig.mobileFeatures,
-          walletCompatibility: orgMobileConfig.walletCompatibility,
+          walletCompatibility: orgMobileConfig.walletCompatibility
         };
       }
 
@@ -81,7 +81,7 @@ export class MobileWebhookService {
         webhookData.timestamp = new Date().toISOString();
       }
     } catch (error) {
-      this.logger.error("Error enriching mobile webhook data:", error);
+      this.logger.error('Error enriching mobile webhook data:', error);
     }
   }
 
@@ -141,7 +141,7 @@ export class MobileWebhookService {
   private async handleMobileConnectionWebhook(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.log("🔗 Processing mobile connection webhook");
+    this.logger.log('🔗 Processing mobile connection webhook');
 
     const connectionPayload = {
       organizationId: webhookData.organizationId,
@@ -149,12 +149,12 @@ export class MobileWebhookService {
       state: webhookData.data.state,
       previousState: webhookData.data.previousState,
       mobileContext: webhookData.mobileContext,
-      timestamp: webhookData.timestamp,
+      timestamp: webhookData.timestamp
     };
 
     // Forward to connection service with mobile enhancement
     await this.natsClient
-      .send({ cmd: "mobile-connection-webhook" }, connectionPayload)
+      .send({ cmd: 'mobile-connection-webhook' }, connectionPayload)
       .toPromise();
   }
 
@@ -164,7 +164,7 @@ export class MobileWebhookService {
   private async handleMobileCredentialWebhook(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.log("🎫 Processing mobile credential webhook");
+    this.logger.log('🎫 Processing mobile credential webhook');
 
     const credentialPayload = {
       organizationId: webhookData.organizationId,
@@ -172,12 +172,12 @@ export class MobileWebhookService {
       connectionId: webhookData.data.connectionId,
       state: webhookData.data.state,
       mobileContext: webhookData.mobileContext,
-      timestamp: webhookData.timestamp,
+      timestamp: webhookData.timestamp
     };
 
     // Forward to credential service with mobile enhancement
     await this.natsClient
-      .send({ cmd: "mobile-credential-webhook" }, credentialPayload)
+      .send({ cmd: 'mobile-credential-webhook' }, credentialPayload)
       .toPromise();
   }
 
@@ -187,7 +187,7 @@ export class MobileWebhookService {
   private async handleMobileProofWebhook(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.log("🔍 Processing mobile proof webhook");
+    this.logger.log('🔍 Processing mobile proof webhook');
 
     const proofPayload = {
       organizationId: webhookData.organizationId,
@@ -195,12 +195,12 @@ export class MobileWebhookService {
       connectionId: webhookData.data.connectionId,
       state: webhookData.data.state,
       mobileContext: webhookData.mobileContext,
-      timestamp: webhookData.timestamp,
+      timestamp: webhookData.timestamp
     };
 
     // Forward to proof service with mobile enhancement
     await this.natsClient
-      .send({ cmd: "mobile-proof-webhook" }, proofPayload)
+      .send({ cmd: 'mobile-proof-webhook' }, proofPayload)
       .toPromise();
   }
 
@@ -210,22 +210,22 @@ export class MobileWebhookService {
   private async handleMobileWalletStatusWebhook(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.log("📱 Processing mobile wallet status webhook");
+    this.logger.log('📱 Processing mobile wallet status webhook');
 
     const statusPayload = {
       organizationId: webhookData.organizationId,
       connectionId: webhookData.data.connectionId,
       status:
         webhookData.eventType === MobileWebhookEventType.MOBILE_WALLET_CONNECTED
-          ? "connected"
-          : "disconnected",
+          ? 'connected'
+          : 'disconnected',
       mobileContext: webhookData.mobileContext,
-      timestamp: webhookData.timestamp,
+      timestamp: webhookData.timestamp
     };
 
     // Update wallet status tracking
     await this.natsClient
-      .send({ cmd: "mobile-wallet-status-update" }, statusPayload)
+      .send({ cmd: 'mobile-wallet-status-update' }, statusPayload)
       .toPromise();
   }
 
@@ -235,7 +235,7 @@ export class MobileWebhookService {
   private async handleMobileErrorWebhook(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.error("❌ Processing mobile error webhook");
+    this.logger.error('❌ Processing mobile error webhook');
     this.logger.error(`Error Code: ${webhookData.data.errorCode}`);
     this.logger.error(`Error Message: ${webhookData.data.errorMessage}`);
 
@@ -245,12 +245,12 @@ export class MobileWebhookService {
       errorMessage: webhookData.data.errorMessage,
       mobileContext: webhookData.mobileContext,
       timestamp: webhookData.timestamp,
-      originalWebhookData: webhookData,
+      originalWebhookData: webhookData
     };
 
     // Forward to error handling service
     await this.natsClient
-      .send({ cmd: "mobile-error-webhook" }, errorPayload)
+      .send({ cmd: 'mobile-error-webhook' }, errorPayload)
       .toPromise();
   }
 
@@ -260,7 +260,7 @@ export class MobileWebhookService {
   private async sendMobileNotifications(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.log("📢 Sending mobile notifications");
+    this.logger.log('📢 Sending mobile notifications');
 
     try {
       const notificationConfig = await this.getMobileNotificationConfig(
@@ -272,16 +272,16 @@ export class MobileWebhookService {
           organizationId: webhookData.organizationId,
           eventType: webhookData.eventType,
           webhookData,
-          config: notificationConfig,
+          config: notificationConfig
         };
 
         // Send via NATS to notification service
         await this.natsClient
-          .send({ cmd: "send-mobile-notification" }, notificationPayload)
+          .send({ cmd: 'send-mobile-notification' }, notificationPayload)
           .toPromise();
       }
     } catch (error) {
-      this.logger.error("Error sending mobile notifications:", error);
+      this.logger.error('Error sending mobile notifications:', error);
     }
   }
 
@@ -291,7 +291,7 @@ export class MobileWebhookService {
   private async updateMobileAnalytics(
     webhookData: MobileWebhookData
   ): Promise<void> {
-    this.logger.log("📊 Updating mobile analytics");
+    this.logger.log('📊 Updating mobile analytics');
 
     try {
       const analyticsPayload = {
@@ -299,15 +299,15 @@ export class MobileWebhookService {
         eventType: webhookData.eventType,
         timestamp: webhookData.timestamp,
         mobileContext: webhookData.mobileContext,
-        state: webhookData.data.state,
+        state: webhookData.data.state
       };
 
       // Send to analytics service
       await this.natsClient
-        .send({ cmd: "update-mobile-analytics" }, analyticsPayload)
+        .send({ cmd: 'update-mobile-analytics' }, analyticsPayload)
         .toPromise();
     } catch (error) {
-      this.logger.error("Error updating mobile analytics:", error);
+      this.logger.error('Error updating mobile analytics:', error);
     }
   }
 
@@ -318,7 +318,7 @@ export class MobileWebhookService {
     webhookData: MobileWebhookData,
     error: Error
   ): Promise<void> {
-    this.logger.error("🚨 Handling mobile webhook error");
+    this.logger.error('🚨 Handling mobile webhook error');
 
     const errorPayload = {
       organizationId: webhookData.organizationId,
@@ -326,13 +326,13 @@ export class MobileWebhookService {
       error: {
         message: error.message,
         stack: error.stack,
-        timestamp: new Date().toISOString(),
-      },
+        timestamp: new Date().toISOString()
+      }
     };
 
     // Send to error tracking service
     await this.natsClient
-      .send({ cmd: "mobile-webhook-error" }, errorPayload)
+      .send({ cmd: 'mobile-webhook-error' }, errorPayload)
       .toPromise();
   }
 
@@ -345,9 +345,9 @@ export class MobileWebhookService {
     // This would analyze the webhook data to detect mobile wallet type, platform, etc.
     // For now, return a basic structure
     return {
-      walletType: "unknown",
-      walletVersion: "unknown",
-      platformType: "web", // Default to 'web', can be 'ios' | 'android' | 'web'
+      walletType: 'unknown',
+      walletVersion: 'unknown',
+      platformType: 'web' // Default to 'web', can be 'ios' | 'android' | 'web'
     };
   }
 
@@ -359,10 +359,10 @@ export class MobileWebhookService {
   ): Promise<MobileAgentConfig | null> {
     try {
       return await this.natsClient
-        .send({ cmd: "get-mobile-agent-config" }, { organizationId })
+        .send({ cmd: 'get-mobile-agent-config' }, { organizationId })
         .toPromise();
     } catch (error) {
-      this.logger.error("Error getting organization mobile config:", error);
+      this.logger.error('Error getting organization mobile config:', error);
       return null;
     }
   }
@@ -375,10 +375,10 @@ export class MobileWebhookService {
   ): Promise<MobileWebhookRouting | null> {
     try {
       return await this.natsClient
-        .send({ cmd: "get-mobile-webhook-routing" }, { organizationId })
+        .send({ cmd: 'get-mobile-webhook-routing' }, { organizationId })
         .toPromise();
     } catch (error) {
-      this.logger.error("Error getting mobile webhook routing:", error);
+      this.logger.error('Error getting mobile webhook routing:', error);
       return null;
     }
   }
@@ -391,10 +391,10 @@ export class MobileWebhookService {
   ): Promise<MobileNotificationConfig | null> {
     try {
       return await this.natsClient
-        .send({ cmd: "get-mobile-notification-config" }, { organizationId })
+        .send({ cmd: 'get-mobile-notification-config' }, { organizationId })
         .toPromise();
     } catch (error) {
-      this.logger.error("Error getting mobile notification config:", error);
+      this.logger.error('Error getting mobile notification config:', error);
       return null;
     }
   }
@@ -406,7 +406,7 @@ export class MobileWebhookService {
     webhookData: MobileWebhookData,
     routingRules: MobileWebhookRouting
   ): Promise<void> {
-    this.logger.log("🚀 Forwarding to external webhooks");
+    this.logger.log('🚀 Forwarding to external webhooks');
 
     for (const rule of routingRules.routingRules) {
       if (rule.enabled && rule.eventTypes.includes(webhookData.eventType)) {
@@ -416,12 +416,12 @@ export class MobileWebhookService {
             webhookData,
             destinationUrl: rule.destinationUrl,
             retryPolicy: routingRules.retryPolicy,
-            authentication: routingRules.authentication,
+            authentication: routingRules.authentication
           };
 
           // Send to webhook forwarding service
           await this.natsClient
-            .send({ cmd: "forward-mobile-webhook" }, forwardPayload)
+            .send({ cmd: 'forward-mobile-webhook' }, forwardPayload)
             .toPromise();
         } catch (error) {
           this.logger.error(

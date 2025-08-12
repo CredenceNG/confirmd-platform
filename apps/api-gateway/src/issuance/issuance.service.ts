@@ -53,7 +53,7 @@ export class IssuanceService extends BaseService {
       user
     };
 
-    return this.natsClient.sendNatsMessage(this.issuanceProxy, 'send-credential-create-offer', payload);
+    return this.natsClient.sendNatsMessage(this.issuanceProxy as any, 'send-credential-create-offer', payload);
   }
 
   sendCredentialOutOfBand(issueCredentialDto: OOBIssueCredentialDto): Promise<{
@@ -115,7 +115,7 @@ export class IssuanceService extends BaseService {
       };
     }
 
-    return this.natsClient.sendNats(this.issuanceProxy, 'send-credential-create-offer-oob', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'send-credential-create-offer-oob', payload);
   }
 
   getIssueCredentials(
@@ -124,7 +124,7 @@ export class IssuanceService extends BaseService {
     orgId: string
   ): Promise<IIssuedCredential> {
     const payload = { issuedCredentialsSearchCriteria, user, orgId };
-    return this.natsClient.sendNatsMessage(this.issuanceProxy, 'get-all-issued-credentials', payload);
+    return this.natsClient.sendNatsMessage(this.issuanceProxy as any, 'get-all-issued-credentials', payload);
   }
 
   getIssueCredentialsbyCredentialRecordId(
@@ -135,7 +135,7 @@ export class IssuanceService extends BaseService {
     response: object;
   }> {
     const payload = { user, credentialRecordId, orgId };
-    return this.natsClient.sendNats(this.issuanceProxy, 'get-issued-credentials-by-credentialDefinitionId', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'get-issued-credentials-by-credentialDefinitionId', payload);
   }
 
   getIssueCredentialWebhook(
@@ -145,7 +145,7 @@ export class IssuanceService extends BaseService {
     response: object;
   }> {
     const payload = { issueCredentialDto, id };
-    return this.natsClient.sendNats(this.issuanceProxy, 'webhook-get-issue-credential', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'webhook-get-issue-credential', payload);
   }
 
   outOfBandCredentialOffer(
@@ -155,13 +155,13 @@ export class IssuanceService extends BaseService {
     response: object;
   }> {
     const payload = { user, outOfBandCredentialDto };
-    return this.natsClient.sendNats(this.issuanceProxy, 'out-of-band-credential-offer', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'out-of-band-credential-offer', payload);
   }
 
   getAllCredentialTemplates(orgId: string, schemaType: string): Promise<ITemplateFormat> {
     const payload = { orgId, schemaType };
     return this.natsClient.sendNatsMessage(
-      this.issuanceProxy,
+      this.issuanceProxy as any,
       'get-all-credential-template-for-bulk-operation',
       payload
     );
@@ -169,13 +169,13 @@ export class IssuanceService extends BaseService {
 
   async downloadBulkIssuanceCSVTemplate(orgId: string, templateDetails: TemplateDetails): Promise<FileExportResponse> {
     const payload = { orgId, templateDetails };
-    return (await this.natsClient.sendNats(this.issuanceProxy, 'download-csv-template-for-bulk-operation', payload))
+    return (await this.natsClient.sendNats(this.issuanceProxy as any, 'download-csv-template-for-bulk-operation', payload))
       .response;
   }
 
   async uploadCSVTemplate(importFileDetails: UploadedFileDetails, orgId: string): Promise<{ response: object }> {
     const payload = { importFileDetails, orgId };
-    return this.natsClient.sendNats(this.issuanceProxy, 'upload-csv-template', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'upload-csv-template', payload);
   }
 
   async previewCSVDetails(requestId: string, orgId: string, previewFileDetails: PreviewFileDetails): Promise<string> {
@@ -184,7 +184,7 @@ export class IssuanceService extends BaseService {
       orgId,
       previewFileDetails
     };
-    return this.natsClient.sendNats(this.issuanceProxy, 'preview-csv-details', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'preview-csv-details', payload);
   }
 
   async issuedFileDetails(orgId: string, fileParameter: FileParameter): Promise<{ response: object }> {
@@ -192,7 +192,7 @@ export class IssuanceService extends BaseService {
       orgId,
       fileParameter
     };
-    return this.natsClient.sendNats(this.issuanceProxy, 'issued-file-details', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'issued-file-details', payload);
   }
 
   async getFileDetailsByFileId(
@@ -205,7 +205,7 @@ export class IssuanceService extends BaseService {
       fileId,
       fileParameter
     };
-    return this.natsClient.sendNats(this.issuanceProxy, 'issued-file-data', payload);
+    return this.natsClient.sendNats(this.issuanceProxy as any, 'issued-file-data', payload);
   }
 
   async issueBulkCredential(
@@ -217,7 +217,7 @@ export class IssuanceService extends BaseService {
   ): Promise<object> {
     const payload = { requestId, orgId, clientDetails, reqPayload, isValidateSchema };
 
-    return this.natsClient.sendNatsMessage(this.issuanceProxy, 'issue-bulk-credentials', payload);
+    return this.natsClient.sendNatsMessage(this.issuanceProxy as any, 'issue-bulk-credentials', payload);
   }
 
   async retryBulkCredential(
@@ -227,9 +227,13 @@ export class IssuanceService extends BaseService {
     isValidateSchema?: boolean
   ): Promise<object> {
     const payload = { fileId, orgId, clientDetails, isValidateSchema };
-    return this.natsClient.sendNatsMessage(this.issuanceProxy, 'retry-bulk-credentials', payload);
+    return this.natsClient.sendNatsMessage(this.issuanceProxy as any, 'retry-bulk-credentials', payload);
   }
 
+  /**
+   * @deprecated This method is no longer used since we moved to centralized webhook processing
+   * via WebhookReceiverService. Kept for backward compatibility.
+   */
   async _getWebhookUrl(tenantId?: string, orgId?: string): Promise<string> {
     const pattern = { cmd: 'get-webhookurl' };
     const payload = { tenantId, orgId };
@@ -244,6 +248,10 @@ export class IssuanceService extends BaseService {
     }
   }
 
+  /**
+   * @deprecated This method is no longer used since we moved to centralized webhook processing
+   * via WebhookReceiverService. Kept for backward compatibility.
+   */
   async _postWebhookResponse(webhookUrl: string, data: object): Promise<string> {
     const pattern = { cmd: 'post-webhook-response-to-webhook-url' };
     const payload = { webhookUrl, data };
@@ -261,13 +269,13 @@ export class IssuanceService extends BaseService {
 
   async deleteIssuanceRecords(orgId: string, userDetails: user): Promise<IDeletedIssuanceRecords> {
     const payload = { orgId, userDetails };
-    return this.natsClient.sendNatsMessage(this.issuanceProxy, 'delete-issuance-records', payload);
+    return this.natsClient.sendNatsMessage(this.issuanceProxy as any, 'delete-issuance-records', payload);
   }
   async getFileDetailsAndFileDataByFileId(orgId: string, fileId: string): Promise<object> {
     const payload = {
       orgId,
       fileId
     };
-    return this.natsClient.sendNatsMessage(this.issuanceProxy, 'issued-file-data-and-file-details', payload);
+    return this.natsClient.sendNatsMessage(this.issuanceProxy as any, 'issued-file-data-and-file-details', payload);
   }
 }

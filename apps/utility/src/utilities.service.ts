@@ -1,9 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { RpcException } from "@nestjs/microservices";
-import { UtilitiesRepository } from "./utilities.repository";
-import { AwsService } from "@credebl/aws";
-import { S3 } from "aws-sdk";
-import { v4 as uuidv4 } from "uuid";
+import { Injectable, Logger } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
+import { UtilitiesRepository } from './utilities.repository';
+import { AwsService } from '@credebl/aws';
+import { S3 } from 'aws-sdk';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UtilitiesService {
@@ -23,8 +23,8 @@ export class UtilitiesService {
           schemaId,
           credDefId,
           invitationUrl,
-          attributes,
-        },
+          attributes
+        }
       };
       await this.utilitiesRepository.saveShorteningUrl(invitationPayload);
       return `${process.env.API_GATEWAY_PROTOCOL}://${process.env.API_ENDPOINT}/invitation/qr-code/${credentialId}`;
@@ -49,7 +49,7 @@ export class UtilitiesService {
       // If invitationPayload contains a Minio URL, fetch the actual invitation
       if (
         invitationPayload &&
-        "object" === typeof invitationPayload &&
+        'object' === typeof invitationPayload &&
         !Array.isArray(invitationPayload)
       ) {
         const payload = invitationPayload as {
@@ -60,18 +60,18 @@ export class UtilitiesService {
         // Check if it's a Minio URL and fetch the actual content
         if (
           payload.invitationUrl &&
-          "string" === typeof payload.invitationUrl &&
-          payload.invitationUrl.includes("minio.confamd.com")
+          'string' === typeof payload.invitationUrl &&
+          payload.invitationUrl.includes('minio.confamd.com')
         ) {
           try {
             const actualInvitation = await this.fetchUrlContent(
               payload.invitationUrl
             );
             // Remove quotes if present and update the invitation URL
-            const cleanedUrl = actualInvitation.replace(/^"(.*)"$/, "$1");
+            const cleanedUrl = actualInvitation.replace(/^"(.*)"$/, '$1');
             invitationPayload = {
               ...payload,
-              invitationUrl: cleanedUrl,
+              invitationUrl: cleanedUrl
             };
           } catch (fetchError) {
             this.logger.error(
@@ -84,7 +84,7 @@ export class UtilitiesService {
 
       const getInvitationUrl = {
         referenceId: getShorteningUrl.referenceId,
-        invitationPayload,
+        invitationPayload
       };
 
       return getInvitationUrl;
@@ -103,25 +103,25 @@ export class UtilitiesService {
    */
   private async fetchUrlContent(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const protocol = url.startsWith("https")
-        ? require("https")
-        : require("http");
+      const protocol = url.startsWith('https')
+        ? require('https')
+        : require('http');
 
       protocol
         .get(url, (res: any) => {
-          let data = "";
-          res.on("data", (chunk: any) => {
+          let data = '';
+          res.on('data', (chunk: any) => {
             data += chunk;
           });
-          res.on("end", () => {
-            if (res.statusCode === 200) {
+          res.on('end', () => {
+            if (200 === res.statusCode) {
               resolve(data);
             } else {
               reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
             }
           });
         })
-        .on("error", (err: any) => {
+        .on('error', (err: any) => {
           reject(err);
         });
     });
@@ -144,7 +144,7 @@ export class UtilitiesService {
     } catch (error) {
       this.logger.error(error);
       throw new Error(
-        "An error occurred while uploading data to S3. Error::::::"
+        'An error occurred while uploading data to S3. Error::::::'
       );
     }
   }

@@ -15,14 +15,14 @@ export class WebhookService extends BaseService {
 
   async getWebhookUrl(getWebhook: GetWebhookDto): Promise<IGetWebhookUrl> { 
     // NATS call
-    return this.natsClient.sendNatsMessage(this.webhookProxy, 'get-webhookurl', getWebhook);
+    return this.natsClient.sendNatsMessage(this.webhookProxy as any, 'get-webhookurl', getWebhook);
   }
 
   async registerWebhook(registerWebhookDto: RegisterWebhookDto): Promise<ICreateWebhookUrl> {
     const payload = { registerWebhookDto};
 
     // NATS call
-    return this.natsClient.sendNatsMessage(this.webhookProxy, 'register-webhook', payload);
+    return this.natsClient.sendNatsMessage(this.webhookProxy as any, 'register-webhook', payload);
   }
 
   

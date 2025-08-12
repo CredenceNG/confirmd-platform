@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import * as crypto from "crypto";
+import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import * as crypto from 'crypto';
 
 // Analytics and Intelligence interfaces for mobile platform
 export interface MobileAnalyticsConfig {
@@ -20,20 +20,20 @@ export interface UserBehaviorEvent {
   deviceId: string;
   sessionId: string;
   eventType:
-    | "app_open"
-    | "screen_view"
-    | "user_action"
-    | "feature_usage"
-    | "error"
-    | "crash"
-    | "performance";
+    | 'app_open'
+    | 'screen_view'
+    | 'user_action'
+    | 'feature_usage'
+    | 'error'
+    | 'crash'
+    | 'performance';
   eventCategory:
-    | "navigation"
-    | "authentication"
-    | "credential"
-    | "invitation"
-    | "notification"
-    | "system";
+    | 'navigation'
+    | 'authentication'
+    | 'credential'
+    | 'invitation'
+    | 'notification'
+    | 'system';
   eventAction: string;
   eventLabel?: string;
   eventValue?: number;
@@ -55,18 +55,18 @@ export interface PerformanceMetrics {
   deviceId: string;
   sessionId: string;
   metricType:
-    | "app_launch"
-    | "api_response"
-    | "screen_load"
-    | "network_request"
-    | "battery_usage"
-    | "memory_usage";
+    | 'app_launch'
+    | 'api_response'
+    | 'screen_load'
+    | 'network_request'
+    | 'battery_usage'
+    | 'memory_usage';
   duration: number; // milliseconds
   startTime: string;
   endTime: string;
   success: boolean;
   errorMessage?: string;
-  networkType?: "wifi" | "4g" | "5g" | "edge" | "offline";
+  networkType?: 'wifi' | '4g' | '5g' | 'edge' | 'offline';
   deviceSpecs: {
     platform: string;
     osVersion: string;
@@ -83,7 +83,7 @@ export interface PerformanceMetrics {
 
 export interface UserEngagementMetrics {
   userId: string;
-  period: "daily" | "weekly" | "monthly";
+  period: 'daily' | 'weekly' | 'monthly';
   startDate: string;
   endDate: string;
   sessionsCount: number;
@@ -101,38 +101,38 @@ export interface UserEngagementMetrics {
     dismissed: number;
   };
   retentionRate: number;
-  churnRisk: "low" | "medium" | "high";
+  churnRisk: 'low' | 'medium' | 'high';
 }
 
 export interface AIInsight {
   insightId: string;
   type:
-    | "user_behavior"
-    | "performance_anomaly"
-    | "security_threat"
-    | "feature_adoption"
-    | "user_retention";
+    | 'user_behavior'
+    | 'performance_anomaly'
+    | 'security_threat'
+    | 'feature_adoption'
+    | 'user_retention';
   category:
-    | "optimization"
-    | "security"
-    | "engagement"
-    | "performance"
-    | "business";
+    | 'optimization'
+    | 'security'
+    | 'engagement'
+    | 'performance'
+    | 'business';
   title: string;
   description: string;
-  severity: "low" | "medium" | "high" | "critical";
+  severity: 'low' | 'medium' | 'high' | 'critical';
   confidence: number; // 0-100 confidence score
   affectedUsers?: string[];
   affectedDevices?: string[];
   data: Record<string, unknown>;
   recommendations: string[];
   timestamp: string;
-  status: "active" | "resolved" | "investigating";
+  status: 'active' | 'resolved' | 'investigating';
 }
 
 export interface AnalyticsDashboard {
   dashboardId: string;
-  period: "last_hour" | "last_24h" | "last_7d" | "last_30d" | "custom";
+  period: 'last_hour' | 'last_24h' | 'last_7d' | 'last_30d' | 'custom';
   totalUsers: number;
   activeUsers: number;
   newUsers: number;
@@ -167,7 +167,7 @@ export interface UserJourney {
   journeyId: string;
   startTime: string;
   endTime?: string;
-  status: "active" | "completed" | "abandoned";
+  status: 'active' | 'completed' | 'abandoned';
   steps: {
     stepId: string;
     stepName: string;
@@ -203,11 +203,11 @@ export class MobileAnalyticsService {
     enableAIInsights: true,
     dataRetentionDays: 90,
     anomalyDetectionThreshold: 0.75,
-    reportingInterval: 300000, // 5 minutes
+    reportingInterval: 300000 // 5 minutes
   };
 
-  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
-    this.logger.log("Mobile Analytics Service initialized");
+  constructor(@Inject('NATS_CLIENT') private readonly natsClient: ClientProxy) {
+    this.logger.log('Mobile Analytics Service initialized');
     this.startRealTimeAnalytics();
   }
 
@@ -215,17 +215,19 @@ export class MobileAnalyticsService {
    * Track user behavior event
    */
   async trackUserBehavior(
-    eventData: Omit<UserBehaviorEvent, "eventId" | "timestamp">
+    eventData: Omit<UserBehaviorEvent, 'eventId' | 'timestamp'>
   ): Promise<void> {
     try {
-      if (!this.analyticsConfig.enableBehaviorTracking) return;
+      if (!this.analyticsConfig.enableBehaviorTracking) {
+        return;
+      }
 
       const event: UserBehaviorEvent = {
         eventId: `event_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}`,
         timestamp: new Date().toISOString(),
-        ...eventData,
+        ...eventData
       };
 
       this.behaviorEvents.push(event);
@@ -238,13 +240,13 @@ export class MobileAnalyticsService {
       await this.processRealTimeEvent(event);
 
       // Emit event for external processing
-      await this.natsClient.emit("mobile.analytics.behavior", event);
+      await this.natsClient.emit('mobile.analytics.behavior', event);
 
       this.logger.debug(
         `Behavior event tracked: ${event.eventType} for user ${event.userId}`
       );
     } catch (error) {
-      this.logger.error("Failed to track user behavior:", error);
+      this.logger.error('Failed to track user behavior:', error);
     }
   }
 
@@ -252,16 +254,18 @@ export class MobileAnalyticsService {
    * Track performance metrics
    */
   async trackPerformanceMetrics(
-    metricsData: Omit<PerformanceMetrics, "metricId">
+    metricsData: Omit<PerformanceMetrics, 'metricId'>
   ): Promise<void> {
     try {
-      if (!this.analyticsConfig.enablePerformanceMetrics) return;
+      if (!this.analyticsConfig.enablePerformanceMetrics) {
+        return;
+      }
 
       const metrics: PerformanceMetrics = {
         metricId: `metric_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}`,
-        ...metricsData,
+        ...metricsData
       };
 
       this.performanceMetrics.push(metrics);
@@ -270,13 +274,13 @@ export class MobileAnalyticsService {
       await this.detectPerformanceAnomalies(metrics);
 
       // Emit metrics for external processing
-      await this.natsClient.emit("mobile.analytics.performance", metrics);
+      await this.natsClient.emit('mobile.analytics.performance', metrics);
 
       this.logger.debug(
         `Performance metrics tracked: ${metrics.metricType} - ${metrics.duration}ms`
       );
     } catch (error) {
-      this.logger.error("Failed to track performance metrics:", error);
+      this.logger.error('Failed to track performance metrics:', error);
     }
   }
 
@@ -297,10 +301,10 @@ export class MobileAnalyticsService {
         userId,
         journeyId,
         startTime: new Date().toISOString(),
-        status: "active",
+        status: 'active',
         steps: [],
         converted: false,
-        conversionGoal,
+        conversionGoal
       };
 
       this.userJourneys.set(journeyId, journey);
@@ -308,20 +312,20 @@ export class MobileAnalyticsService {
       // Track journey start event
       await this.trackUserBehavior({
         userId,
-        deviceId: "unknown",
+        deviceId: 'unknown',
         sessionId: journeyId,
-        eventType: "user_action",
-        eventCategory: "navigation",
-        eventAction: "journey_start",
+        eventType: 'user_action',
+        eventCategory: 'navigation',
+        eventAction: 'journey_start',
         eventLabel: journeyType,
         properties: { journeyType, conversionGoal },
-        userAgent: "mobile-app",
+        userAgent: 'mobile-app'
       });
 
       this.logger.log(`User journey started: ${journeyId} for user ${userId}`);
       return journey;
     } catch (error) {
-      this.logger.error("Failed to start user journey:", error);
+      this.logger.error('Failed to start user journey:', error);
       throw error;
     }
   }
@@ -337,21 +341,23 @@ export class MobileAnalyticsService {
   ): Promise<void> {
     try {
       const journey = this.userJourneys.get(journeyId);
-      if (!journey || journey.status !== "active") return;
+      if (!journey || 'active' !== journey.status) {
+        return;
+      }
 
       const step = {
         stepId: `step_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         stepName,
         timestamp: new Date().toISOString(),
         duration:
-          journey.steps.length > 0
+          0 < journey.steps.length
             ? Date.now() -
               new Date(
                 journey.steps[journey.steps.length - 1].timestamp
               ).getTime()
             : Date.now() - new Date(journey.startTime).getTime(),
         success,
-        metadata,
+        metadata
       };
 
       journey.steps.push(step);
@@ -363,7 +369,7 @@ export class MobileAnalyticsService {
         success
       ) {
         journey.converted = true;
-        journey.status = "completed";
+        journey.status = 'completed';
         journey.endTime = new Date().toISOString();
         journey.totalDuration =
           new Date(journey.endTime).getTime() -
@@ -373,17 +379,17 @@ export class MobileAnalyticsService {
       // Check for drop-off
       if (!success) {
         journey.dropOffPoint = stepName;
-        journey.status = "abandoned";
+        journey.status = 'abandoned';
         journey.endTime = new Date().toISOString();
       }
 
       this.userJourneys.set(journeyId, journey);
 
       this.logger.debug(
-        `Journey step added: ${stepName} (${success ? "success" : "failed"})`
+        `Journey step added: ${stepName} (${success ? 'success' : 'failed'})`
       );
     } catch (error) {
-      this.logger.error("Failed to add journey step:", error);
+      this.logger.error('Failed to add journey step:', error);
     }
   }
 
@@ -391,7 +397,7 @@ export class MobileAnalyticsService {
    * Generate analytics dashboard
    */
   async generateDashboard(
-    period: AnalyticsDashboard["period"] = "last_24h",
+    period: AnalyticsDashboard['period'] = 'last_24h',
     customStartDate?: string,
     customEndDate?: string
   ): Promise<AnalyticsDashboard> {
@@ -406,14 +412,12 @@ export class MobileAnalyticsService {
 
       // Filter data by period
       const periodEvents = this.behaviorEvents.filter(
-        (event) =>
-          new Date(event.timestamp) >= startDate &&
+        (event) => new Date(event.timestamp) >= startDate &&
           new Date(event.timestamp) <= endDate
       );
 
       const periodMetrics = this.performanceMetrics.filter(
-        (metric) =>
-          new Date(metric.startTime) >= startDate &&
+        (metric) => new Date(metric.startTime) >= startDate &&
           new Date(metric.startTime) <= endDate
       );
 
@@ -433,23 +437,23 @@ export class MobileAnalyticsService {
         performanceMetrics: {
           averageAppLaunchTime: this.calculateAverageMetric(
             periodMetrics,
-            "app_launch"
+            'app_launch'
           ),
           averageApiResponseTime: this.calculateAverageMetric(
             periodMetrics,
-            "api_response"
+            'api_response'
           ),
           networkErrorRate: this.calculateErrorRate(periodMetrics),
-          cacheHitRate: this.calculateCacheHitRate(periodMetrics),
+          cacheHitRate: this.calculateCacheHitRate(periodMetrics)
         },
         deviceMetrics: {
           platforms: this.getDevicePlatforms(periodEvents),
           osVersions: this.getOSVersions(periodMetrics),
-          topDevices: this.getTopDevices(periodMetrics),
+          topDevices: this.getTopDevices(periodMetrics)
         },
         geographicDistribution: this.getGeographicDistribution(periodEvents),
         securityMetrics: this.getSecurityMetrics(periodEvents),
-        aiInsights: this.getActiveAIInsights(),
+        aiInsights: this.getActiveAIInsights()
       };
 
       this.logger.log(
@@ -457,7 +461,7 @@ export class MobileAnalyticsService {
       );
       return dashboard;
     } catch (error) {
-      this.logger.error("Failed to generate dashboard:", error);
+      this.logger.error('Failed to generate dashboard:', error);
       throw error;
     }
   }
@@ -467,9 +471,11 @@ export class MobileAnalyticsService {
    */
   async generateAIInsights(): Promise<AIInsight[]> {
     try {
-      if (!this.analyticsConfig.enableAIInsights) return [];
+      if (!this.analyticsConfig.enableAIInsights) {
+        return [];
+      }
 
-      this.logger.log("Generating AI insights from analytics data");
+      this.logger.log('Generating AI insights from analytics data');
 
       const insights: AIInsight[] = [];
 
@@ -492,13 +498,13 @@ export class MobileAnalyticsService {
       // Store and emit insights
       insights.forEach((insight) => {
         this.aiInsights.push(insight);
-        this.natsClient.emit("mobile.analytics.insight", insight);
+        this.natsClient.emit('mobile.analytics.insight', insight);
       });
 
       this.logger.log(`Generated ${insights.length} AI insights`);
       return insights;
     } catch (error) {
-      this.logger.error("Failed to generate AI insights:", error);
+      this.logger.error('Failed to generate AI insights:', error);
       return [];
     }
   }
@@ -508,7 +514,7 @@ export class MobileAnalyticsService {
    */
   async getUserEngagementMetrics(
     userId: string,
-    period: UserEngagementMetrics["period"] = "weekly"
+    period: UserEngagementMetrics['period'] = 'weekly'
   ): Promise<UserEngagementMetrics> {
     try {
       const cacheKey = `${userId}_${period}`;
@@ -521,15 +527,13 @@ export class MobileAnalyticsService {
       const { startDate, endDate } = this.getEngagementPeriod(period);
 
       const userEvents = this.behaviorEvents.filter(
-        (event) =>
-          event.userId === userId &&
+        (event) => event.userId === userId &&
           new Date(event.timestamp) >= startDate &&
           new Date(event.timestamp) <= endDate
       );
 
       const sessions = new Set(userEvents.map((e) => e.sessionId));
-      const sessionDurations = Array.from(sessions).map((sessionId) =>
-        this.calculateSessionDuration(sessionId, userEvents)
+      const sessionDurations = Array.from(sessions).map((sessionId) => this.calculateSessionDuration(sessionId, userEvents)
       );
 
       const metrics: UserEngagementMetrics = {
@@ -543,37 +547,37 @@ export class MobileAnalyticsService {
           0
         ),
         averageSessionDuration:
-          sessionDurations.length > 0
+          0 < sessionDurations.length
             ? sessionDurations.reduce((sum, duration) => sum + duration, 0) /
               sessionDurations.length
             : 0,
         screenViewsCount: userEvents.filter(
-          (e) => e.eventType === "screen_view"
+          (e) => 'screen_view' === e.eventType
         ).length,
         featuresUsed: [
           ...new Set(
             userEvents.filter((e) => e.eventAction).map((e) => e.eventAction)
-          ),
+          )
         ],
         credentialsCreated: userEvents.filter(
-          (e) => e.eventAction === "create_credential"
+          (e) => 'create_credential' === e.eventAction
         ).length,
         credentialsShared: userEvents.filter(
-          (e) => e.eventAction === "share_credential"
+          (e) => 'share_credential' === e.eventAction
         ).length,
         invitationsAccepted: userEvents.filter(
-          (e) => e.eventAction === "accept_invitation"
+          (e) => 'accept_invitation' === e.eventAction
         ).length,
         notificationEngagement:
           this.calculateNotificationEngagement(userEvents),
         retentionRate: this.calculateUserRetentionRate(userId),
-        churnRisk: this.calculateChurnRisk(userEvents),
+        churnRisk: this.calculateChurnRisk(userEvents)
       };
 
       this.engagementMetrics.set(cacheKey, metrics);
       return metrics;
     } catch (error) {
-      this.logger.error("Failed to get user engagement metrics:", error);
+      this.logger.error('Failed to get user engagement metrics:', error);
       throw error;
     }
   }
@@ -595,8 +599,8 @@ export class MobileAnalyticsService {
         (journey) => !userId || journey.userId === userId
       );
 
-      const completed = journeys.filter((j) => j.status === "completed");
-      const abandoned = journeys.filter((j) => j.status === "abandoned");
+      const completed = journeys.filter((j) => 'completed' === j.status);
+      const abandoned = journeys.filter((j) => 'abandoned' === j.status);
       const converted = journeys.filter((j) => j.converted);
 
       const dropOffPoints = abandoned
@@ -614,15 +618,15 @@ export class MobileAnalyticsService {
           completed.reduce((sum, j) => sum + (j.totalDuration || 0), 0) /
             completed.length || 0,
         conversionRate:
-          journeys.length > 0 ? (converted.length / journeys.length) * 100 : 0,
+          0 < journeys.length ? (converted.length / journeys.length) * 100 : 0,
         topDropOffPoints: Object.entries(dropOffPoints)
           .sort(([, a], [, b]) => b - a)
           .slice(0, 10)
           .map(([step, count]) => ({ step, count })),
-        journeys: journeys.slice(0, 100), // Return latest 100
+        journeys: journeys.slice(0, 100) // Return latest 100
       };
     } catch (error) {
-      this.logger.error("Failed to get user journey analytics:", error);
+      this.logger.error('Failed to get user journey analytics:', error);
       throw error;
     }
   }
@@ -630,13 +634,15 @@ export class MobileAnalyticsService {
   // Private helper methods
 
   private startRealTimeAnalytics(): void {
-    if (!this.analyticsConfig.enableRealTimeAnalytics) return;
+    if (!this.analyticsConfig.enableRealTimeAnalytics) {
+      return;
+    }
 
     setInterval(async () => {
       try {
         await this.processRealTimeAnalytics();
       } catch (error) {
-        this.logger.error("Real-time analytics processing failed:", error);
+        this.logger.error('Real-time analytics processing failed:', error);
       }
     }, this.analyticsConfig.reportingInterval);
   }
@@ -661,7 +667,7 @@ export class MobileAnalyticsService {
       await this.addJourneyStep(
         event.sessionId,
         event.eventAction,
-        event.eventType !== "error",
+        'error' !== event.eventType,
         event.properties
       );
     }
@@ -675,7 +681,7 @@ export class MobileAnalyticsService {
       this.activeSessions.set(sessionId, {
         userId,
         startTime: new Date().toISOString(),
-        lastActivity: new Date().toISOString(),
+        lastActivity: new Date().toISOString()
       });
     }
   }
@@ -703,7 +709,7 @@ export class MobileAnalyticsService {
   }
 
   private getPeriodDates(
-    period: AnalyticsDashboard["period"],
+    period: AnalyticsDashboard['period'],
     customStartDate?: string,
     customEndDate?: string
   ): { startDate: Date; endDate: Date } {
@@ -712,19 +718,19 @@ export class MobileAnalyticsService {
     let startDate: Date;
 
     switch (period) {
-      case "last_hour":
+      case 'last_hour':
         startDate = new Date(now.getTime() - 60 * 60 * 1000);
         break;
-      case "last_24h":
+      case 'last_24h':
         startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         break;
-      case "last_7d":
+      case 'last_7d':
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
-      case "last_30d":
+      case 'last_30d':
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         break;
-      case "custom":
+      case 'custom':
         startDate = customStartDate
           ? new Date(customStartDate)
           : new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -752,8 +758,7 @@ export class MobileAnalyticsService {
     return new Set(
       events
         .filter(
-          (event) =>
-            event.eventAction === "user_registration" &&
+          (event) => 'user_registration' === event.eventAction &&
             new Date(event.timestamp) >= startDate
         )
         .map((event) => event.userId)
@@ -775,7 +780,7 @@ export class MobileAnalyticsService {
     });
 
     const durations = Array.from(sessions.values()).map((s) => s.end - s.start);
-    return durations.length > 0
+    return 0 < durations.length
       ? durations.reduce((sum, duration) => sum + duration, 0) /
           durations.length
       : 0;
@@ -785,26 +790,26 @@ export class MobileAnalyticsService {
     // Mock retention calculation - implement based on your business logic
     const totalUsers = new Set(events.map((e) => e.userId)).size;
     const returningUsers = new Set(
-      events.filter((e) => e.eventAction === "app_open").map((e) => e.userId)
+      events.filter((e) => 'app_open' === e.eventAction).map((e) => e.userId)
     ).size;
 
-    return totalUsers > 0 ? (returningUsers / totalUsers) * 100 : 0;
+    return 0 < totalUsers ? (returningUsers / totalUsers) * 100 : 0;
   }
 
   private calculateCrashRate(events: UserBehaviorEvent[]): number {
     const totalSessions = new Set(events.map((e) => e.sessionId)).size;
     const crashedSessions = new Set(
-      events.filter((e) => e.eventType === "crash").map((e) => e.sessionId)
+      events.filter((e) => 'crash' === e.eventType).map((e) => e.sessionId)
     ).size;
 
-    return totalSessions > 0 ? (crashedSessions / totalSessions) * 100 : 0;
+    return 0 < totalSessions ? (crashedSessions / totalSessions) * 100 : 0;
   }
 
   private getPopularFeatures(
     events: UserBehaviorEvent[]
   ): { feature: string; usage: number }[] {
     const featureUsage = events
-      .filter((e) => "feature_usage" === (e.eventCategory as string))
+      .filter((e) => 'feature_usage' === (e.eventCategory as string))
       .reduce((acc, event) => {
         acc[event.eventAction] = (acc[event.eventAction] || 0) + 1;
         return acc;
@@ -821,7 +826,7 @@ export class MobileAnalyticsService {
     metricType: string
   ): number {
     const relevantMetrics = metrics.filter((m) => m.metricType === metricType);
-    return relevantMetrics.length > 0
+    return 0 < relevantMetrics.length
       ? relevantMetrics.reduce((sum, m) => sum + m.duration, 0) /
           relevantMetrics.length
       : 0;
@@ -830,13 +835,13 @@ export class MobileAnalyticsService {
   private calculateErrorRate(metrics: PerformanceMetrics[]): number {
     const total = metrics.length;
     const errors = metrics.filter((m) => !m.success).length;
-    return total > 0 ? (errors / total) * 100 : 0;
+    return 0 < total ? (errors / total) * 100 : 0;
   }
 
   private calculateCacheHitRate(metrics: PerformanceMetrics[]): number {
     const relevantMetrics = metrics.filter((m) => m.cacheHit !== undefined);
     const hits = relevantMetrics.filter((m) => m.cacheHit).length;
-    return relevantMetrics.length > 0
+    return 0 < relevantMetrics.length
       ? (hits / relevantMetrics.length) * 100
       : 0;
   }
@@ -853,7 +858,7 @@ export class MobileAnalyticsService {
 
     return Object.entries(platforms).map(([platform, count]) => ({
       platform,
-      count,
+      count
     }));
   }
 
@@ -868,7 +873,7 @@ export class MobileAnalyticsService {
 
     return Object.entries(versions).map(([version, count]) => ({
       version,
-      count,
+      count
     }));
   }
 
@@ -893,7 +898,7 @@ export class MobileAnalyticsService {
     const countries = events
       .filter((e) => e.location?.country)
       .reduce((acc, event) => {
-        const country = event.location!.country;
+        const { country } = event.location!;
         acc[country] = (acc[country] || new Set()).add(event.userId);
         return acc;
       }, {} as Record<string, Set<string>>);
@@ -905,28 +910,28 @@ export class MobileAnalyticsService {
 
   private getSecurityMetrics(
     events: UserBehaviorEvent[]
-  ): AnalyticsDashboard["securityMetrics"] {
+  ): AnalyticsDashboard['securityMetrics'] {
     return {
-      successfulLogins: events.filter((e) => e.eventAction === "login_success")
+      successfulLogins: events.filter((e) => 'login_success' === e.eventAction)
         .length,
-      failedLogins: events.filter((e) => e.eventAction === "login_failed")
+      failedLogins: events.filter((e) => 'login_failed' === e.eventAction)
         .length,
       biometricAuthSuccess: events.filter(
-        (e) => e.eventAction === "biometric_success"
+        (e) => 'biometric_success' === e.eventAction
       ).length,
       suspiciousActivities: events.filter(
-        (e) => e.eventAction === "suspicious_activity"
-      ).length,
+        (e) => 'suspicious_activity' === e.eventAction
+      ).length
     };
   }
 
   private getActiveAIInsights(): AIInsight[] {
     return this.aiInsights
-      .filter((insight) => insight.status === "active")
+      .filter((insight) => 'active' === insight.status)
       .slice(0, 10);
   }
 
-  private getEngagementPeriod(period: UserEngagementMetrics["period"]): {
+  private getEngagementPeriod(period: UserEngagementMetrics['period']): {
     startDate: Date;
     endDate: Date;
   } {
@@ -934,13 +939,13 @@ export class MobileAnalyticsService {
     let startDate: Date;
 
     switch (period) {
-      case "daily":
+      case 'daily':
         startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         break;
-      case "weekly":
+      case 'weekly':
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
-      case "monthly":
+      case 'monthly':
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         break;
       default:
@@ -955,73 +960,85 @@ export class MobileAnalyticsService {
     events: UserBehaviorEvent[]
   ): number {
     const sessionEvents = events.filter((e) => e.sessionId === sessionId);
-    if (sessionEvents.length === 0) return 0;
+    if (0 === sessionEvents.length) {
+      return 0;
+    }
 
-    const timestamps = sessionEvents.map((e) =>
-      new Date(e.timestamp).getTime()
+    const timestamps = sessionEvents.map((e) => new Date(e.timestamp).getTime()
     );
     return Math.max(...timestamps) - Math.min(...timestamps);
   }
 
   private calculateNotificationEngagement(
     events: UserBehaviorEvent[]
-  ): UserEngagementMetrics["notificationEngagement"] {
+  ): UserEngagementMetrics['notificationEngagement'] {
     const notificationEvents = events.filter(
-      (e) => e.eventCategory === "notification"
+      (e) => 'notification' === e.eventCategory
     );
 
     return {
-      received: notificationEvents.filter((e) => e.eventAction === "received")
+      received: notificationEvents.filter((e) => 'received' === e.eventAction)
         .length,
-      opened: notificationEvents.filter((e) => e.eventAction === "opened")
+      opened: notificationEvents.filter((e) => 'opened' === e.eventAction)
         .length,
-      clicked: notificationEvents.filter((e) => e.eventAction === "clicked")
+      clicked: notificationEvents.filter((e) => 'clicked' === e.eventAction)
         .length,
-      dismissed: notificationEvents.filter((e) => e.eventAction === "dismissed")
-        .length,
+      dismissed: notificationEvents.filter((e) => 'dismissed' === e.eventAction)
+        .length
     };
   }
 
   private calculateUserRetentionRate(userId: string): number {
     // Mock calculation - implement based on your business logic
     const userEvents = this.behaviorEvents.filter((e) => e.userId === userId);
-    const uniqueDays = new Set(userEvents.map((e) => e.timestamp.split("T")[0]))
+    const uniqueDays = new Set(userEvents.map((e) => e.timestamp.split('T')[0]))
       .size;
     const daysSinceFirst =
-      userEvents.length > 0
+      0 < userEvents.length
         ? Math.ceil(
             (Date.now() - new Date(userEvents[0].timestamp).getTime()) /
               (24 * 60 * 60 * 1000)
           )
         : 0;
 
-    return daysSinceFirst > 0 ? (uniqueDays / daysSinceFirst) * 100 : 0;
+    return 0 < daysSinceFirst ? (uniqueDays / daysSinceFirst) * 100 : 0;
   }
 
   private calculateChurnRisk(
     events: UserBehaviorEvent[]
-  ): UserEngagementMetrics["churnRisk"] {
+  ): UserEngagementMetrics['churnRisk'] {
     const recentEvents = events.filter(
-      (e) =>
-        new Date(e.timestamp) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      (e) => new Date(e.timestamp) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     );
 
-    if (recentEvents.length === 0) return "high";
-    if (recentEvents.length < 5) return "medium";
-    return "low";
+    if (0 === recentEvents.length) {
+      return 'high';
+    }
+    if (5 > recentEvents.length) {
+      return 'medium';
+    }
+    return 'low';
   }
 
   private extractPlatform(userAgent: string): string {
-    if (userAgent.includes("Android")) return "Android";
-    if (userAgent.includes("iOS") || userAgent.includes("iPhone")) return "iOS";
-    if (userAgent.includes("Windows")) return "Windows";
-    if (userAgent.includes("Mac")) return "macOS";
-    return "Unknown";
+    if (userAgent.includes('Android')) {
+      return 'Android';
+    }
+    if (userAgent.includes('iOS') || userAgent.includes('iPhone')) {
+      return 'iOS';
+    }
+    if (userAgent.includes('Windows')) {
+      return 'Windows';
+    }
+    if (userAgent.includes('Mac')) {
+      return 'macOS';
+    }
+    return 'Unknown';
   }
 
   private updateEngagementMetricsCache(): void {
     // Periodically clear cache to ensure fresh data
-    if (Math.random() < 0.1) {
+    if (0.1 > Math.random()) {
       // 10% chance
       this.engagementMetrics.clear();
     }
@@ -1034,29 +1051,29 @@ export class MobileAnalyticsService {
     const thresholds = {
       app_launch: 5000, // 5 seconds
       api_response: 2000, // 2 seconds
-      screen_load: 3000, // 3 seconds
+      screen_load: 3000 // 3 seconds
     };
 
     const threshold = thresholds[metrics.metricType as keyof typeof thresholds];
     if (threshold && metrics.duration > threshold) {
       const insight: AIInsight = {
         insightId: `perf_anomaly_${Date.now()}`,
-        type: "performance_anomaly",
-        category: "performance",
+        type: 'performance_anomaly',
+        category: 'performance',
         title: `Slow ${metrics.metricType} detected`,
         description: `${metrics.metricType} took ${metrics.duration}ms, which exceeds the normal threshold of ${threshold}ms`,
-        severity: "medium",
+        severity: 'medium',
         confidence: 85,
         affectedUsers: [metrics.userId],
         affectedDevices: [metrics.deviceId],
         data: { metrics },
         recommendations: [
-          "Check network connectivity",
-          "Optimize application performance",
-          "Review server response times",
+          'Check network connectivity',
+          'Optimize application performance',
+          'Review server response times'
         ],
         timestamp: new Date().toISOString(),
-        status: "active",
+        status: 'active'
       };
 
       this.aiInsights.push(insight);
@@ -1067,25 +1084,25 @@ export class MobileAnalyticsService {
     event: UserBehaviorEvent
   ): Promise<void> {
     // Simple behavior anomaly detection
-    if (event.eventType === "error" || event.eventType === "crash") {
+    if ('error' === event.eventType || 'crash' === event.eventType) {
       const insight: AIInsight = {
         insightId: `behavior_anomaly_${Date.now()}`,
-        type: "user_behavior",
-        category: "optimization",
+        type: 'user_behavior',
+        category: 'optimization',
         title: `${event.eventType} detected`,
         description: `User experienced ${event.eventType} in ${event.eventCategory}`,
-        severity: event.eventType === "crash" ? "high" : "medium",
+        severity: 'crash' === event.eventType ? 'high' : 'medium',
         confidence: 95,
         affectedUsers: [event.userId],
         affectedDevices: [event.deviceId],
         data: { event },
         recommendations: [
-          "Review error logs",
-          "Check application stability",
-          "Improve error handling",
+          'Review error logs',
+          'Check application stability',
+          'Improve error handling'
         ],
         timestamp: new Date().toISOString(),
-        status: "active",
+        status: 'active'
       };
 
       this.aiInsights.push(insight);

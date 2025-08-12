@@ -7,14 +7,14 @@ import Logger, { LoggerKey } from './logger.interface';
 import { ClsService } from 'nestjs-cls';
 import { v4 } from 'uuid';
 
-const isNullUndefinedOrEmpty = (obj: any): boolean => obj === null || obj === undefined || (typeof obj === 'object' && Object.keys(obj).length === 0);
+const isNullUndefinedOrEmpty = (obj: any): boolean => null === obj || obj === undefined || ('object' === typeof obj && 0 === Object.keys(obj).length);
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   constructor(
     private readonly clsService: ClsService,
     @Inject(ContextStorageServiceKey)
   private readonly contextStorageService: ContextStorageService,
-  @Inject(LoggerKey) private readonly _logger: Logger,
+  @Inject(LoggerKey) private readonly _logger: Logger
   ) {}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {

@@ -4,8 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export default class NestjsClsContextStorageService
-  implements ContextStorageService
-{
+  implements ContextStorageService {
   constructor(private readonly cls: ClsService) {
   }
 

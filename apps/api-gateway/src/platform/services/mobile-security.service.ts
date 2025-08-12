@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import * as crypto from "crypto";
-import * as jwt from "jsonwebtoken";
+import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import * as crypto from 'crypto';
+import * as jwt from 'jsonwebtoken';
 
 // Enhanced security interfaces for mobile authentication
 export interface MobileSecurityConfig {
@@ -18,7 +18,7 @@ export interface MobileSecurityConfig {
 
 export interface DeviceFingerprint {
   deviceId: string;
-  platform: "android" | "ios" | "web";
+  platform: 'android' | 'ios' | 'web';
   osVersion: string;
   appVersion: string;
   deviceModel: string;
@@ -35,12 +35,12 @@ export interface BiometricChallenge {
   challengeId: string;
   userId: string;
   deviceId: string;
-  challengeType: "fingerprint" | "face" | "voice" | "pin";
+  challengeType: 'fingerprint' | 'face' | 'voice' | 'pin';
   challengeData: string; // Encrypted challenge data
   expiresAt: string;
   attempts: number;
   maxAttempts: number;
-  status: "pending" | "completed" | "failed" | "expired";
+  status: 'pending' | 'completed' | 'failed' | 'expired';
   createdAt: string;
 }
 
@@ -49,12 +49,12 @@ export interface SecurityAuditLog {
   userId: string;
   deviceId?: string;
   eventType:
-    | "login"
-    | "logout"
-    | "failed_login"
-    | "device_registered"
-    | "biometric_auth"
-    | "suspicious_activity";
+    | 'login'
+    | 'logout'
+    | 'failed_login'
+    | 'device_registered'
+    | 'biometric_auth'
+    | 'suspicious_activity';
   ipAddress: string;
   userAgent: string;
   location?: {
@@ -71,7 +71,7 @@ export interface TrustedDevice {
   deviceId: string;
   userId: string;
   deviceFingerprint: DeviceFingerprint;
-  trustLevel: "low" | "medium" | "high";
+  trustLevel: 'low' | 'medium' | 'high';
   trustedAt: string;
   expiresAt: string;
   lastUsed: string;
@@ -84,7 +84,7 @@ export interface SecurityTokens {
   refreshToken: string;
   deviceToken: string;
   expiresIn: number;
-  tokenType: "Bearer";
+  tokenType: 'Bearer';
   scope: string[];
 }
 
@@ -103,18 +103,18 @@ export class MobileSecurityService {
   > = new Map();
 
   private readonly securityConfig: MobileSecurityConfig = {
-    jwtSecret: process.env.JWT_SECRET || "your-secret-key-change-in-production",
-    jwtExpiresIn: "15m",
-    refreshTokenExpiresIn: "7d",
+    jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    jwtExpiresIn: '15m',
+    refreshTokenExpiresIn: '7d',
     maxLoginAttempts: 5,
     lockoutDuration: 15 * 60 * 1000, // 15 minutes
     deviceTrustDuration: 30 * 24 * 60 * 60 * 1000, // 30 days
     requireBiometric: false,
-    enableDeviceFingerprinting: true,
+    enableDeviceFingerprinting: true
   };
 
-  constructor(@Inject("NATS_CLIENT") private readonly natsClient: ClientProxy) {
-    this.logger.log("Mobile Security Service initialized");
+  constructor(@Inject('NATS_CLIENT') private readonly natsClient: ClientProxy) {
+    this.logger.log('Mobile Security Service initialized');
   }
 
   /**
@@ -124,8 +124,8 @@ export class MobileSecurityService {
     deviceInfo: Partial<DeviceFingerprint>
   ): Promise<DeviceFingerprint> {
     try {
-      this.logger.log("Generating device fingerprint:", {
-        deviceId: deviceInfo.deviceId,
+      this.logger.log('Generating device fingerprint:', {
+        deviceId: deviceInfo.deviceId
       });
 
       // Create fingerprint string from device attributes
@@ -135,36 +135,36 @@ export class MobileSecurityService {
         deviceInfo.deviceModel,
         deviceInfo.screenResolution,
         deviceInfo.timezone,
-        deviceInfo.language,
+        deviceInfo.language
       ]
         .filter(Boolean)
-        .join("|");
+        .join('|');
 
       // Generate SHA-256 hash
       const fingerprint = crypto
-        .createHash("sha256")
+        .createHash('sha256')
         .update(fingerprintData)
-        .digest("hex");
+        .digest('hex');
 
       // Calculate trust score based on device history
       const trustScore = this.calculateDeviceTrustScore(
-        deviceInfo.deviceId || "",
+        deviceInfo.deviceId || '',
         fingerprint
       );
 
       const deviceFingerprint: DeviceFingerprint = {
         deviceId: deviceInfo.deviceId || `device_${Date.now()}`,
-        platform: deviceInfo.platform || "web",
-        osVersion: deviceInfo.osVersion || "unknown",
-        appVersion: deviceInfo.appVersion || "1.0.0",
-        deviceModel: deviceInfo.deviceModel || "unknown",
+        platform: deviceInfo.platform || 'web',
+        osVersion: deviceInfo.osVersion || 'unknown',
+        appVersion: deviceInfo.appVersion || '1.0.0',
+        deviceModel: deviceInfo.deviceModel || 'unknown',
         screenResolution: deviceInfo.screenResolution,
-        timezone: deviceInfo.timezone || "UTC",
-        language: deviceInfo.language || "en",
+        timezone: deviceInfo.timezone || 'UTC',
+        language: deviceInfo.language || 'en',
         fingerprint,
         trustScore,
         registeredAt: new Date().toISOString(),
-        lastSeen: new Date().toISOString(),
+        lastSeen: new Date().toISOString()
       };
 
       // Store device fingerprint
@@ -175,13 +175,13 @@ export class MobileSecurityService {
 
       // Log security event
       await this.logSecurityEvent({
-        eventType: "device_registered",
-        userId: "system",
+        eventType: 'device_registered',
+        userId: 'system',
         deviceId: deviceFingerprint.deviceId,
-        ipAddress: "127.0.0.1",
+        ipAddress: '127.0.0.1',
         userAgent: `${deviceInfo.platform} ${deviceInfo.osVersion}`,
         riskScore: 100 - trustScore,
-        details: { fingerprint: deviceFingerprint.fingerprint },
+        details: { fingerprint: deviceFingerprint.fingerprint }
       });
 
       this.logger.log(
@@ -189,10 +189,10 @@ export class MobileSecurityService {
       );
       return deviceFingerprint;
     } catch (error) {
-      this.logger.error("Failed to generate device fingerprint:", error);
+      this.logger.error('Failed to generate device fingerprint:', error);
       throw new Error(
         `Device fingerprint generation failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : 'Unknown error'
         }`
       );
     }
@@ -204,13 +204,13 @@ export class MobileSecurityService {
   async createBiometricChallenge(
     userId: string,
     deviceId: string,
-    challengeType: BiometricChallenge["challengeType"]
+    challengeType: BiometricChallenge['challengeType']
   ): Promise<BiometricChallenge> {
     try {
-      this.logger.log("Creating biometric challenge:", {
+      this.logger.log('Creating biometric challenge:', {
         userId,
         deviceId,
-        challengeType,
+        challengeType
       });
 
       // Generate challenge data
@@ -228,8 +228,8 @@ export class MobileSecurityService {
         expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
         attempts: 0,
         maxAttempts: 3,
-        status: "pending",
-        createdAt: new Date().toISOString(),
+        status: 'pending',
+        createdAt: new Date().toISOString()
       };
 
       // Store challenge
@@ -238,8 +238,8 @@ export class MobileSecurityService {
       // Auto-cleanup expired challenge
       setTimeout(() => {
         const storedChallenge = this.biometricChallenges.get(challengeId);
-        if (storedChallenge && storedChallenge.status === "pending") {
-          storedChallenge.status = "expired";
+        if (storedChallenge && 'pending' === storedChallenge.status) {
+          storedChallenge.status = 'expired';
           this.biometricChallenges.set(challengeId, storedChallenge);
         }
       }, 5 * 60 * 1000);
@@ -247,10 +247,10 @@ export class MobileSecurityService {
       this.logger.log(`Biometric challenge created: ${challengeId}`);
       return challenge;
     } catch (error) {
-      this.logger.error("Failed to create biometric challenge:", error);
+      this.logger.error('Failed to create biometric challenge:', error);
       throw new Error(
         `Biometric challenge creation failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : 'Unknown error'
         }`
       );
     }
@@ -268,26 +268,26 @@ export class MobileSecurityService {
     error?: string;
   }> {
     try {
-      this.logger.log("Verifying biometric challenge:", { challengeId });
+      this.logger.log('Verifying biometric challenge:', { challengeId });
 
       const challenge = this.biometricChallenges.get(challengeId);
       if (!challenge) {
-        return { success: false, error: "Challenge not found" };
+        return { success: false, error: 'Challenge not found' };
       }
 
       // Check if challenge is expired
       if (new Date() > new Date(challenge.expiresAt)) {
-        challenge.status = "expired";
+        challenge.status = 'expired';
         this.biometricChallenges.set(challengeId, challenge);
-        return { success: false, error: "Challenge expired", challenge };
+        return { success: false, error: 'Challenge expired', challenge };
       }
 
       // Check if challenge is already completed or failed
-      if (challenge.status !== "pending") {
+      if ('pending' !== challenge.status) {
         return {
           success: false,
           error: `Challenge already ${challenge.status}`,
-          challenge,
+          challenge
         };
       }
 
@@ -301,21 +301,21 @@ export class MobileSecurityService {
       );
 
       if (isValid) {
-        challenge.status = "completed";
+        challenge.status = 'completed';
         this.biometricChallenges.set(challengeId, challenge);
 
         // Log successful biometric authentication
         await this.logSecurityEvent({
-          eventType: "biometric_auth",
+          eventType: 'biometric_auth',
           userId: challenge.userId,
           deviceId: challenge.deviceId,
-          ipAddress: "127.0.0.1",
-          userAgent: "mobile-app",
+          ipAddress: '127.0.0.1',
+          userAgent: 'mobile-app',
           riskScore: 10, // Low risk for successful biometric auth
           details: {
             challengeType: challenge.challengeType,
-            attempts: challenge.attempts,
-          },
+            attempts: challenge.attempts
+          }
         });
 
         this.logger.log(
@@ -325,7 +325,7 @@ export class MobileSecurityService {
       } else {
         // Check if max attempts reached
         if (challenge.attempts >= challenge.maxAttempts) {
-          challenge.status = "failed";
+          challenge.status = 'failed';
         }
         this.biometricChallenges.set(challengeId, challenge);
 
@@ -334,15 +334,15 @@ export class MobileSecurityService {
         );
         return {
           success: false,
-          error: "Biometric verification failed",
-          challenge,
+          error: 'Biometric verification failed',
+          challenge
         };
       }
     } catch (error) {
-      this.logger.error("Failed to verify biometric challenge:", error);
+      this.logger.error('Failed to verify biometric challenge:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -363,29 +363,29 @@ export class MobileSecurityService {
     error?: string;
   }> {
     try {
-      this.logger.log("Authenticating user with enhanced security:", {
+      this.logger.log('Authenticating user with enhanced security:', {
         userId,
-        deviceId: deviceFingerprint.deviceId,
+        deviceId: deviceFingerprint.deviceId
       });
 
       // Check for account lockout
       const lockoutCheck = this.checkAccountLockout(userId);
       if (lockoutCheck.isLocked) {
         await this.logSecurityEvent({
-          eventType: "failed_login",
+          eventType: 'failed_login',
           userId,
           deviceId: deviceFingerprint.deviceId,
           ipAddress,
           userAgent,
           riskScore: 90,
           details: {
-            reason: "account_locked",
-            lockedUntil: lockoutCheck.lockedUntil,
-          },
+            reason: 'account_locked',
+            lockedUntil: lockoutCheck.lockedUntil
+          }
         });
         return {
           success: false,
-          error: `Account locked until ${lockoutCheck.lockedUntil}`,
+          error: `Account locked until ${lockoutCheck.lockedUntil}`
         };
       }
 
@@ -406,7 +406,7 @@ export class MobileSecurityService {
         return {
           success: false,
           requiresBiometric: true,
-          error: "Biometric authentication required",
+          error: 'Biometric authentication required'
         };
       }
 
@@ -414,11 +414,11 @@ export class MobileSecurityService {
       if (credentials?.biometricChallengeId) {
         const biometricResult = await this.verifyBiometricChallenge(
           credentials.biometricChallengeId,
-          "mock-biometric-data"
+          'mock-biometric-data'
         );
         if (!biometricResult.success) {
           this.recordFailedLogin(userId);
-          return { success: false, error: "Biometric authentication failed" };
+          return { success: false, error: 'Biometric authentication failed' };
         }
       }
 
@@ -430,15 +430,15 @@ export class MobileSecurityService {
       if (!isValidCredentials) {
         this.recordFailedLogin(userId);
         await this.logSecurityEvent({
-          eventType: "failed_login",
+          eventType: 'failed_login',
           userId,
           deviceId: deviceFingerprint.deviceId,
           ipAddress,
           userAgent,
           riskScore: riskScore + 20,
-          details: { reason: "invalid_credentials" },
+          details: { reason: 'invalid_credentials' }
         });
-        return { success: false, error: "Invalid credentials" };
+        return { success: false, error: 'Invalid credentials' };
       }
 
       // Clear failed login attempts
@@ -455,25 +455,25 @@ export class MobileSecurityService {
 
       // Log successful authentication
       await this.logSecurityEvent({
-        eventType: "login",
+        eventType: 'login',
         userId,
         deviceId: deviceFingerprint.deviceId,
         ipAddress,
         userAgent,
         riskScore,
         details: {
-          authMethod: requiresBiometric ? "biometric" : "password",
-          trustScore: deviceFingerprint.trustScore,
-        },
+          authMethod: requiresBiometric ? 'biometric' : 'password',
+          trustScore: deviceFingerprint.trustScore
+        }
       });
 
       this.logger.log(`User authenticated successfully: ${userId}`);
       return { success: true, tokens };
     } catch (error) {
-      this.logger.error("Failed to authenticate user:", error);
+      this.logger.error('Failed to authenticate user:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Authentication failed",
+        error: error instanceof Error ? error.message : 'Authentication failed'
       };
     }
   }
@@ -486,14 +486,14 @@ export class MobileSecurityService {
     deviceFingerprint: DeviceFingerprint
   ): Promise<{ success: boolean; tokens?: SecurityTokens; error?: string }> {
     try {
-      this.logger.log("Refreshing authentication tokens:", {
-        deviceId: deviceFingerprint.deviceId,
+      this.logger.log('Refreshing authentication tokens:', {
+        deviceId: deviceFingerprint.deviceId
       });
 
       // Verify refresh token (mock implementation)
       const tokenPayload = await this.verifyRefreshToken(refreshToken);
       if (!tokenPayload) {
-        return { success: false, error: "Invalid refresh token" };
+        return { success: false, error: 'Invalid refresh token' };
       }
 
       // Check device trust
@@ -501,7 +501,7 @@ export class MobileSecurityService {
         `${tokenPayload.userId}_${deviceFingerprint.deviceId}`
       );
       if (!trustedDevice || !trustedDevice.isActive) {
-        return { success: false, error: "Device not trusted" };
+        return { success: false, error: 'Device not trusted' };
       }
 
       // Generate new tokens
@@ -523,10 +523,10 @@ export class MobileSecurityService {
       );
       return { success: true, tokens: newTokens };
     } catch (error) {
-      this.logger.error("Failed to refresh tokens:", error);
+      this.logger.error('Failed to refresh tokens:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Token refresh failed",
+        error: error instanceof Error ? error.message : 'Token refresh failed'
       };
     }
   }
@@ -541,8 +541,7 @@ export class MobileSecurityService {
     return this.auditLogs
       .filter((log) => log.userId === userId)
       .sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       )
       .slice(0, limit);
   }
@@ -572,13 +571,13 @@ export class MobileSecurityService {
         this.trustedDevices.set(deviceKey, trustedDevice);
 
         await this.logSecurityEvent({
-          eventType: "suspicious_activity",
+          eventType: 'suspicious_activity',
           userId,
           deviceId,
-          ipAddress: "127.0.0.1",
-          userAgent: "system",
+          ipAddress: '127.0.0.1',
+          userAgent: 'system',
           riskScore: 60,
-          details: { action: "device_trust_revoked" },
+          details: { action: 'device_trust_revoked' }
         });
 
         this.logger.log(
@@ -588,7 +587,7 @@ export class MobileSecurityService {
       }
       return false;
     } catch (error) {
-      this.logger.error("Failed to revoke device trust:", error);
+      this.logger.error('Failed to revoke device trust:', error);
       return false;
     }
   }
@@ -614,19 +613,19 @@ export class MobileSecurityService {
   }
 
   private generateChallengeData(
-    challengeType: BiometricChallenge["challengeType"]
+    challengeType: BiometricChallenge['challengeType']
   ): string {
     // Generate challenge data based on type
     const challengeData = {
       challengeType,
-      nonce: crypto.randomBytes(16).toString("hex"),
-      timestamp: Date.now(),
+      nonce: crypto.randomBytes(16).toString('hex'),
+      timestamp: Date.now()
     };
 
     return crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(JSON.stringify(challengeData))
-      .digest("hex");
+      .digest('hex');
   }
 
   private async mockBiometricVerification(
@@ -635,7 +634,7 @@ export class MobileSecurityService {
   ): Promise<boolean> {
     // Mock biometric verification - replace with actual biometric validation
     await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate processing time
-    return Math.random() > 0.1; // 90% success rate for testing
+    return 0.1 < Math.random(); // 90% success rate for testing
   }
 
   private checkAccountLockout(userId: string): {
@@ -670,16 +669,16 @@ export class MobileSecurityService {
     }
 
     // Mock IP geolocation risk (replace with actual geolocation service)
-    const isHighRiskLocation = ipAddress.startsWith("192.168.")
+    const isHighRiskLocation = ipAddress.startsWith('192.168.')
       ? false
-      : Math.random() > 0.8;
+      : 0.8 < Math.random();
     if (isHighRiskLocation) {
       riskScore += 25;
     }
 
     // Recent failed login attempts increase risk
     const attempts = this.loginAttempts.get(userId);
-    if (attempts && attempts.count > 0) {
+    if (attempts && 0 < attempts.count) {
       riskScore += attempts.count * 5;
     }
 
@@ -691,13 +690,19 @@ export class MobileSecurityService {
     riskScore: number
   ): boolean {
     // Require biometric for high-risk scenarios
-    if (riskScore > 70) return true;
+    if (70 < riskScore) {
+      return true;
+    }
 
     // Require biometric for untrusted devices
-    if (deviceFingerprint.trustScore < 50) return true;
+    if (50 > deviceFingerprint.trustScore) {
+      return true;
+    }
 
     // Require biometric if globally enabled
-    if (this.securityConfig.requireBiometric) return true;
+    if (this.securityConfig.requireBiometric) {
+      return true;
+    }
 
     return false;
   }
@@ -708,13 +713,13 @@ export class MobileSecurityService {
   ): Promise<boolean> {
     // Mock password verification - replace with actual user authentication
     await new Promise((resolve) => setTimeout(resolve, 200)); // Simulate processing time
-    return Boolean(password && password.length > 5);
+    return Boolean(password && 5 < password.length);
   }
 
   private recordFailedLogin(userId: string): void {
     const attempts = this.loginAttempts.get(userId) || {
       count: 0,
-      lastAttempt: new Date().toISOString(),
+      lastAttempt: new Date().toISOString()
     };
     attempts.count++;
     attempts.lastAttempt = new Date().toISOString();
@@ -736,31 +741,31 @@ export class MobileSecurityService {
       userId,
       deviceId: deviceFingerprint.deviceId,
       platform: deviceFingerprint.platform,
-      iat: Math.floor(Date.now() / 1000),
+      iat: Math.floor(Date.now() / 1000)
     };
 
     const accessToken = jwt.sign(payload, this.securityConfig.jwtSecret, {
-      expiresIn: this.securityConfig.jwtExpiresIn,
+      expiresIn: this.securityConfig.jwtExpiresIn
     });
 
     const refreshToken = jwt.sign(
-      { ...payload, type: "refresh" },
+      { ...payload, type: 'refresh' },
       this.securityConfig.jwtSecret,
       { expiresIn: this.securityConfig.refreshTokenExpiresIn }
     );
 
     const deviceToken = crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(`${userId}_${deviceFingerprint.deviceId}_${Date.now()}`)
-      .digest("hex");
+      .digest('hex');
 
     return {
       accessToken,
       refreshToken,
       deviceToken,
       expiresIn: 15 * 60, // 15 minutes
-      tokenType: "Bearer",
-      scope: ["read", "write", "mobile"],
+      tokenType: 'Bearer',
+      scope: ['read', 'write', 'mobile']
     };
   }
 
@@ -776,13 +781,13 @@ export class MobileSecurityService {
       trustedDevice.lastUsed = new Date().toISOString();
       trustedDevice.usageCount++;
       // Increase trust level over time
-      if (trustedDevice.usageCount > 10 && trustedDevice.trustLevel === "low") {
-        trustedDevice.trustLevel = "medium";
+      if (10 < trustedDevice.usageCount && 'low' === trustedDevice.trustLevel) {
+        trustedDevice.trustLevel = 'medium';
       } else if (
-        trustedDevice.usageCount > 50 &&
-        trustedDevice.trustLevel === "medium"
+        50 < trustedDevice.usageCount &&
+        'medium' === trustedDevice.trustLevel
       ) {
-        trustedDevice.trustLevel = "high";
+        trustedDevice.trustLevel = 'high';
       }
     } else {
       // Create new trusted device
@@ -790,14 +795,14 @@ export class MobileSecurityService {
         deviceId: deviceFingerprint.deviceId,
         userId,
         deviceFingerprint,
-        trustLevel: "low",
+        trustLevel: 'low',
         trustedAt: new Date().toISOString(),
         expiresAt: new Date(
           Date.now() + this.securityConfig.deviceTrustDuration
         ).toISOString(),
         lastUsed: new Date().toISOString(),
         usageCount: 1,
-        isActive: true,
+        isActive: true
       };
     }
 
@@ -812,7 +817,7 @@ export class MobileSecurityService {
         refreshToken,
         this.securityConfig.jwtSecret
       ) as any;
-      if (decoded.type === "refresh") {
+      if ('refresh' === decoded.type) {
         return { userId: decoded.userId, deviceId: decoded.deviceId };
       }
       return null;
@@ -822,7 +827,7 @@ export class MobileSecurityService {
   }
 
   private async logSecurityEvent(
-    eventData: Omit<SecurityAuditLog, "eventId" | "timestamp">
+    eventData: Omit<SecurityAuditLog, 'eventId' | 'timestamp'>
   ): Promise<void> {
     try {
       const auditLog: SecurityAuditLog = {
@@ -830,20 +835,20 @@ export class MobileSecurityService {
           .toString(36)
           .substr(2, 9)}`,
         timestamp: new Date().toISOString(),
-        ...eventData,
+        ...eventData
       };
 
       this.auditLogs.push(auditLog);
 
       // Keep only last 1000 logs
-      if (this.auditLogs.length > 1000) {
+      if (1000 < this.auditLogs.length) {
         this.auditLogs.splice(0, this.auditLogs.length - 1000);
       }
 
       // Emit security event via NATS
-      await this.natsClient.emit("mobile.security.audit", auditLog);
+      await this.natsClient.emit('mobile.security.audit', auditLog);
     } catch (error) {
-      this.logger.error("Failed to log security event:", error);
+      this.logger.error('Failed to log security event:', error);
     }
   }
 }

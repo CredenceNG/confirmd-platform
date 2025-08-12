@@ -4,8 +4,8 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  InternalServerErrorException,
-} from "@nestjs/common";
+  InternalServerErrorException
+} from '@nestjs/common';
 import {
   IOrgUsers,
   PlatformSettings,
@@ -18,18 +18,18 @@ import {
   IUserDeletedActivity,
   UserKeycloakId,
   UserRoleMapping,
-  UserRoleDetails,
-} from "../interfaces/user.interface";
-import { PrismaService } from "@credebl/prisma-service";
+  UserRoleDetails
+} from '../interfaces/user.interface';
+import { PrismaService } from '@credebl/prisma-service';
 // eslint-disable-next-line camelcase
 import {
   RecordType,
   schema,
   token,
   user,
-  user_org_roles,
-} from "@prisma/client";
-import { UserRole } from "@credebl/enum/enum";
+  user_org_roles
+} from '@prisma/client';
+import { UserRole } from '@credebl/enum/enum';
 
 interface UserQueryOptions {
   id?: string; // Use the appropriate type based on your data model
@@ -57,7 +57,7 @@ export class UserRepository {
     try {
       const saveResponse = await this.prisma.user.upsert({
         where: {
-          email: userEmailVerification.email,
+          email: userEmailVerification.email
         },
         create: {
           username: userEmailVerification.username,
@@ -65,11 +65,11 @@ export class UserRepository {
           verificationCode: verifyCode.toString(),
           clientId: userEmailVerification.clientId,
           clientSecret: userEmailVerification.clientSecret,
-          publicProfile: true,
+          publicProfile: true
         },
         update: {
-          verificationCode: verifyCode.toString(),
-        },
+          verificationCode: verifyCode.toString()
+        }
       });
 
       return saveResponse;
@@ -90,8 +90,8 @@ export class UserRepository {
     try {
       return this.prisma.user.findFirst({
         where: {
-          email,
-        },
+          email
+        }
       });
     } catch (error) {
       this.logger.error(`checkUserExist: ${JSON.stringify(error)}`);
@@ -108,8 +108,8 @@ export class UserRepository {
     try {
       return this.prisma.user.findFirst({
         where: {
-          email,
-        },
+          email
+        }
       });
     } catch (error) {
       this.logger.error(`Not Found: ${JSON.stringify(error)}`);
@@ -124,7 +124,7 @@ export class UserRepository {
    */
   async getUserById(id: string): Promise<IUsersProfile> {
     const queryOptions: UserQueryOptions = {
-      id,
+      id
     };
 
     return this.findUser(queryOptions);
@@ -137,7 +137,7 @@ export class UserRepository {
    */
   async getUserPublicProfile(username: string): Promise<IUsersProfile> {
     const queryOptions: UserQueryOptions = {
-      username,
+      username
     };
 
     return this.findUserForPublicProfile(queryOptions);
@@ -152,14 +152,14 @@ export class UserRepository {
     try {
       const userdetails = await this.prisma.user.update({
         where: {
-          id: String(updateUserProfile.id),
+          id: String(updateUserProfile.id)
         },
         data: {
           profileImg: updateUserProfile.profileImg,
           firstName: updateUserProfile.firstName,
           lastName: updateUserProfile.lastName,
-          publicProfile: updateUserProfile?.isPublic,
-        },
+          publicProfile: updateUserProfile?.isPublic
+        }
       });
       return userdetails;
     } catch (error) {
@@ -177,7 +177,7 @@ export class UserRepository {
     try {
       return this.prisma.user.findFirst({
         where: {
-          supabaseUserId: id,
+          supabaseUserId: id
         },
         select: {
           id: true,
@@ -195,12 +195,12 @@ export class UserRepository {
               organisation: {
                 include: {
                   // eslint-disable-next-line camelcase
-                  org_agents: true,
-                },
-              },
-            },
-          },
-        },
+                  org_agents: true
+                }
+              }
+            }
+          }
+        }
       });
     } catch (error) {
       this.logger.error(`Not Found: ${JSON.stringify(error)}`);
@@ -217,7 +217,7 @@ export class UserRepository {
     try {
       return this.prisma.user.findFirstOrThrow({
         where: {
-          keycloakUserId: id,
+          keycloakUserId: id
         },
         select: {
           id: true,
@@ -236,12 +236,12 @@ export class UserRepository {
               organisation: {
                 include: {
                   // eslint-disable-next-line camelcase
-                  org_agents: true,
-                },
-              },
-            },
-          },
-        },
+                  org_agents: true
+                }
+              }
+            }
+          }
+        }
       });
     } catch (error) {
       this.logger.error(
@@ -253,7 +253,7 @@ export class UserRepository {
 
   async findUserByEmail(email: string): Promise<object> {
     const queryOptions: UserQueryOptions = {
-      email,
+      email
     };
     return this.findUser(queryOptions);
   }
@@ -263,12 +263,12 @@ export class UserRepository {
       where: {
         OR: [
           {
-            id: queryOptions.id,
+            id: queryOptions.id
           },
           {
-            email: queryOptions.email,
-          },
-        ],
+            email: queryOptions.email
+          }
+        ]
       },
       select: {
         id: true,
@@ -291,8 +291,8 @@ export class UserRepository {
               select: {
                 id: true,
                 name: true,
-                description: true,
-              },
+                description: true
+              }
             },
             organisation: {
               select: {
@@ -305,10 +305,10 @@ export class UserRepository {
                 publicProfile: true,
                 countryId: true,
                 stateId: true,
-                cityId: true,
-              },
-            },
-          },
+                cityId: true
+              }
+            }
+          }
         },
         // eslint-disable-next-line camelcase
         user_role_mapping: {
@@ -320,12 +320,12 @@ export class UserRepository {
             user_role: {
               select: {
                 id: true,
-                role: true,
-              },
-            },
-          },
-        },
-      },
+                role: true
+              }
+            }
+          }
+        }
+      }
     });
   }
 
@@ -337,15 +337,15 @@ export class UserRepository {
         publicProfile: true,
         OR: [
           {
-            id: String(queryOptions.id),
+            id: String(queryOptions.id)
           },
           {
-            email: queryOptions.email,
+            email: queryOptions.email
           },
           {
-            username: queryOptions.username,
-          },
-        ],
+            username: queryOptions.username
+          }
+        ]
       },
       select: {
         id: true,
@@ -365,8 +365,8 @@ export class UserRepository {
               select: {
                 id: true,
                 name: true,
-                description: true,
-              },
+                description: true
+              }
             },
             organisation: {
               select: {
@@ -379,12 +379,12 @@ export class UserRepository {
                 publicProfile: true,
                 countryId: true,
                 stateId: true,
-                cityId: true,
-              },
-            },
-          },
-        },
-      },
+                cityId: true
+              }
+            }
+          }
+        }
+      }
     });
   }
 
@@ -398,12 +398,12 @@ export class UserRepository {
     try {
       const updateUserDetails = await this.prisma.user.update({
         where: {
-          id,
+          id
         },
         data: {
           isEmailVerified: true,
-          keycloakUserId: keycloakId,
-        },
+          keycloakUserId: keycloakId
+        }
       });
       return updateUserDetails;
     } catch (error) {
@@ -425,12 +425,12 @@ export class UserRepository {
     try {
       const updateUserDetails = await this.prisma.user.update({
         where: {
-          email,
+          email
         },
         data: {
           firstName: userInfo.firstName,
-          lastName: userInfo.lastName,
-        },
+          lastName: userInfo.lastName
+        }
       });
       return updateUserDetails;
     } catch (error) {
@@ -454,7 +454,7 @@ export class UserRepository {
     const result = await this.prisma.$transaction([
       this.prisma.user.findMany({
         where: {
-          ...queryOptions, // Spread the dynamic condition object
+          ...queryOptions // Spread the dynamic condition object
         },
         select: {
           id: true,
@@ -465,7 +465,7 @@ export class UserRepository {
           isEmailVerified: true,
           userOrgRoles: {
             where: {
-              ...filterOptions,
+              ...filterOptions
               // Additional filtering conditions if needed
             },
             select: {
@@ -476,8 +476,8 @@ export class UserRepository {
                 select: {
                   id: true,
                   name: true,
-                  description: true,
-                },
+                  description: true
+                }
               },
               organisation: {
                 select: {
@@ -495,25 +495,25 @@ export class UserRepository {
                       agentSpinUpStatus: true,
                       agentsTypeId: true,
                       createDateTime: true,
-                      orgAgentTypeId: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
+                      orgAgentTypeId: true
+                    }
+                  }
+                }
+              }
+            }
+          }
         },
         take: pageSize,
         skip: (pageNumber - 1) * pageSize,
         orderBy: {
-          createDateTime: "desc",
-        },
+          createDateTime: 'desc'
+        }
       }),
       this.prisma.user.count({
         where: {
-          ...queryOptions,
-        },
-      }),
+          ...queryOptions
+        }
+      })
     ]);
 
     const users = result[0];
@@ -538,7 +538,7 @@ export class UserRepository {
       this.prisma.user.findMany({
         where: {
           ...queryOptions, // Spread the dynamic condition object
-          publicProfile: true,
+          publicProfile: true
         },
         select: {
           id: true,
@@ -550,19 +550,19 @@ export class UserRepository {
           isEmailVerified: true,
           clientId: false,
           clientSecret: false,
-          supabaseUserId: false,
+          supabaseUserId: false
         },
         take: pageSize,
         skip: (pageNumber - 1) * pageSize,
         orderBy: {
-          createDateTime: "desc",
-        },
+          createDateTime: 'desc'
+        }
       }),
       this.prisma.user.count({
         where: {
-          ...queryOptions,
-        },
-      }),
+          ...queryOptions
+        }
+      })
     ]);
 
     const users = result[0];
@@ -578,8 +578,8 @@ export class UserRepository {
     try {
       const getAttributes = await this.prisma.schema.findFirst({
         where: {
-          schemaLedgerId: shareUserCertificate.schemaId,
-        },
+          schemaLedgerId: shareUserCertificate.schemaId
+        }
       });
       return getAttributes;
     } catch (error) {
@@ -592,8 +592,8 @@ export class UserRepository {
     try {
       return this.prisma.user.findUnique({
         where: {
-          email,
-        },
+          email
+        }
       });
     } catch (error) {
       this.logger.error(`checkUserExist: ${JSON.stringify(error)}`);
@@ -605,11 +605,11 @@ export class UserRepository {
     try {
       const updateUserDetails = await this.prisma.user.update({
         where: {
-          email,
+          email
         },
         data: {
-          isEmailVerified: true,
-        },
+          isEmailVerified: true
+        }
       });
       return updateUserDetails;
     } catch (error) {
@@ -628,11 +628,11 @@ export class UserRepository {
     try {
       const updateUserDetails = await this.prisma.user.update({
         where: {
-          email,
+          email
         },
         data: {
-          password: userInfo,
-        },
+          password: userInfo
+        }
       });
       return updateUserDetails;
     } catch (error) {
@@ -658,8 +658,8 @@ export class UserRepository {
         data: {
           token,
           userId,
-          expiresAt: expireTime,
-        },
+          expiresAt: expireTime
+        }
       });
       return createResetPasswordToken;
     } catch (error) {
@@ -684,8 +684,8 @@ export class UserRepository {
       const tokenDetails = await this.prisma.token.findUnique({
         where: {
           userId,
-          token,
-        },
+          token
+        }
       });
       return tokenDetails;
     } catch (error) {
@@ -705,8 +705,8 @@ export class UserRepository {
     try {
       const tokenDeleteDetails = await this.prisma.token.delete({
         where: {
-          id,
-        },
+          id
+        }
       });
       return tokenDeleteDetails;
     } catch (error) {
@@ -751,7 +751,7 @@ export class UserRepository {
           `❌ Repository: No platform_config record found in database!`
         );
         throw new InternalServerErrorException(
-          "No platform configuration found. Please create a platform configuration first."
+          'No platform configuration found. Please create a platform configuration first.'
         );
       }
 
@@ -761,15 +761,15 @@ export class UserRepository {
 
       const platformDetails = await this.prisma.platform_config.update({
         where: {
-          id: getPlatformDetails.id,
+          id: getPlatformDetails.id
         },
         data: {
           externalIp: updatePlatformSettings.externalIp,
           inboundEndpoint: updatePlatformSettings.inboundEndpoint,
           sgApiKey: updatePlatformSettings.sgApiKey,
           emailFrom: updatePlatformSettings.emailFrom,
-          apiEndpoint: updatePlatformSettings.apiEndPoint,
-        },
+          apiEndpoint: updatePlatformSettings.apiEndPoint
+        }
       });
 
       this.logger.log(
@@ -818,8 +818,8 @@ export class UserRepository {
             deletedBy,
             recordType,
             txnMetadata,
-            userId,
-          },
+            userId
+          }
         });
       return orgDeletedActivity;
     } catch (error) {
@@ -834,11 +834,11 @@ export class UserRepository {
     try {
       const getUserDetails = await this.prisma.user.findUnique({
         where: {
-          id: userId,
+          id: userId
         },
         select: {
-          email: true,
-        },
+          email: true
+        }
       });
       return getUserDetails;
     } catch (error) {
@@ -852,14 +852,14 @@ export class UserRepository {
       const users = await this.prisma.user.findMany({
         where: {
           email: {
-            in: userEmails,
-          },
+            in: userEmails
+          }
         },
         select: {
           email: true,
           keycloakUserId: true,
-          id: true,
-        },
+          id: true
+        }
       });
 
       // Create a map for quick lookup of keycloakUserId, id, and email by email
@@ -869,8 +869,8 @@ export class UserRepository {
           {
             id: user.id,
             keycloakUserId: user.keycloakUserId,
-            email: user.email,
-          },
+            email: user.email
+          }
         ])
       );
 
@@ -880,7 +880,7 @@ export class UserRepository {
         return {
           id: user?.id || null,
           keycloakUserId: user?.keycloakUserId || null,
-          email,
+          email
         };
       });
 
@@ -899,8 +899,8 @@ export class UserRepository {
       const userRoleMapping = await this.prisma.user_role_mapping.create({
         data: {
           userId,
-          userRoleId,
-        },
+          userRoleId
+        }
       });
       return userRoleMapping;
     } catch (error) {
@@ -913,8 +913,8 @@ export class UserRepository {
     try {
       const getUserRole = await this.prisma.user_role.findFirstOrThrow({
         where: {
-          role,
-        },
+          role
+        }
       });
       return getUserRole;
     } catch (error) {
@@ -928,17 +928,17 @@ export class UserRepository {
     try {
       const getUserOrgs = await this.prisma.user_org_roles.findMany({
         where: {
-          userId,
+          userId
         },
         include: {
           orgRole: true,
           organisation: {
             include: {
               // eslint-disable-next-line camelcase
-              org_agents: true,
-            },
-          },
-        },
+              org_agents: true
+            }
+          }
+        }
       });
 
       return getUserOrgs;
@@ -965,12 +965,12 @@ export class UserRepository {
         where: {
           userId,
           orgRole: {
-            name: "platform_admin",
-          },
+            name: 'platform_admin'
+          }
         },
         include: {
-          orgRole: true,
-        },
+          orgRole: true
+        }
       });
 
       this.logger.log(
@@ -978,7 +978,7 @@ export class UserRepository {
           platformAdminRole
         )}`
       );
-      const result = !!platformAdminRole;
+      const result = Boolean(platformAdminRole);
       this.logger.log(
         `🎯 Repository: Platform Admin check result for user ${userId}: ${result}`
       );

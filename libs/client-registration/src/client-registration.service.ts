@@ -13,6 +13,15 @@ import { CommonService } from '@credebl/common';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { KeycloakUrlService } from '@credebl/keycloak-url';
+
+// Interface for user objects with encrypted credentials
+interface UserWithCredentials {
+  id?: string;
+  email?: string;
+  clientId?: string;
+  clientSecret?: string;
+  roles?: ({ role?: string; name?: string } | string)[];
+}
 import { accessTokenPayloadDto } from './dtos/accessTokenPayloadDto';
 import { userTokenPayloadDto } from './dtos/userTokenPayloadDto';
 import { KeycloakUserRegistrationDto } from '@credebl/user-dtos';
@@ -100,7 +109,7 @@ export class ClientRegistrationService {
       const createUserUrl = await this.keycloakUrlService.createUserURL(realm);
       this.logger.log(`📡 Create user URL: ${createUserUrl}`);
 
-      const createUserResponse = await this.commonService.httpPost(
+      await this.commonService.httpPost(
         createUserUrl,
         payload,
         this.getAuthHeader(token)
@@ -129,7 +138,7 @@ export class ClientRegistrationService {
 
           this.logger.log(`📊 Username search response: ${Array.isArray(getUserResponse) ? getUserResponse.length : 'Not array'} results`);
 
-          if (Array.isArray(getUserResponse) && getUserResponse.length > 0) {
+          if (Array.isArray(getUserResponse) && 0 < getUserResponse.length) {
             this.logger.log(`✅ User found via username search on attempt ${searchAttempts}`);
             break;
           }
@@ -145,7 +154,7 @@ export class ClientRegistrationService {
 
           this.logger.log(`📊 Email search response: ${Array.isArray(getUserResponse) ? getUserResponse.length : 'Not array'} results`);
 
-          if (Array.isArray(getUserResponse) && getUserResponse.length > 0) {
+          if (Array.isArray(getUserResponse) && 0 < getUserResponse.length) {
             this.logger.log(`✅ User found via email search on attempt ${searchAttempts}`);
             break;
           }
@@ -165,7 +174,7 @@ export class ClientRegistrationService {
         }
       }
 
-      if (!Array.isArray(getUserResponse) || getUserResponse.length === 0) {
+      if (!Array.isArray(getUserResponse) || 0 === getUserResponse.length) {
         this.logger.error(`❌ No user found after creation despite ${maxAttempts} attempts`);
         this.logger.error(`❌ Search parameters used: username=${user.email}, email=${user.email}`);
         throw new Error('User not found after creation in Keycloak');
@@ -435,7 +444,7 @@ export class ClientRegistrationService {
    * @param user User object containing encrypted clientId and clientSecret
    * @returns Management access token
    */
-  async getManagementTokenFromDatabase(user: any): Promise<string> {
+  async getManagementTokenFromDatabase(user: UserWithCredentials): Promise<string> {
     try {
       this.logger.log(`🔐 === GETTING MANAGEMENT TOKEN FROM DATABASE (PLATFORM ADMIN) ===`);
       this.logger.log(`👤 User: ${user.email}`);
@@ -518,19 +527,17 @@ export class ClientRegistrationService {
    * @param user User object with roles or role information
    * @returns true if user is platform admin
    */
-  isPlatformAdmin(user: any): boolean {
+  isPlatformAdmin(user: UserWithCredentials): boolean {
     try {
       this.logger.log(`🔍 Checking if user is platform admin: ${user?.email}`);
       
       // Check if user has platform admin role in various possible formats
       const isPlatformAdmin = 
-        user?.roles?.some((role: any) => 
-          role?.role === 'platform_admin' || 
-          role?.name === 'platform_admin' ||
-          role === 'platform_admin'
+        user?.roles?.some((role: { role?: string; name?: string } | string) => ('string' === typeof role && 'platform_admin' === role) ||
+          ('object' === typeof role && ('platform_admin' === role?.role || 'platform_admin' === role?.name))
         ) ||
-        user?.role === 'platform_admin' ||
-        user?.userRole === 'platform_admin' ||
+        'platform_admin' === user?.role ||
+        'platform_admin' === user?.userRole ||
         // Also check clientId pattern as fallback (admin user has 'platform-admin' as clientId)
         (user?.clientId && user.clientId.includes('platform-admin'));
 
@@ -915,17 +922,17 @@ export class ClientRegistrationService {
         import_mode: false,
         customScripts: {
           login:
-            "function login(email, password, callback) {\n  //this example uses the \"pg\" library\n  //more info here: https://github.com/brianc/node-postgres\n\n  const bcrypt = require('bcrypt');\n  const postgres = require('pg');\n\n  const conString = `postgres://${configuration.pg_user}:${configuration.pg_pass}@${configuration.pg_ip}/${configuration.pg_db}`;\n  postgres.connect(conString, function (err, client, done) {\n    if (err) return callback(err);\n\t\t\t\n    const query = 'SELECT id, email, password FROM public.user WHERE email = $1 or username = $1';\n    client.query(query, [email], function (err, result) {\n      // NOTE: always call done() here to close\n      // the connection to the database\n      done();\n\n      if (err || result.rows.length === 0) return callback(err || new WrongUsernameOrPasswordError(email));\n\n      const user = result.rows[0];\n\n      //if(password === user.password) {\n        this.logger.log(email);\n        if (password === user.password) return callback(err || new WrongUsernameOrPasswordError(email));\n\n        return callback(null, {\n          user_id: user.id,\n          email: user.email\n        });\n      });\n      \n    });\n  //});\n}",
+            'function login(email, password, callback) {\n  //this example uses the "pg" library\n  //more info here: https://github.com/brianc/node-postgres\n\n  const bcrypt = require(\'bcrypt\');\n  const postgres = require(\'pg\');\n\n  const conString = `postgres://${configuration.pg_user}:${configuration.pg_pass}@${configuration.pg_ip}/${configuration.pg_db}`;\n  postgres.connect(conString, function (err, client, done) {\n    if (err) return callback(err);\n\t\t\t\n    const query = \'SELECT id, email, password FROM public.user WHERE email = $1 or username = $1\';\n    client.query(query, [email], function (err, result) {\n      // NOTE: always call done() here to close\n      // the connection to the database\n      done();\n\n      if (err || result.rows.length === 0) return callback(err || new WrongUsernameOrPasswordError(email));\n\n      const user = result.rows[0];\n\n      //if(password === user.password) {\n        this.logger.log(email);\n        if (password === user.password) return callback(err || new WrongUsernameOrPasswordError(email));\n\n        return callback(null, {\n          user_id: user.id,\n          email: user.email\n        });\n      });\n      \n    });\n  //});\n}',
           create:
             'function create(user, callback) {\n  // This script should create a user entry in your existing database. It will\n  // be executed when a user attempts to sign up, or when a user is created\n  // through the Auth0 dashboard or API.\n  // When this script has finished executing, the Login script will be\n  // executed immediately afterwards, to verify that the user was created\n  // successfully.\n  //\n  // The user object will always contain the following properties:\n  // * email: the user\'s email\n  // * password: the password entered by the user, in plain text\n  // * tenant: the name of this Auth0 account\n  // * client_id: the client ID of the application where the user signed up, or\n  //              API key if created through the API or Auth0 dashboard\n  // * connection: the name of this database connection\n  //\n  // There are three ways this script can finish:\n  // 1. A user was successfully created\n  //     callback(null);\n  // 2. This user already exists in your database\n  //     callback(new ValidationError("user_exists", "my error message"));\n  // 3. Something went wrong while trying to reach your database\n  //     callback(new Error("my error message"));\n\n  const msg = \'Please implement the Create script for this database connection \' +\n    \'at https://manage.auth0.com/#/connections/database\';\n  return callback(new Error(msg));\n}\n',
           delete:
-            "function remove(id, callback) {\n  // This script remove a user from your existing database.\n  // It is executed whenever a user is deleted from the API or Auth0 dashboard.\n  //\n  // There are two ways that this script can finish:\n  // 1. The user was removed successfully:\n  //     callback(null);\n  // 2. Something went wrong while trying to reach your database:\n  //     callback(new Error(\"my error message\"));\n\n  const msg = 'Please implement the Delete script for this database ' +\n    'connection at https://manage.auth0.com/#/connections/database';\n  return callback(new Error(msg));\n}\n",
+            'function remove(id, callback) {\n  // This script remove a user from your existing database.\n  // It is executed whenever a user is deleted from the API or Auth0 dashboard.\n  //\n  // There are two ways that this script can finish:\n  // 1. The user was removed successfully:\n  //     callback(null);\n  // 2. Something went wrong while trying to reach your database:\n  //     callback(new Error("my error message"));\n\n  const msg = \'Please implement the Delete script for this database \' +\n    \'connection at https://manage.auth0.com/#/connections/database\';\n  return callback(new Error(msg));\n}\n',
           verify:
-            "function verify(email, callback) {\n  // This script should mark the current user's email address as verified in\n  // your database.\n  // It is executed whenever a user clicks the verification link sent by email.\n  // These emails can be customized at https://manage.auth0.com/#/emails.\n  // It is safe to assume that the user's email already exists in your database,\n  // because verification emails, if enabled, are sent immediately after a\n  // successful signup.\n  //\n  // There are two ways that this script can finish:\n  // 1. The user's email was verified successfully\n  //     callback(null, true);\n  // 2. Something went wrong while trying to reach your database:\n  //     callback(new Error(\"my error message\"));\n  //\n  // If an error is returned, it will be passed to the query string of the page\n  // where the user is being redirected to after clicking the verification link.\n  // For example, returning `callback(new Error(\"error\"))` and redirecting to\n  // https://example.com would redirect to the following URL:\n  //     https://example.com?email=alice%40example.com&message=error&success=false\n\n  const msg = 'Please implement the Verify script for this database connection ' +\n    'at https://manage.auth0.com/#/connections/database';\n  return callback(new Error(msg));\n}\n",
+            'function verify(email, callback) {\n  // This script should mark the current user\'s email address as verified in\n  // your database.\n  // It is executed whenever a user clicks the verification link sent by email.\n  // These emails can be customized at https://manage.auth0.com/#/emails.\n  // It is safe to assume that the user\'s email already exists in your database,\n  // because verification emails, if enabled, are sent immediately after a\n  // successful signup.\n  //\n  // There are two ways that this script can finish:\n  // 1. The user\'s email was verified successfully\n  //     callback(null, true);\n  // 2. Something went wrong while trying to reach your database:\n  //     callback(new Error("my error message"));\n  //\n  // If an error is returned, it will be passed to the query string of the page\n  // where the user is being redirected to after clicking the verification link.\n  // For example, returning `callback(new Error("error"))` and redirecting to\n  // https://example.com would redirect to the following URL:\n  //     https://example.com?email=alice%40example.com&message=error&success=false\n\n  const msg = \'Please implement the Verify script for this database connection \' +\n    \'at https://manage.auth0.com/#/connections/database\';\n  return callback(new Error(msg));\n}\n',
           get_user:
-            "function getByEmail(email, callback) {\n  // This script should retrieve a user profile from your existing database,\n  // without authenticating the user.\n  // It is used to check if a user exists before executing flows that do not\n  // require authentication (signup and password reset).\n  //\n  // There are three ways this script can finish:\n  // 1. A user was successfully found. The profile should be in the following\n  // format: https://auth0.com/docs/users/normalized/auth0/normalized-user-profile-schema.\n  //     callback(null, profile);\n  // 2. A user was not found\n  //     callback(null);\n  // 3. Something went wrong while trying to reach your database:\n  //     callback(new Error(\"my error message\"));\n\n  const msg = 'Please implement the Get User script for this database connection ' +\n    'at https://manage.auth0.com/#/connections/database';\n  return callback(new Error(msg));\n}\n",
+            'function getByEmail(email, callback) {\n  // This script should retrieve a user profile from your existing database,\n  // without authenticating the user.\n  // It is used to check if a user exists before executing flows that do not\n  // require authentication (signup and password reset).\n  //\n  // There are three ways this script can finish:\n  // 1. A user was successfully found. The profile should be in the following\n  // format: https://auth0.com/docs/users/normalized/auth0/normalized-user-profile-schema.\n  //     callback(null, profile);\n  // 2. A user was not found\n  //     callback(null);\n  // 3. Something went wrong while trying to reach your database:\n  //     callback(new Error("my error message"));\n\n  const msg = \'Please implement the Get User script for this database connection \' +\n    \'at https://manage.auth0.com/#/connections/database\';\n  return callback(new Error(msg));\n}\n',
           change_password:
-            "function changePassword(email, newPassword, callback) {\n  // This script should change the password stored for the current user in your\n  // database. It is executed when the user clicks on the confirmation link\n  // after a reset password request.\n  // The content and behavior of password confirmation emails can be customized\n  // here: https://manage.auth0.com/#/emails\n  // The `newPassword` parameter of this function is in plain text. It must be\n  // hashed/salted to match whatever is stored in your database.\n  //\n  // There are three ways that this script can finish:\n  // 1. The user's password was updated successfully:\n  //     callback(null, true);\n  // 2. The user's password was not updated:\n  //     callback(null, false);\n  // 3. Something went wrong while trying to reach your database:\n  //     callback(new Error(\"my error message\"));\n  //\n  // If an error is returned, it will be passed to the query string of the page\n  // where the user is being redirected to after clicking the confirmation link.\n  // For example, returning `callback(new Error(\"error\"))` and redirecting to\n  // https://example.com would redirect to the following URL:\n  //     https://example.com?email=alice%40example.com&message=error&success=false\n\n  const msg = 'Please implement the Change Password script for this database ' +\n    'connection at https://manage.auth0.com/#/connections/database';\n  return callback(new Error(msg));\n}\n"
+            'function changePassword(email, newPassword, callback) {\n  // This script should change the password stored for the current user in your\n  // database. It is executed when the user clicks on the confirmation link\n  // after a reset password request.\n  // The content and behavior of password confirmation emails can be customized\n  // here: https://manage.auth0.com/#/emails\n  // The `newPassword` parameter of this function is in plain text. It must be\n  // hashed/salted to match whatever is stored in your database.\n  //\n  // There are three ways that this script can finish:\n  // 1. The user\'s password was updated successfully:\n  //     callback(null, true);\n  // 2. The user\'s password was not updated:\n  //     callback(null, false);\n  // 3. Something went wrong while trying to reach your database:\n  //     callback(new Error("my error message"));\n  //\n  // If an error is returned, it will be passed to the query string of the page\n  // where the user is being redirected to after clicking the confirmation link.\n  // For example, returning `callback(new Error("error"))` and redirecting to\n  // https://example.com would redirect to the following URL:\n  //     https://example.com?email=alice%40example.com&message=error&success=false\n\n  const msg = \'Please implement the Change Password script for this database \' +\n    \'connection at https://manage.auth0.com/#/connections/database\';\n  return callback(new Error(msg));\n}\n'
         },
         passwordPolicy: 'good',
         password_complexity_options: {
@@ -1103,10 +1110,11 @@ export class ClientRegistrationService {
         throw new BadRequestException(`Client ID and client secret are missing`);
       }
 
-      // clientId is stored as plain text, only clientSecret is encrypted
+      // Both clientId and clientSecret are encrypted and need to be decrypted
+      const decryptClientId = await this.commonService.decryptPassword(clientId);
       const decryptClientSecret = await this.commonService.decryptPassword(clientSecret);
 
-      payload.client_id = clientId; // Use plain text clientId
+      payload.client_id = decryptClientId; // Use decrypted clientId
       payload.client_secret = decryptClientSecret; // Use decrypted clientSecret
 
       payload.grant_type = 'refresh_token';
