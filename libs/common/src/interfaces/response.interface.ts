@@ -4,7 +4,7 @@ export default interface IResponseType {
   label?: string;
   data?: unknown;
   error?: unknown;
-};;;;;;;;;;;
+};;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 export interface IResponse {
   statusCode: number;
   message: string;

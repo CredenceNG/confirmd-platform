@@ -125,9 +125,17 @@ export class VerificationController {
   }
 
   @MessagePattern({ cmd: 'webhook-proof-received' })
-  async processProofWebhook(@Payload() webhookData: any): Promise<void> {
+  async processProofWebhook(@Payload() webhookData: any): Promise<presentations> {
     this.logger.log('🔍 Processing proof webhook event');
-    return this.verificationService.processProofWebhookEvent(webhookData);
+    this.logger.log(`📦 Raw webhook data: ${JSON.stringify(webhookData, null, 2)}`);
+    
+    // Transform raw webhook data to IProofPresentation format
+    const proofPresentationPayload: IProofPresentation = {
+      proofPresentationPayload: webhookData,
+      orgId: webhookData.orgId || 'unknown' // Extract orgId if available
+    };
+    
+    return this.verificationService.webhookProofPresentation(proofPresentationPayload);
   }
 
   @MessagePattern({ cmd: 'send-out-of-band-proof-request' })

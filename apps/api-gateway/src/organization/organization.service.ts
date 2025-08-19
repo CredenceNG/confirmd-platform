@@ -4,6 +4,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { BaseService } from 'libs/service/base.service';
 import { CreateOrganizationDto } from './dtos/create-organization-dto';
+import { OrganizationRegistrationDto } from './dtos/organization-registration.dto';
 import { BulkSendInvitationDto } from './dtos/send-invitation.dto';
 import { UpdateUserRolesDto } from './dtos/update-user-roles.dto';
 import { UpdateOrganizationDto } from './dtos/update-organization-dto';
@@ -48,6 +49,34 @@ export class OrganizationService extends BaseService {
     const payload = { createOrgDto, userId, keycloakUserId };
     return firstValueFrom(
       this.natsClient.send({ cmd: 'create-organization' }, payload)
+    );
+  }
+
+  /**
+   *
+   * @param orgRegistrationDto
+   * @param userId
+   * @returns Organization registration submission
+   */
+  async registerOrganization(
+    orgRegistrationDto: OrganizationRegistrationDto,
+    userId: string
+  ): Promise<organisation> {
+    const payload = { orgRegistrationDto, userId };
+    return firstValueFrom(
+      this.natsClient.send({ cmd: 'register-organization' }, payload)
+    );
+  }
+
+  /**
+   *
+   * @param userId
+   * @returns User's organization status
+   */
+  async getMyOrganization(userId: string): Promise<organisation | null> {
+    const payload = { userId };
+    return firstValueFrom(
+      this.natsClient.send({ cmd: 'get-my-organization' }, payload)
     );
   }
 
@@ -153,7 +182,7 @@ export class OrganizationService extends BaseService {
         )
       );
     } catch (error) {
-      this.logger.error(`Error in get user:${JSON.stringify(error)}`);
+      this.logger.error(`Error in getPublicProfile for orgSlug '${orgSlug}': ${JSON.stringify(error)}`);
     }
   }
 

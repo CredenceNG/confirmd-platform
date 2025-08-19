@@ -26,6 +26,7 @@ import { WebhookModule } from './webhook/webhook.module';
 import { UtilitiesModule } from './utilities/utilities.module';
 import { NotificationModule } from './notification/notification.module';
 import { GeoLocationModule } from './geo-location/geo-location.module';
+import { LocationModule } from './location/location.module';
 import {
   CommonConstants,
   MICRO_SERVICE_NAME
@@ -74,7 +75,8 @@ import { ConfigModule as PlatformConfig } from '@credebl/config/config.module';
       host: process.env.REDIS_HOST,
       port: process.env.REDIS_PORT
     }),
-    GeoLocationModule
+    GeoLocationModule,
+    LocationModule
   ],
   controllers: [AppController],
   providers: [
@@ -117,7 +119,10 @@ export class AppModule {
         'admin/user-login',
         'registry/organizations',
         'issue-credentials/national-id',
-        'labels/:id'
+        'labels/:id',
+        'locations/countries',
+        'locations/states',
+        'locations/cities'
       )
       .forRoutes(AgentController, RevocationController);
   }

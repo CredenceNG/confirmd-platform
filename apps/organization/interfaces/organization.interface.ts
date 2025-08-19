@@ -20,12 +20,11 @@ export interface IUpdateOrganization {
   orgId: string;
   logo?: string;
   website?: string;
-  orgSlug?: string;
   isPublic?: boolean;
   userId?: string;
-  countryId?: number;
-  cityId?: number;
-  stateId?: number;
+  countryCode?: string;
+  stateCode?: string;
+  cityCode?: string;
 }
 
 export interface ICreateConnectionUrl {
@@ -49,7 +48,6 @@ export interface IGetOrgById {
   id: string;
   name: string;
   description: string;
-  orgSlug: string;
   logoUrl: string;
   website: string;
   publicProfile: boolean;
@@ -104,6 +102,7 @@ interface IGetAllOrganizations {
   description: string;
   logoUrl: string;
   orgSlug: string;
+  createDateTime: Date;
   userOrgRoles: IUserOrganizationRoles[];
 }
 
@@ -291,7 +290,6 @@ interface IOrgAgentDetails {
 interface IOrganisation {
   id: string;
   name: string;
-  orgSlug: string;
 }
 
 interface IUserOrgRolesDetails {
@@ -303,6 +301,86 @@ interface IUserOrgRolesDetails {
 }
 export interface IOrgDetails {
   organisations: IOrganisation[];
-  orgAgents: IOrgAgentDetails[];
+  org_agents: IOrgAgentDetails[];
   userOrgRoles: IUserOrgRolesDetails[];
+}
+
+export interface IOrganization {
+  id: string;
+  name: string;
+  description?: string;
+  logoUrl?: string;
+  website?: string;
+  publicProfile: boolean;
+  createdBy: string;
+  lastChangedBy: string;
+  createDateTime: Date;
+  lastChangedDateTime: Date;
+  countryCode?: string;
+  stateCode?: string;
+  cityCode?: string;
+  did?: string;
+  verkey?: string;
+  deletedAt?: Date;
+  // Enhanced organization fields
+  legalName?: string;
+  publicName?: string;
+  companyRegistrationNumber?: string;
+  regulatorId?: string;
+  regulatoryRegistrationNumber?: string;
+  status?: string;
+  // Enhanced location fields - using codes from database schema
+  address?: string;
+  // Official contact information
+  officialContactFirstName?: string;
+  officialContactLastName?: string;
+  officialContactPhoneNumber?: string;
+  // Organization slug
+  orgSlug?: string;
+  // Notification webhook
+  notificationWebhook?: string;
+  // IDP fields
+  idpId?: string;
+  clientId?: string;
+  clientSecret?: string;
+  userOrgRoles: IUserOrgRoles[];
+}
+
+export interface IDeleteOrganization {
+  id: string;
+  name: string;
+  description?: string;
+  logoUrl?: string;
+  website?: string;
+  publicProfile: boolean;
+  ownDid?: string;
+  countryCode?: string;
+  stateCode?: string;
+  cityCode?: string;
+  did?: string;
+  verkey?: string;
+  status?: string;
+  legalName?: string;
+  publicName?: string;
+  companyRegistrationNumber?: string;
+  regulatorId?: string;
+  regulatoryRegistrationNumber?: string;
+  idpId?: string;
+  clientId?: string;
+  clientSecret?: string;
+  createdBy: string;
+  lastChangedBy: string;
+  createDateTime: Date;
+  lastChangedDateTime: Date;
+  deletedAt?: Date;
+  // Enhanced location fields - using codes from database schema
+  address?: string;
+  // Official contact information
+  officialContactFirstName?: string;
+  officialContactLastName?: string;
+  officialContactPhoneNumber?: string;
+  // Organization slug
+  orgSlug?: string;
+  // Notification webhook
+  notificationWebhook?: string;
 }

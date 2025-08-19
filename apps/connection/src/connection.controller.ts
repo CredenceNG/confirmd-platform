@@ -15,7 +15,14 @@ import {
   IConnectionList,
   IDeletedConnectionsRecord
 } from '@credebl/common/interfaces/connection.interface';
-import { IConnectionDetailsById } from 'apps/api-gateway/src/interfaces/IConnectionSearch.interface';
+// Temporary interface definition until moved to common library
+interface IConnectionDetailsById {
+  id?: string;
+  createDateTime?: Date;
+  connectionInvitation?: string;
+  connectionId?: string;
+  orgId?: string;
+}
 import { IQuestionPayload } from './interfaces/messaging.interfaces';
 import { user } from '@prisma/client';
 @Controller()

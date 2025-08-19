@@ -51,6 +51,6 @@ export class CreateOrganizationDto extends GeoLocationDto {
   @ApiPropertyOptional()
   @IsOptional()
   @Transform(({ value }) => trim(value))
-  @IsString({ message: 'registrationNumber must be in string format.' })
-  registrationNumber?: string;
+  @IsString({ message: 'companyRegistrationNumber must be in string format.' })
+  companyRegistrationNumber?: string;
 }

@@ -24,6 +24,11 @@ export class CreateCloudWalletDto {
     
     userId?: string;
 
+    @ApiPropertyOptional({ example: 'client-socket-id-123', description: 'Client socket ID for websocket notifications' })
+    @IsString({ message: 'clientSocketId must be a string' })
+    @IsOptional()
+    clientSocketId?: string;
+
 }
 
 export class ReceiveInvitationUrlDTO {

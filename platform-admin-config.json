@@ -1,4 +1,4 @@
 {
-  "webhookUrl": "http://host.docker.internal:5000/webhooks",
+  "webhookUrl": "http://nginx-proxy:5000/webhooks",
   "port": 8002
 }

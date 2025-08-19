@@ -1,7 +1,16 @@
 // eslint-disable-next-line camelcase
 import { IUserRequest } from '@credebl/user-request/user-request.interface';
 import { organisation } from '@prisma/client';
-import { UserRoleOrgPermsDto } from 'apps/api-gateway/src/dtos/user-role-org-perms.dto';
+// Temporary DTO definition until moved to common library
+class UserRoleOrgPermsDto {
+  id: string;  // Required property
+  userId?: string;
+  orgId?: string;
+  roleId?: string;
+  permissions?: string[];
+  role: any;  // Required property
+  Organization: any;  // Required property
+}
 
 export interface IConnection {
   user: IUserRequestInterface;
@@ -66,6 +75,7 @@ export interface ICreateConnectionPayload {
   createDateTime: string;
   lastChangedDateTime: string;
   id: string;
+  connectionId?: string;
   state: string;
   imageUrl: string;
   orgDid?: string;

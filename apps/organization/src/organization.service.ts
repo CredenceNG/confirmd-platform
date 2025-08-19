@@ -41,7 +41,6 @@ import {
   IOrganization,
   IOrganizationInvitations,
   IOrganizationDashboard,
-  IDeleteOrganization,
   IOrgActivityCount
 } from '@credebl/common/interfaces/organization.interface';
 
@@ -116,14 +115,14 @@ export class OrganizationService {
         throw new ConflictException(ResponseMessages.organisation.error.exists);
       }
 
+      // Generate org slug
       const orgSlug = this.createOrgSlug(createOrgDto.name);
-
-      const isOrgSlugExist = await this.organizationRepository.checkOrganizationSlugExist(orgSlug);
-
-      if (isOrgSlugExist) {
+      const existingOrgWithSlug = await this.prisma.organisation.findUnique({
+        where: { orgSlug }
+      });
+      if (existingOrgWithSlug) {
         throw new ConflictException(ResponseMessages.organisation.error.exists);
       }   
-
       createOrgDto.orgSlug = orgSlug;
       createOrgDto.createdBy = userId;
       createOrgDto.lastChangedBy = userId;
@@ -143,7 +142,6 @@ export class OrganizationService {
       // To return selective object data
       delete organizationDetails.lastChangedBy;
       delete organizationDetails.lastChangedDateTime;
-      delete organizationDetails.orgSlug;
       delete organizationDetails.website;
 
       try {
@@ -329,7 +327,10 @@ export class OrganizationService {
       let updateOrgData = {};
       let generatedClientSecret = '';
 
+      this.logger.log(`🔍 Organization details: ID=${organizationDetails.id}, idpId=${organizationDetails.idpId || 'null'}`);
+
       if (organizationDetails.idpId) {
+        this.logger.log(`✅ Organization has idpId, using generateClientSecret path`);
 
         const userDetails = await this.organizationRepository.getUser(userId);
         
@@ -346,6 +347,7 @@ export class OrganizationService {
           clientSecret: this.maskString(generatedClientSecret)
         };
       } else {
+        this.logger.log(`❌ Organization has no idpId, using registerToKeycloak path`);
 
         try {
           const orgCredentials = await this.registerToKeycloak(
@@ -367,7 +369,19 @@ export class OrganizationService {
           };
         } catch (error) {
           this.logger.error(`Error In creating client : ${JSON.stringify(error)}`);
-          throw new InternalServerErrorException('Unable to create client');
+          
+          // Provide more specific error messages based on the error type
+          if (error.message?.includes('already exists')) {
+            throw new InternalServerErrorException(
+              'Organization client already exists in Keycloak. Please contact support to resolve this conflict.'
+            );
+          } else if (error.message?.includes('Failed to create Keycloak client')) {
+            throw new InternalServerErrorException(
+              'Failed to create organization credentials in identity provider. Please try again or contact support.'
+            );
+          } else {
+            throw new InternalServerErrorException('Unable to create client');
+          }
         }
       }
 
@@ -431,21 +445,40 @@ export class OrganizationService {
 
     this.logger.log(`🏢 === KEYCLOAK CLIENT CREATION PHASE ===`);
     this.logger.log(`📡 Calling clientRegistrationService.createClient...`);
-    const orgDetails = await this.clientRegistrationService.createClient(orgName, orgId, token);
-    this.logger.log(`✅ Keycloak client created successfully:`);
-    this.logger.log(`   - Client ID: ${orgDetails.clientId}`);
-    this.logger.log(`   - IDP ID: ${orgDetails.idpId}`);
-    this.logger.log(`   - Client Secret: ${orgDetails.clientSecret ? 'Present' : 'Missing'}`);
+    
+    let orgDetails;
+    try {
+      orgDetails = await this.clientRegistrationService.createClient(orgName, orgId, token);
+      this.logger.log(`✅ Keycloak client created successfully:`);
+      this.logger.log(`   - Client ID: ${orgDetails.clientId}`);
+      this.logger.log(`   - IDP ID: ${orgDetails.idpId}`);
+      this.logger.log(`   - Client Secret: ${orgDetails.clientSecret ? 'Present' : 'Missing'}`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to create Keycloak client for organization ${orgName} (${orgId})`);
+      this.logger.error(`Error details: ${JSON.stringify(error)}`);
+      
+      if (error.message?.includes('already exists')) {
+        this.logger.error(`🚨 Client conflict detected - client already exists`);
+      }
+      
+      throw new Error(`Failed to create Keycloak client: ${error.message}`);
+    }
 
     const orgRolesList = [OrgRoles.OWNER, OrgRoles.ADMIN, OrgRoles.ISSUER, OrgRoles.VERIFIER, OrgRoles.MEMBER];
     this.logger.log(`👥 === ORGANIZATION ROLES CREATION PHASE ===`);
     this.logger.log(`📝 Creating ${orgRolesList.length} organization roles: ${orgRolesList.join(', ')}`);
 
+    try {
       for (const role of orgRolesList) {
         this.logger.log(`   📝 Creating client role: ${role}`);
         await this.clientRegistrationService.createClientRole(orgDetails.idpId, token, role, role);
         this.logger.log(`   ✅ Role '${role}' created successfully`);
-      }   
+      }
+    } catch (error) {
+      this.logger.error(`❌ Failed to create organization roles for client ${orgDetails.idpId}`);
+      this.logger.error(`Error details: ${JSON.stringify(error)}`);
+      throw new Error(`Failed to create organization roles: ${error.message}`);
+    }   
 
     this.logger.log(`✅ All organization roles created successfully`);
 
@@ -628,8 +661,8 @@ export class OrganizationService {
         throw new ConflictException(ResponseMessages.organisation.error.exists);
       }
 
-      const orgSlug = await this.createOrgSlug(updateOrgDto.name);
-      updateOrgDto.orgSlug = orgSlug;
+      // const orgSlug = await this.createOrgSlug(updateOrgDto.name);
+      // updateOrgDto.orgSlug = orgSlug;
       updateOrgDto.userId = userId;
 
       if (await this.isValidBase64(updateOrgDto.logo)) {
@@ -833,6 +866,8 @@ export class OrganizationService {
 
   async getPublicOrganizations(pageNumber: number, pageSize: number, search: string): Promise<IGetOrganization> {
     try {
+      this.logger.log(`DEBUG SERVICE: getPublicOrganizations called with pageNumber: ${pageNumber}, pageSize: ${pageSize}, search: ${search}`);
+      
       const query = {
         publicProfile: true,
         OR: [
@@ -843,7 +878,11 @@ export class OrganizationService {
 
       const filterOptions = {};
 
-      return this.organizationRepository.getOrganizations(query, filterOptions, pageNumber, pageSize);
+      this.logger.log(`DEBUG SERVICE: Calling repository.getOrganizations with query: ${JSON.stringify(query)}`);
+      const result = await this.organizationRepository.getOrganizations(query, filterOptions, pageNumber, pageSize);
+      this.logger.log(`DEBUG SERVICE: Repository returned ${result.organizations.length} organizations`);
+      
+      return result;
     } catch (error) {
       this.logger.error(`In fetch getPublicOrganizations : ${JSON.stringify(error)}`);
       throw new RpcException(error.response ? error.response : error);
@@ -867,7 +906,7 @@ export class OrganizationService {
       organizationDetails['credential_definitions'] = credDefs;
       return organizationDetails;
     } catch (error) {
-      this.logger.error(`get user: ${JSON.stringify(error)}`);
+      this.logger.error(`getPublicProfile error for orgSlug '${orgSlug}': ${JSON.stringify(error)}`);
       throw new RpcException(error.response ? error.response : error);
     }
   }
@@ -1718,7 +1757,7 @@ export class OrganizationService {
     }
   }
   
-  async deleteOrganization(orgId: string, user: user): Promise<IDeleteOrganization> {
+  async deleteOrganization(orgId: string, user: user): Promise<any> {
     try {
       const getUser = await this.organizationRepository.getUser(user?.id);
       
@@ -2137,5 +2176,196 @@ export class OrganizationService {
         this.logger.error(`Error in getOrgAgentDetailsForEcosystem: ${error}`);
         throw new RpcException(error.response ? error.response : error);
     }
-}
+  }
+
+  /**
+   * Register organization with approval workflow
+   * @param orgRegistrationDto Organization registration details
+   * @param userId User ID
+   * @returns Registered organization
+   */
+  async registerOrganization(
+    orgRegistrationDto: any,
+    userId: string
+  ): Promise<organisation> {
+    try {
+      this.logger.log(`🚀 === ORGANIZATION REGISTRATION PROCESS STARTED ===`);
+      this.logger.log(`📋 Registration details:`);
+      this.logger.log(`   - Legal Name: ${orgRegistrationDto.legalName}`);
+      this.logger.log(`   - Public Name: ${orgRegistrationDto.publicName}`);
+      this.logger.log(`   - User ID: ${userId}`);
+      this.logger.log(`   - Regulator ID: ${orgRegistrationDto.regulatorId}`);
+
+      // 1. Validate required registration fields
+      if (!orgRegistrationDto.legalName) {
+        throw new BadRequestException('Legal name is required');
+      }
+      if (!orgRegistrationDto.publicName) {
+        throw new BadRequestException('Public name is required');
+      }
+      if (!orgRegistrationDto.regulatorId) {
+        throw new BadRequestException('Regulator ID is required');
+      }
+
+      // 2. Validate regulator exists
+      this.logger.log(`🔍 Step 1: Validating regulator...`);
+      const regulator = await (this.prisma as any).regulators.findUnique({
+        where: { id: orgRegistrationDto.regulatorId },
+        include: { country: true }
+      });
+
+      if (!regulator || !regulator.isActive) {
+        this.logger.error(`❌ Invalid or inactive regulator: ${orgRegistrationDto.regulatorId}`);
+        throw new BadRequestException('Invalid regulator specified');
+      }
+
+      this.logger.log(`✅ Regulator validated: ${regulator.name} (${regulator.abbreviation})`);
+
+      // 3. Convert location IDs to codes for backward compatibility
+      let countryCode: string | undefined;
+      let stateCode: string | undefined;
+      let cityCode: string | undefined;
+
+      if (orgRegistrationDto.countryCode) {
+        const country = await this.prisma.countries.findUnique({
+          where: { countryCode: orgRegistrationDto.countryCode }
+        });
+        if (!country) {
+          throw new BadRequestException('Invalid country specified');
+        }
+        countryCode = country.countryCode;
+        this.logger.log(`✅ Country validated: ${country.name} (${countryCode})`);
+      }
+
+      if (orgRegistrationDto.stateCode) {
+        const state = await this.prisma.states.findUnique({
+          where: { stateCode: orgRegistrationDto.stateCode }
+        });
+        if (!state) {
+          throw new BadRequestException('Invalid state specified');
+        }
+        stateCode = state.stateCode;
+        this.logger.log(`✅ State validated: ${state.name} (${stateCode})`);
+      }
+
+      if (orgRegistrationDto.cityCode) {
+        const city = await this.prisma.cities.findUnique({
+          where: { cityCode: orgRegistrationDto.cityCode }
+        });
+        if (!city) {
+          throw new BadRequestException('Invalid city specified');
+        }
+        cityCode = city.cityCode;
+        this.logger.log(`✅ City validated: ${city.name} (${cityCode})`);
+      }
+
+      // 4. Map registration DTO to create DTO
+      const createOrgDto: CreateOrganizationDto = {
+        // Basic organization info
+        name: orgRegistrationDto.publicName, // Use public name as primary name
+        description: orgRegistrationDto.description || `${orgRegistrationDto.legalName} - Professional Services Organization`,
+        website: orgRegistrationDto.website,
+        logo: orgRegistrationDto.logo,
+        
+        // Enhanced registration fields
+        legalName: orgRegistrationDto.legalName,
+        publicName: orgRegistrationDto.publicName,
+        companyRegistrationNumber: orgRegistrationDto.companyRegistrationNumber,
+        regulatorId: orgRegistrationDto.regulatorId,
+        regulatoryRegistrationNumber: orgRegistrationDto.regulatoryRegistrationNumber,
+        
+        // Location codes (for existing schema compatibility)
+        countryCode,
+        stateCode,
+        cityCode,
+        address: orgRegistrationDto.address,
+        
+        // Contact information
+        officialContactFirstName: orgRegistrationDto.officialContactFirstName,
+        officialContactLastName: orgRegistrationDto.officialContactLastName,
+        officialContactPhoneNumber: orgRegistrationDto.officialContactPhoneNumber,
+        
+        // Webhook for notifications
+        notificationWebhook: orgRegistrationDto.notificationWebhook
+      };
+
+      this.logger.log(`🔄 Step 2: Mapping registration data to create organization DTO`);
+      this.logger.log(`   - Organization name: ${createOrgDto.name}`);
+      this.logger.log(`   - Legal name: ${createOrgDto.legalName}`);
+      this.logger.log(`   - Location: ${countryCode}/${stateCode}/${cityCode}`);
+
+      // 5. Use existing createOrganization method
+      // Note: We'll need to get keycloakUserId, but for now use userId
+      const keycloakUserId = userId; // TODO: Get actual keycloak user ID
+      
+      this.logger.log(`🔧 Step 3: Creating organization using existing createOrganization method...`);
+      const newOrganization = await this.createOrganization(
+        createOrgDto,
+        userId,
+        keycloakUserId
+      );
+
+      this.logger.log(`🎉 === ORGANIZATION REGISTRATION COMPLETED SUCCESSFULLY ===`);
+      this.logger.log(`Organization: ${newOrganization.name} (${newOrganization.id})`);
+      
+      return newOrganization;
+
+    } catch (error) {
+      this.logger.error(`❌ Registration failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's organization
+   * @param userId User ID
+   * @returns User's organization if exists
+   */
+  async getMyOrganization(userId: string): Promise<organisation | null> {
+    try {
+      this.logger.log(`🚀 === GET MY ORGANIZATION REQUEST ===`);
+      this.logger.log(`User ID: ${userId}`);
+
+      // Find organization where user has owner or admin role
+      const userOrganization = await this.prisma.organisation.findFirst({
+        where: {
+          userOrgRoles: {
+            some: {
+              userId,
+              orgRole: {
+                name: {
+                  in: ['owner', 'admin']
+                }
+              }
+            }
+          }
+        }
+        // TODO: Fix relationship includes after schema relationships are verified  
+        // include: {
+        //   country: true,
+        //   state: true,
+        //   city: true,
+        //   userOrgRoles: {
+        //     where: { userId },
+        //     include: {
+        //       orgRole: true
+        //     }
+        //   }
+        // }
+      });
+
+      if (userOrganization) {
+        this.logger.log(`✅ Organization found: ${userOrganization.name} (${userOrganization.id})`); // legalName field removed
+        this.logger.log(`Created: ${userOrganization.createDateTime}`); // status field removed
+      } else {
+        this.logger.log(`ℹ️  No organization found for user`);
+      }
+
+      return userOrganization;
+
+    } catch (error) {
+      this.logger.error(`❌ Error fetching user organization: ${error.message}`);
+      throw new RpcException(error.response ? error.response : error);
+    }
+  }
 }

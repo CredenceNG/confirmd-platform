@@ -10,7 +10,10 @@ type UserOrgRolesWhereUniqueInput = Prisma.user_org_rolesWhereUniqueInput;
 
 @Injectable()
 export class UserOrgRolesRepository {
-  constructor(private readonly prisma: PrismaService, private readonly logger: Logger) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: Logger
+  ) {}
 
   /**
    *
@@ -18,14 +21,18 @@ export class UserOrgRolesRepository {
    * @returns user details
    */
   // eslint-disable-next-line camelcase
-  async createUserOrgRole(userId: string, roleId: string, orgId?: string, idpRoleId?: string): Promise<user_org_roles> {
-    
+  async createUserOrgRole(
+    userId: string,
+    roleId: string,
+    orgId?: string,
+    idpRoleId?: string
+  ): Promise<user_org_roles> {
     try {
       const data: {
         orgRole: { connect: { id: string } };
         user: { connect: { id: string } };
         organisation?: { connect: { id: string } };
-        idpRoleId?: string
+        idpRoleId?: string;
       } = {
         orgRole: { connect: { id: roleId } },
         user: { connect: { id: userId } }
@@ -42,9 +49,8 @@ export class UserOrgRolesRepository {
       const saveResponse = await this.prisma.user_org_roles.create({
         data
       });
-     
+
       return saveResponse;
-     
     } catch (error) {
       this.logger.error(`UserOrgRolesRepository:: createUserOrgRole: ${error}`);
       throw new InternalServerErrorException('User Org Role not created');
@@ -66,8 +72,8 @@ export class UserOrgRolesRepository {
         include: {
           organisation: {
             include: {
-              // eslint-disable-next-line camelcase
-              org_agents: true,
+              // TODO: Re-enable after Prisma client regeneration
+              // org_agents: true,
               orgInvitations: true
             }
           },
@@ -80,7 +86,10 @@ export class UserOrgRolesRepository {
     }
   }
 
-  async findAndUpdate(queryOptions: UserOrgRolesWhereUniqueInput, updateData: object): Promise<object> {
+  async findAndUpdate(
+    queryOptions: UserOrgRolesWhereUniqueInput,
+    updateData: object
+  ): Promise<object> {
     try {
       return this.prisma.user_org_roles.update({
         where: { ...queryOptions },
@@ -102,5 +111,4 @@ export class UserOrgRolesRepository {
       throw new InternalServerErrorException(error);
     }
   }
-
 }

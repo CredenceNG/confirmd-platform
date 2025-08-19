@@ -4,8 +4,23 @@ import { Prisma, organisation } from '@prisma/client';
 
 import { IPrettyVc } from '@credebl/common/interfaces/issuance.interface';
 import { IUserRequest } from '@credebl/user-request/user-request.interface';
-import { IUserRequestInterface } from 'apps/agent-service/src/interface/agent-service.interface';
-import { IssueCredentialType } from 'apps/api-gateway/src/issuance/interfaces';
+// Temporary interface definitions until moved to common library
+interface IUserRequestInterface {
+  userId?: string;
+  email?: string;
+  orgId?: string;
+  agentEndPoint?: string;
+  apiKey?: string;
+  tenantId?: string;
+  tenantName?: string;
+  tenantOrgId?: string;
+  userRoleOrgPermissions?: any[];
+  orgName?: string;
+  selectedOrg?: any;
+}
+
+// Import from common enum
+import { IssueCredentialType } from '@credebl/enum/enum';
 
 export interface IAttributes {
   attributeName: string;

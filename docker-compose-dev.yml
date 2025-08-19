@@ -173,9 +173,20 @@ services:
       - user
     build:
       context: ./ # Adjust the context path as needed
-      dockerfile: Dockerfiles/Dockerfile.connection
+      dockerfile: Dockerfiles/Dockerfile.connection.dev
     env_file:
       - ./.env
+    volumes:
+      # Volume mappings for hot reloading
+      - ./apps/connection:/app/apps/connection
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      # Exclude node_modules and dist folders from sync
+      - /app/node_modules
+      - /app/dist
   issuance:
     depends_on:
       - nats
@@ -186,9 +197,20 @@ services:
       - connection
     build:
       context: ./
-      dockerfile: Dockerfiles/Dockerfile.issuance
+      dockerfile: Dockerfiles/Dockerfile.issuance.dev
     env_file:
       - ./.env
+    volumes:
+      # Volume mappings for hot reloading
+      - ./apps/issuance:/app/apps/issuance
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      # Exclude node_modules and dist folders from sync
+      - /app/node_modules
+      - /app/dist
   ledger:
     depends_on:
       - nats # Use depends_on instead of needs
@@ -211,7 +233,7 @@ services:
       - ledger
     build:
       context: ./ # Adjust the context path as needed
-      dockerfile: Dockerfiles/Dockerfile.organization
+      dockerfile: Dockerfiles/Dockerfile.organization.dev
     env_file:
       - ./.env
     volumes:
@@ -238,9 +260,20 @@ services:
       - organization
     build:
       context: ./
-      dockerfile: Dockerfiles/Dockerfile.verification
+      dockerfile: Dockerfiles/Dockerfile.verification.dev
     env_file:
       - ./.env
+    volumes:
+      # Volume mappings for hot reloading
+      - ./apps/verification:/app/apps/verification
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      # Exclude node_modules and dist folders from sync
+      - /app/node_modules
+      - /app/dist
   agent-provisioning:
     depends_on:
       - nats # Use depends_on instead of needs

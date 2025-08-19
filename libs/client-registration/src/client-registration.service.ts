@@ -536,8 +536,6 @@ export class ClientRegistrationService {
         user?.roles?.some((role: { role?: string; name?: string } | string) => ('string' === typeof role && 'platform_admin' === role) ||
           ('object' === typeof role && ('platform_admin' === role?.role || 'platform_admin' === role?.name))
         ) ||
-        'platform_admin' === user?.role ||
-        'platform_admin' === user?.userRole ||
         // Also check clientId pattern as fallback (admin user has 'platform-admin' as clientId)
         (user?.clientId && user.clientId.includes('platform-admin'));
 
@@ -596,6 +594,7 @@ export class ClientRegistrationService {
 
     return getClientDeleteResponse;
   }
+
 
   async createUserClientRole(idpId: string, token: string, userId: string, payload: object[]): Promise<string> {
     const realmName = process.env.KEYCLOAK_REALM;
@@ -725,12 +724,6 @@ export class ClientRegistrationService {
   }
 
   async createClient(orgName: string, orgId: string, token: string) {
-    this.logger.log(`🏢 === CREATING KEYCLOAK CLIENT FOR ORGANIZATION ===`);
-    this.logger.log(`Organization: ${orgName} (ID: ${orgId})`);
-    this.logger.log(`Target realm: ${process.env.KEYCLOAK_REALM}`);
-    this.logger.log(`📋 This is NOT the master realm - creating client in application realm`);
-
-    //create client for respective created realm in order to access its resources
     const realmName = process.env.KEYCLOAK_REALM;
     const clientPayload = {
       clientId: `${orgId}`,
@@ -752,7 +745,6 @@ export class ClientRegistrationService {
       enabled: true,
       protocol: 'openid-connect',
       description: 'rest-api',
-
       rootUrl: '${authBaseUrl}',
       baseUrl: `/realms/${realmName}/account/`,
       surrogateAuthRequired: false,
@@ -771,25 +763,22 @@ export class ClientRegistrationService {
       nodeReRegistrationTimeout: 0
     };
 
-    this.logger.log(`🔧 Creating Keycloak client with payload...`);
     const createClientResponse = await this.commonService.httpPost(
       await this.keycloakUrlService.createClientURL(realmName),
       clientPayload,
       this.getAuthHeader(token)
     );
-    this.logger.log(`✅ Keycloak client created successfully`);
     this.logger.debug(`ClientRegistrationService create realm client ${JSON.stringify(createClientResponse)}`);
 
-    this.logger.log(`🔍 Retrieving client details...`);
     const getClientResponse = await this.commonService.httpGet(
       await this.keycloakUrlService.GetClientURL(realmName, `${orgId}`),
       this.getAuthHeader(token)
     );
-    this.logger.debug(`ClientRegistrationService get realm admin client ${JSON.stringify(createClientResponse)}`);
+    this.logger.debug(`ClientRegistrationService get realm admin client ${JSON.stringify(getClientResponse)}`);
+    
     const { id } = getClientResponse[0];
     const client_id = getClientResponse[0].clientId;
 
-    this.logger.log(`🔑 Retrieving client secret...`);
     const getClientSercretResponse = await this.commonService.httpGet(
       await this.keycloakUrlService.GetClientSecretURL(realmName, id),
       this.getAuthHeader(token)
@@ -797,11 +786,8 @@ export class ClientRegistrationService {
     this.logger.debug(
       `ClientRegistrationService get realm admin client secret ${JSON.stringify(getClientSercretResponse)}`
     );
-    this.logger.log(`Client secret retrieved successfully`);
+    this.logger.log(`${getClientSercretResponse.value}`);
     const client_secret = getClientSercretResponse.value;
-
-    this.logger.log(`✅ Client creation completed successfully`);
-    this.logger.log(`Client ID: ${client_id}, IDP ID: ${id}`);
 
     return {
       idpId: id,

@@ -5,11 +5,13 @@ export interface CityInterface {
   stateCode: string;
   countryId: number;
   countryCode: string;
+  cityCode: string;
 }
 
 export interface CountryInterface {
   id: number;
   name: string;
+  countryCode: string;
   phonecode?: string;
   capital?: string;
 }
@@ -19,4 +21,5 @@ export interface StateInterface {
   name: string;
   countryId: number;
   countryCode: string;
+  stateCode: string;
 }

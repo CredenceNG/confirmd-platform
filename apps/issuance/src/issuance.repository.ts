@@ -22,9 +22,24 @@ import {
   schema
 } from '@prisma/client';
 
-import { FileUploadStatus } from 'apps/api-gateway/src/enum';
+// Temporary enum definition until moved to common library
+enum FileUploadStatus {
+  COMPLETED = 'completed',
+  PROCESSING = 'processing',
+  FAILED = 'failed',
+  retry = 'retry'
+}
 import { IDeletedIssuanceRecords } from '@credebl/common/interfaces/issuance.interface';
-import { IIssuedCredentialSearchParams } from 'apps/api-gateway/src/issuance/interfaces';
+// Temporary interface definition until moved to common library
+interface IIssuedCredentialSearchParams {
+  pageNumber?: number;
+  pageSize?: number;
+  searchByText?: string;
+  sortByValue?: string;
+  search?: string;
+  sortField?: string;
+  sortBy?: string;
+}
 import { IUserRequest } from '@credebl/user-request/user-request.interface';
 import { PrismaService } from '@credebl/prisma-service';
 import { ResponseMessages } from '@credebl/common/response-messages';

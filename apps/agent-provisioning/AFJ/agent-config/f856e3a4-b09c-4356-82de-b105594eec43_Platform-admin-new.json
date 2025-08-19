@@ -1,17 +1,14 @@
 {
-  "label": "f856e3a4-b09c-4356-82de-b105594eec43_Platform-admin",
+  "label": "platform-admin",
   "walletId": "platform-admin",
-  "walletKey": "U2FsdGVkX19l6w/PpuicnGBYThBHolzF27oN0JwfWkc=",
+  "walletKey": "platform-admin-key",
   "walletType": "postgres",
-  "walletUrl": "confirmd-platform-postgres-1:5432",
+  "walletUrl": "confirmd-platform-postgres-1:5432/platform-admin",
   "walletAccount": "postgres",
   "walletPassword": "postgres",
   "walletAdminAccount": "postgres",
   "walletAdminPassword": "postgres",
   "walletScheme": "DatabasePerWallet",
-  "walletConnectTimeout": 30,
-  "walletMaxConnections": 10,
-  "walletIdleTimeout": 300,
   "modules": {
     "indyVdr": {
       "networks": [
@@ -24,7 +21,7 @@
       ]
     }
   },
-  "endpoint": ["http://f856e3a4-b09c-4356-82de-b105594eec43_Platform-admin:9002"],
+  "endpoint": ["https://agent.confamd.com"],
   "autoAcceptConnections": true,
   "autoAcceptCredentials": "contentApproved",
   "autoAcceptProofs": "contentApproved",
@@ -36,7 +33,7 @@
     }
   ],
   "outboundTransport": ["http"],
-  "webhookUrl": "http://confirmd-platform-api-gateway-1:4321/wh/f856e3a4-b09c-4356-82de-b105594eec43",
+  "webhookUrl": "http://nginx-proxy:5000/webhooks",
   "adminPort": 8002,
   "tenancy": true
 }

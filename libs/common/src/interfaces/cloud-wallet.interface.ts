@@ -6,6 +6,7 @@ export class ICreateCloudWallet {
   connectionImageUrl?: string;
   email?: string;
   userId?: string;
+  clientSocketId?: string;
 }
 
 export interface ICloudWalletDetails {

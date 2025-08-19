@@ -40,14 +40,40 @@ import {
   IProofPresentationList,
   IVerificationRecords
 } from '@credebl/common/interfaces/verification.interface';
-import {
-  API_Version,
-  ProofRequestLabel,
-  ProofRequestType,
-  ProofVersion,
-  ProtocolVersionType,
-  VerificationMethodLabel
-} from 'apps/api-gateway/src/verification/enum/verification.enum';
+// Import only existing enums from common lib
+// TODO: Move verification-specific enums to common library
+import { IssueCredentialType } from '@credebl/enum/enum';
+
+// Temporary enum definitions until they're moved to common library
+enum API_Version {
+  VERSION_1 = 'v1.0',
+  VERSION_2 = 'v2.0'
+}
+
+enum ProofRequestLabel {
+  PROOF_REQUEST = 'Proof request'
+}
+
+enum ProofRequestType {
+  INDY = 'indy',
+  PRESENTATIONEXCHANGE = 'presentationExchange'
+}
+
+enum ProofVersion {
+  V1 = '1.0',
+  V2 = '2.0',
+  PROOF_VERSION = '1.0'
+}
+
+enum ProtocolVersionType {
+  PROTOCOL_VERSION_1 = 'v1',
+  PROTOCOL_VERSION_2 = 'v2'
+}
+
+enum VerificationMethodLabel {
+  PROOF_OF_IDENTITY = 'Proof of Identity',
+  REQUEST_PROOF = 'Request Proof'
+}
 import { UserActivityService } from '@credebl/user-activity';
 import { convertUrlToDeepLinkUrl } from '@credebl/common/common.utils';
 import { UserActivityRepository } from 'libs/user-activity/repositories';
@@ -829,7 +855,7 @@ export class VerificationService {
           break;
         }
 
-        case 'request-proof': {
+        case 'Request Proof': {
           url =
             orgAgentType === OrgAgentType.DEDICATED
               ? `${agentEndPoint}${CommonConstants.URL_SEND_PROOF_REQUEST}`
@@ -1210,34 +1236,5 @@ export class VerificationService {
     throw new RpcException(error.response ? error.response : error);
   }
 }
+}
 
-/**
- * Process proof webhook events
- * @param webhookData Webhook payload from agent
- */
-async processProofWebhookEvent(webhookData: any): Promise<void> {
-  try {
-    this.logger.log('🔍 Processing proof webhook event');
-    this.logger.log(`📊 Proof State: ${webhookData.state || 'unknown'}`);
-    this.logger.log(`🆔 Proof Exchange ID: ${webhookData.id || 'unknown'}`);
-    
-    // Log the webhook data for debugging
-    this.logger.debug(`📦 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
-    
-    // Here you can add specific business logic for proof webhook processing
-    // For example:
-    // - Update proof state in database
-    // - Send notifications to users
-    // - Trigger verification workflows
-    // - Update audit logs
-    
-    // For now, we'll just log the event
-    // TODO: Implement specific proof webhook processing logic
-    
-    this.logger.log('✅ Proof webhook event processed successfully');
-  } catch (error) {
-    this.logger.error('❌ Failed to process proof webhook event:', error);
-    throw new RpcException(error.response ? error.response : error);
-  }
-}
-}

@@ -9,17 +9,21 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Copy package.json and package-lock.json
-COPY package.json ./
+COPY package.json pnpm-lock.yaml ./
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-# Install dependencies
-RUN pnpm i --ignore-scripts
+# Install dependencies with frozen lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy the rest of the application code
 COPY . .
-# RUN cd libs/prisma-service && npx prisma migrate deploy && npx prisma generate
-RUN cd libs/prisma-service && npx prisma generate
+
+# Ensure we have the latest Prisma client types
+RUN cd libs/prisma-service && npx prisma generate --schema=./prisma/schema.prisma
+
+# Install any additional dependencies that might be needed
+RUN pnpm install --ignore-scripts
 
 # Build the user service
 RUN pnpm run build user
@@ -34,11 +38,12 @@ WORKDIR /app
 # Copy the compiled code from the build stage
 COPY --from=build /app/dist/apps/user/ ./dist/apps/user/
 
-# Copy the libs folder from the build stage
+# Copy the libs folder from the build stage (includes generated Prisma client)
 COPY --from=build /app/libs/ ./libs/
-#COPY --from=build /app/package.json ./  
+
+# Copy the node_modules (includes generated Prisma client)
 COPY --from=build /app/node_modules  ./node_modules
 
 
 # Set the command to run the microservice
-CMD ["sh", "-c", "cd libs/prisma-service && npx prisma migrate deploy && npx prisma generate && cd ../.. && node dist/apps/user/main.js"]
+CMD ["sh", "-c", "cd libs/prisma-service && npx prisma migrate deploy --schema=./prisma/schema.prisma && npx prisma generate --schema=./prisma/schema.prisma && cd ../.. && node dist/apps/user/main.js"]

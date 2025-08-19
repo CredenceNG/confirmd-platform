@@ -87,6 +87,15 @@ export class WebhookReceiverService {
       orgId = null;
     }
 
+    // Generate a unique connection ID if not provided
+    const connectionId = webhookData.id || webhookData.connectionId || webhookData.connection_id;
+    
+    // Log warning if no connection ID is found
+    if (!connectionId) {
+      this.logger.warn('⚠️ No connectionId found in webhook data - this may cause database issues');
+      this.logger.warn(`⚠️ Webhook data keys: ${Object.keys(webhookData).join(', ')}`);
+    }
+
     const connectionDto = {
       createDateTime:
         webhookData.createDateTime ||
@@ -96,8 +105,8 @@ export class WebhookReceiverService {
         webhookData.lastChangedDateTime ||
         webhookData.updatedAt ||
         new Date().toISOString(),
-      id:
-        webhookData.id || webhookData.connectionId || webhookData.connection_id,
+      id: connectionId,
+      connectionId: connectionId, // Ensure both id and connectionId are set
       state: webhookData.state || 'unknown',
       imageUrl: webhookData.imageUrl || webhookData.image_url || '',
       orgDid: webhookData.orgDid || webhookData.did || webhookData.myDid,
@@ -120,7 +129,7 @@ export class WebhookReceiverService {
         webhookData.contextCorrelationId ||
         webhookData.context_correlation_id ||
         '',
-      // Add required fields for database validation
+      // Add required fields for database validation - ensure they're never undefined
       createdBy: webhookData.createdBy || 'system-webhook',
       lastChangedBy: webhookData.lastChangedBy || 'system-webhook'
     };

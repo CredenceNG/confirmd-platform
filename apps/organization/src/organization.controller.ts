@@ -17,7 +17,6 @@ import {
   IOrganizationInvitations,
   IOrganization,
   IOrganizationDashboard,
-  IDeleteOrganization,
   IOrgActivityCount
 } from '@credebl/common/interfaces/organization.interface';
 import { organisation, user } from '@prisma/client';
@@ -151,6 +150,7 @@ export class OrganizationController {
   async getPublicOrganizations(
     @Body() payload: Payload
   ): Promise<IGetOrganization> {
+    console.log(`DEBUG CONTROLLER: get-public-organizations message received with payload:`, payload);
     const { pageNumber, pageSize, search } = payload;
     return this.organizationService.getPublicOrganizations(
       pageNumber,
@@ -357,7 +357,7 @@ export class OrganizationController {
   async deleteOrganization(payload: {
     orgId: string;
     user: user;
-  }): Promise<IDeleteOrganization> {
+  }): Promise<any> {
     return this.organizationService.deleteOrganization(
       payload.orgId,
       payload.user
@@ -436,5 +436,52 @@ export class OrganizationController {
     search: string;
   }): Promise<IOrgDetails> {
     return this.organizationService.getOrgAgentDetailsForEcosystem(payload);
+  }
+
+  /**
+   * Description: Register organization with approval workflow
+   * @param payload Organization registration details
+   * @returns Organization registration submission
+   */
+  @MessagePattern({ cmd: 'register-organization' })
+  async registerOrganization(
+    @Body()
+    payload: {
+      orgRegistrationDto: any;
+      userId: string;
+    }
+  ): Promise<organisation> {
+    this.logger.log(
+      `🚀 === ORGANIZATION SERVICE: REGISTER ORGANIZATION REQUEST ===`
+    );
+    this.logger.log(`User ID: ${payload.userId}`);
+    this.logger.log(`Legal Name: ${payload.orgRegistrationDto.legalName}`);
+    this.logger.log(`Public Name: ${payload.orgRegistrationDto.publicName}`);
+    this.logger.log(`Regulator ID: ${payload.orgRegistrationDto.regulatorId}`);
+
+    return this.organizationService.registerOrganization(
+      payload.orgRegistrationDto,
+      payload.userId
+    );
+  }
+
+  /**
+   * Description: Get user's organization status
+   * @param payload User details
+   * @returns User's organization if exists
+   */
+  @MessagePattern({ cmd: 'get-my-organization' })
+  async getMyOrganization(
+    @Body()
+    payload: {
+      userId: string;
+    }
+  ): Promise<organisation | null> {
+    this.logger.log(
+      `🚀 === ORGANIZATION SERVICE: GET MY ORGANIZATION REQUEST ===`
+    );
+    this.logger.log(`User ID: ${payload.userId}`);
+
+    return this.organizationService.getMyOrganization(payload.userId);
   }
 }

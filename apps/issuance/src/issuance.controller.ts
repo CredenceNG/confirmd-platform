@@ -18,7 +18,28 @@ import {
 import { Controller, Logger } from '@nestjs/common';
 import { IssuanceService } from './issuance.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { OOBIssueCredentialDto } from 'apps/api-gateway/src/issuance/dtos/issuance.dto';
+// Temporary DTO definition until moved to common library
+class OOBIssueCredentialDto {
+  protocolVersion?: string;
+  credentialData?: any;
+  connectionId?: string;
+  organisationId?: string;
+  orgId?: string;
+  willConfirm?: boolean;
+  imageUrl?: string;
+  goalCode?: string;
+  parentThreadId?: string;
+  autoAcceptCredential?: string;
+  isValidateSchema?: boolean;
+  attributes?: any[];
+  isShortenUrl?: boolean;
+  reuseConnection?: boolean;
+  options?: any;
+  credentialType?: string;
+  credential?: any;
+  comment?: string;
+  credentialDefinitionId?: string;
+}
 import { user } from '@prisma/client';
 
 @Controller()

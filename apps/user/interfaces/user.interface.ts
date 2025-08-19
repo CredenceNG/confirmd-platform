@@ -42,14 +42,35 @@ export interface IOrgRole {
 export interface IOrganisation {
   id: string;
   name: string;
-  description: string;
-  orgSlug: string;
-  logoUrl: string;
-  website: string;
+  description?: string;
+  logoUrl?: string;
+  website?: string;
   publicProfile: boolean;
-  countryId: number;
-  stateId: number;
-  cityId: number;
+  createdBy: string;
+  lastChangedBy: string;
+  createDateTime: Date;
+  lastChangedDateTime: Date;
+  countryCode?: string;
+  stateCode?: string;
+  cityCode?: string;
+  did?: string;
+  verkey?: string;
+  legalName?: string;
+  publicName?: string;
+  companyRegistrationNumber?: string;
+  regulatorId?: string;
+  regulatoryRegistrationNumber?: string;
+  status?: string;
+  address?: string;
+  officialContactFirstName?: string;
+  officialContactLastName?: string;
+  officialContactPhoneNumber?: string;
+  orgSlug?: string;
+  notificationWebhook?: string;
+  idpId?: string;
+  clientId?: string;
+  clientSecret?: string;
+  deletedAt?: Date;
 }
 
 export interface OrgInvitations {
@@ -75,6 +96,7 @@ export interface IUserInformation {
   password: string;
   firstName: string;
   lastName: string;
+  phoneNumber: string;
   isPasskey: boolean;
   isHolder?: boolean;
 }
@@ -163,13 +185,19 @@ interface OrgRole {
 interface Organization {
   id: string;
   name: string;
-  description: string;
-  orgSlug: string;
-  logoUrl: string;
-  org_agents: OrgAgents[];
+  description?: string;
+  orgSlug?: string;
+  logoUrl?: string;
+  website?: string;
+  publicProfile: boolean;
+  countryCode?: string;
+  stateCode?: string;
+  cityCode?: string;
+  status?: string;
+  org_agents: org_agents[];
 }
 
-interface OrgAgents {
+interface org_agents {
   id: string;
   orgDid: string;
   walletName: string;

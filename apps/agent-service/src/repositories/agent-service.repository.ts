@@ -42,7 +42,9 @@ export class AgentServiceRepository {
     try {
       return this.prisma.platform_config.findFirst();
     } catch (error) {
-      this.logger.error(`[getPlatformConfigDetails] - error: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getPlatformConfigDetails] - error: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -52,7 +54,9 @@ export class AgentServiceRepository {
       const ledgerConfigData = await this.prisma.ledgerConfig.findMany();
       return ledgerConfigData;
     } catch (error) {
-      this.logger.error(`[getGenesisUrl] - get genesis URL: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getGenesisUrl] - get genesis URL: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -73,7 +77,9 @@ export class AgentServiceRepository {
 
       return genesisData;
     } catch (error) {
-      this.logger.error(`[getGenesisUrl] - get genesis URL: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getGenesisUrl] - get genesis URL: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -94,13 +100,18 @@ export class AgentServiceRepository {
         return oranizationDetails;
       }
     } catch (error) {
-      this.logger.error(`[getOrgDetails] - get organization details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getOrgDetails] - get organization details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
 
   // eslint-disable-next-line camelcase
-  async createOrgAgent(agentSpinUpStatus: number, userId: string): Promise<ICreateOrgAgent> {
+  async createOrgAgent(
+    agentSpinUpStatus: number,
+    userId: string
+  ): Promise<ICreateOrgAgent> {
     try {
       return this.prisma.org_agents.create({
         data: {
@@ -113,7 +124,9 @@ export class AgentServiceRepository {
         }
       });
     } catch (error) {
-      this.logger.error(`[createOrgAgent] - create agent details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[createOrgAgent] - create agent details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -129,7 +142,9 @@ export class AgentServiceRepository {
         });
       }
     } catch (error) {
-      this.logger.error(`[removeOrgAgent] - remove org agent details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[removeOrgAgent] - remove org agent details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -144,7 +159,11 @@ export class AgentServiceRepository {
       });
       return agentDetails;
     } catch (error) {
-      this.logger.error(`[getAgentDetailsByOrgId] - get agent details by orgId: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getAgentDetailsByOrgId] - get agent details by orgId: ${JSON.stringify(
+          error
+        )}`
+      );
       throw error;
     }
   }
@@ -155,9 +174,12 @@ export class AgentServiceRepository {
    * @returns
    */
   // eslint-disable-next-line camelcase
-  async storeOrgAgentDetails(storeOrgAgentDetails: IStoreOrgAgentDetails): Promise<IStoreAgent> {
+  async storeOrgAgentDetails(
+    storeOrgAgentDetails: IStoreOrgAgentDetails
+  ): Promise<IStoreAgent> {
     try {
-      const { id, userId, ledgerId, did, didDoc, ...commonFields } = storeOrgAgentDetails;
+      const { id, userId, ledgerId, did, didDoc, ...commonFields } =
+        storeOrgAgentDetails;
       const firstLedgerId = Array.isArray(ledgerId) ? ledgerId[0] : null;
       const data = {
         ...commonFields,
@@ -178,7 +200,9 @@ export class AgentServiceRepository {
 
       return { id: (await query).id };
     } catch (error) {
-      this.logger.error(`[storeAgentDetails] - store agent details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[storeAgentDetails] - store agent details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -191,7 +215,8 @@ export class AgentServiceRepository {
   // eslint-disable-next-line camelcase
   async storeDidDetails(storeDidDetails: IStoreDidDetails): Promise<org_dids> {
     try {
-      const { orgId, did, didDocument, isPrimaryDid, userId, orgAgentId } = storeDidDetails;
+      const { orgId, did, didDocument, isPrimaryDid, userId, orgAgentId } =
+        storeDidDetails;
 
       return this.prisma.org_dids.create({
         data: {
@@ -205,7 +230,9 @@ export class AgentServiceRepository {
         }
       });
     } catch (error) {
-      this.logger.error(`[storeDidDetails] - Store DID details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[storeDidDetails] - Store DID details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -216,7 +243,11 @@ export class AgentServiceRepository {
    * @returns did details
    */
   // eslint-disable-next-line camelcase
-  async setPrimaryDid(orgDid: string, orgId: string, didDocument: Prisma.JsonValue): Promise<org_agents> {
+  async setPrimaryDid(
+    orgDid: string,
+    orgId: string,
+    didDocument: Prisma.JsonValue
+  ): Promise<org_agents> {
     try {
       return await this.prisma.org_agents.update({
         where: {
@@ -228,7 +259,9 @@ export class AgentServiceRepository {
         }
       });
     } catch (error) {
-      this.logger.error(`[setprimaryDid] - Update DID details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[setprimaryDid] - Update DID details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -245,7 +278,9 @@ export class AgentServiceRepository {
         }
       });
     } catch (error) {
-      this.logger.error(`[updateLedgerId] - Update ledgerId: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[updateLedgerId] - Update ledgerId: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -269,7 +304,9 @@ export class AgentServiceRepository {
         });
       }
     } catch (error) {
-      this.logger.error(`[getAgentDetails] - get agent details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getAgentDetails] - get agent details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -302,7 +339,11 @@ export class AgentServiceRepository {
       });
       return id;
     } catch (error) {
-      this.logger.error(`[getAgentTypeDetails] - get org agent health details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getAgentTypeDetails] - get org agent health details: ${JSON.stringify(
+          error
+        )}`
+      );
       throw error;
     }
   }
@@ -331,7 +372,9 @@ export class AgentServiceRepository {
       });
       return ledgersDetails;
     } catch (error) {
-      this.logger.error(`[getLedgerDetails] - get ledger details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getLedgerDetails] - get ledger details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -345,7 +388,11 @@ export class AgentServiceRepository {
       });
       return id;
     } catch (error) {
-      this.logger.error(`[getOrgAgentTypeDetails] - get org agent type details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getOrgAgentTypeDetails] - get org agent type details: ${JSON.stringify(
+          error
+        )}`
+      );
       throw error;
     }
   }
@@ -359,7 +406,9 @@ export class AgentServiceRepository {
       });
       return id;
     } catch (error) {
-      this.logger.error(`[getPlatfomOrg] - get platform org details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getPlatfomOrg] - get platform org details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -373,7 +422,9 @@ export class AgentServiceRepository {
       });
       return agent;
     } catch (error) {
-      this.logger.error(`[getAgentType] - get agent type details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getAgentType] - get agent type details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -387,7 +438,9 @@ export class AgentServiceRepository {
       });
       return id;
     } catch (error) {
-      this.logger.error(`[getAgentType] - get agent type details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getAgentType] - get agent type details: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -401,15 +454,21 @@ export class AgentServiceRepository {
   async getOrgAgentDetails(orgId: string): Promise<org_agents> {
     try {
       if (orgId) {
-        const oranizationAgentDetails = await this.prisma.org_agents.findUnique({
-          where: {
-            orgId
+        const oranizationAgentDetails = await this.prisma.org_agents.findUnique(
+          {
+            where: {
+              orgId
+            }
           }
-        });
+        );
         return oranizationAgentDetails;
       }
     } catch (error) {
-      this.logger.error(`[getOrgAgentDetails] - get org agent health details: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getOrgAgentDetails] - get org agent health details: ${JSON.stringify(
+          error
+        )}`
+      );
       throw error;
     }
   }
@@ -439,7 +498,11 @@ export class AgentServiceRepository {
       });
       return platformAdminUser;
     } catch (error) {
-      this.logger.error(`[getPlatfomAdminUser] - get platform admin user: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getPlatfomAdminUser] - get platform admin user: ${JSON.stringify(
+          error
+        )}`
+      );
       throw error;
     }
   }
@@ -456,7 +519,9 @@ export class AgentServiceRepository {
         return agent;
       }
     } catch (error) {
-      this.logger.error(`[getAgentApiKey] - get api key: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getAgentApiKey] - get api key: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -472,7 +537,9 @@ export class AgentServiceRepository {
         return ledgerDetails;
       }
     } catch (error) {
-      this.logger.error(`[getLedgerByNameSpace] - get indy ledger: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getLedgerByNameSpace] - get indy ledger: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }
@@ -495,7 +562,10 @@ export class AgentServiceRepository {
     }
   }
 
-  async updateIsPrimaryDid(orgId: string, isPrimaryDid: boolean): Promise<Prisma.BatchPayload> {
+  async updateIsPrimaryDid(
+    orgId: string,
+    isPrimaryDid: boolean
+  ): Promise<Prisma.BatchPayload> {
     try {
       const updateOrgDid = await this.prisma.org_dids.updateMany({
         where: {
@@ -527,12 +597,15 @@ export class AgentServiceRepository {
     try {
       return await this.prisma.$transaction(async (prisma) => {
         const referenceCounts = await Promise.all(
-          tablesToCheck.map((table) => prisma[table].count({ where: { orgId } }))
+          tablesToCheck.map((table) => prisma[table].count({ where: { orgId } })
+          )
         );
 
         referenceCounts.forEach((count, index) => {
           if (0 < count) {
-            throw new ConflictException(`Organization ID ${orgId} is referenced in the table ${tablesToCheck[index]}`);
+            throw new ConflictException(
+              `Organization ID ${orgId} is referenced in the table ${tablesToCheck[index]}`
+            );
           }
         });
 
@@ -543,12 +616,16 @@ export class AgentServiceRepository {
         ]);
 
         // Delete the organization agent
-        const deleteOrgAgent = await prisma.org_agents.delete({ where: { orgId } });
+        const deleteOrgAgent = await prisma.org_agents.delete({
+          where: { orgId }
+        });
 
         return { orgDid, agentInvitation, deleteOrgAgent };
       });
     } catch (error) {
-      this.logger.error(`[deleteOrgAgentByOrg] - Error deleting org agent record: ${error.message}`);
+      this.logger.error(
+        `[deleteOrgAgentByOrg] - Error deleting org agent record: ${error.message}`
+      );
       throw error;
     }
   }
@@ -562,7 +639,9 @@ export class AgentServiceRepository {
       });
       return ledgerData;
     } catch (error) {
-      this.logger.error(`[getLedger] - get org ledger: ${JSON.stringify(error)}`);
+      this.logger.error(
+        `[getLedger] - get org ledger: ${JSON.stringify(error)}`
+      );
       throw error;
     }
   }

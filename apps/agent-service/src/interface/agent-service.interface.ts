@@ -643,16 +643,15 @@ export interface OrgDid {
 }
 
 export interface ILedgers {
-    id: string;
-    createDateTime: Date;
-    lastChangedDateTime: Date;
-    name: string;
-    networkType: string;
-    poolConfig: string;
-    isActive: boolean;
-    networkString: string;
-    nymTxnEndpoint: string;
-    indyNamespace: string;
-    networkUrl: string;
-
+  id: string;
+  createDateTime: Date;
+  lastChangedDateTime: Date;
+  name: string;
+  networkType: string;
+  poolConfig: string;
+  isActive: boolean;
+  networkString: string;
+  nymTxnEndpoint: string;
+  indyNamespace: string;
+  networkUrl: string;
 }

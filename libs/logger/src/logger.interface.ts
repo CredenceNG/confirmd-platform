@@ -17,4 +17,4 @@ export default interface Logger {
   fatal(message: string | Error, data?: LogData, profile?: string): void;
   emergency(message: string | Error, data?: LogData, profile?: string): void;
   startProfile(id: string): void;
-};;;;;;;;;;;
+};;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

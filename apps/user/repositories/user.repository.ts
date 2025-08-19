@@ -193,9 +193,22 @@ export class UserRepository {
             include: {
               orgRole: true,
               organisation: {
-                include: {
-                  // eslint-disable-next-line camelcase
-                  org_agents: true
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  logoUrl: true,
+                  website: true,
+                  publicProfile: true,
+                  orgSlug: true,
+                  org_agents: {
+                    select: {
+                      id: true,
+                      orgDid: true,
+                      walletName: true,
+                      agentSpinUpStatus: true
+                    }
+                  }
                 }
               }
             }
@@ -234,9 +247,22 @@ export class UserRepository {
             include: {
               orgRole: true,
               organisation: {
-                include: {
-                  // eslint-disable-next-line camelcase
-                  org_agents: true
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  logoUrl: true,
+                  website: true,
+                  publicProfile: true,
+                  orgSlug: true,
+                  org_agents: {
+                    select: {
+                      id: true,
+                      orgDid: true,
+                      walletName: true,
+                      agentSpinUpStatus: true
+                    }
+                  }
                 }
               }
             }
@@ -303,9 +329,13 @@ export class UserRepository {
                 logoUrl: true,
                 website: true,
                 publicProfile: true,
-                countryId: true,
-                stateId: true,
-                cityId: true
+                countryCode: true,
+                stateCode: true,
+                cityCode: true,
+                createdBy: true,
+                lastChangedBy: true,
+                createDateTime: true,
+                lastChangedDateTime: true
               }
             }
           }
@@ -377,9 +407,13 @@ export class UserRepository {
                 logoUrl: true,
                 website: true,
                 publicProfile: true,
-                countryId: true,
-                stateId: true,
-                cityId: true
+                countryCode: true,
+                stateCode: true,
+                cityCode: true,
+                createdBy: true,
+                lastChangedBy: true,
+                createDateTime: true,
+                lastChangedDateTime: true
               }
             }
           }
@@ -516,7 +550,7 @@ export class UserRepository {
       })
     ]);
 
-    const users = result[0];
+    const users = result[0] as any;
     const totalCount = result[1];
     const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -565,7 +599,7 @@ export class UserRepository {
       })
     ]);
 
-    const users = result[0];
+    const users = result[0] as any;
     const totalCount = result[1];
     const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -933,9 +967,22 @@ export class UserRepository {
         include: {
           orgRole: true,
           organisation: {
-            include: {
-              // eslint-disable-next-line camelcase
-              org_agents: true
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              logoUrl: true,
+              website: true,
+              publicProfile: true,
+              orgSlug: true,
+              org_agents: {
+                select: {
+                  id: true,
+                  orgDid: true,
+                  walletName: true,
+                  agentSpinUpStatus: true
+                }
+              }
             }
           }
         }

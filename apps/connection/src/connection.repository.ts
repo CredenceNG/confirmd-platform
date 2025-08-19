@@ -16,6 +16,17 @@ export class ConnectionRepository {
   ) {}
 
   /**
+   * Helper method to validate UUID format
+   * @param value - The value to validate
+   * @returns boolean indicating if the value is a valid UUID
+   */
+  private isValidUUID(value: any): boolean {
+    if (typeof value !== 'string') return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(value);
+  }
+
+  /**
    * Description: Get getAgentEndPoint by orgId
    * @param connectionId
    * @returns Get getAgentEndPoint details
@@ -163,24 +174,63 @@ export class ConnectionRepository {
           break;
       }
 
+      // Use connectionId from the DTO, or fallback to the id field
+      const connectionId = connectionDto?.connectionId || connectionDto?.id;
+      
+      // If still no connectionId, generate a unique one or handle gracefully
+      if (!connectionId) {
+        this.logger.warn('⚠️ No connectionId available for webhook - creating new connection record');
+        
+        // Generate fallback UUIDs for required fields when organisationId is null/undefined
+        const fallbackUUID = require('crypto').randomUUID();
+        const createdByUUID = organisationId && this.isValidUUID(organisationId) ? organisationId : fallbackUUID;
+        const lastChangedByUUID = organisationId && this.isValidUUID(organisationId) ? organisationId : fallbackUUID;
+        const newConnectionId = require('crypto').randomUUID();
+        
+        this.logger.log(`🔧 Creating connection with generated UUID: ${newConnectionId}`);
+        this.logger.log(`🔧 createdBy: ${createdByUUID}, orgId: ${organisationId || 'null'}`);
+        
+        // Create a new connection without upsert since we can't identify existing ones
+        return this.prisma.connections.create({
+          data: {
+            createDateTime: connectionDto?.createDateTime || new Date().toISOString(),
+            lastChangedDateTime: connectionDto?.lastChangedDateTime || new Date().toISOString(),
+            createdBy: createdByUUID,
+            lastChangedBy: lastChangedByUUID,
+            connectionId: newConnectionId,
+            state: connectionDto?.state || 'unknown',
+            theirLabel: maskedTheirLabel || 'Unknown',
+            orgId: organisationId && this.isValidUUID(organisationId) ? organisationId : null
+          }
+        });
+      }
+
+      // Generate fallback UUIDs for upsert operation
+      const fallbackUUID = require('crypto').randomUUID();
+      const createdByUUID = organisationId && this.isValidUUID(organisationId) ? organisationId : fallbackUUID;
+      const lastChangedByUUID = organisationId && this.isValidUUID(organisationId) ? organisationId : fallbackUUID;
+      
+      this.logger.log(`🔄 Upserting connection with ID: ${connectionId}`);
+      this.logger.log(`🔧 createdBy: ${createdByUUID}, orgId: ${organisationId || 'null'}`);
+
       return this.prisma.connections.upsert({
         where: {
-          connectionId: connectionDto?.id
+          connectionId: connectionId
         },
         update: {
-          lastChangedDateTime: connectionDto?.lastChangedDateTime,
-          lastChangedBy: organisationId,
-          state: connectionDto?.state
+          lastChangedDateTime: connectionDto?.lastChangedDateTime || new Date().toISOString(),
+          lastChangedBy: lastChangedByUUID,
+          state: connectionDto?.state || 'unknown'
         },
         create: {
-          createDateTime: connectionDto?.createDateTime,
-          lastChangedDateTime: connectionDto?.lastChangedDateTime,
-          createdBy: organisationId,
-          lastChangedBy: organisationId,
-          connectionId: connectionDto?.id,
-          state: connectionDto?.state,
-          theirLabel: maskedTheirLabel,
-          orgId: organisationId
+          createDateTime: connectionDto?.createDateTime || new Date().toISOString(),
+          lastChangedDateTime: connectionDto?.lastChangedDateTime || new Date().toISOString(),
+          createdBy: createdByUUID,
+          lastChangedBy: lastChangedByUUID,
+          connectionId: connectionId,
+          state: connectionDto?.state || 'unknown',
+          theirLabel: maskedTheirLabel || 'Unknown',
+          orgId: organisationId && this.isValidUUID(organisationId) ? organisationId : null
         }
       });
     } catch (error) {

@@ -26,7 +26,7 @@
       "indyNamespace": "bcovrin:testnet"
     }
   ],
-  "endpoint": ["https://agent.confamd.com", "wss://agent.confamd.com"],
+  "endpoint": ["http://agent.confamd.com", "wss://agent.confamd.com"],
   "autoAcceptConnections": true,
   "autoAcceptCredentials": "always",
   "autoAcceptProofs": "contentApproved",
@@ -37,15 +37,11 @@
     {
       "transport": "http",
       "port": 9002
-    },
-    {
-      "transport": "ws",
-      "port": 9002
     }
   ],
-  "outboundTransport": ["http", "ws"],
-  "autoAcceptMediationRequests": false,
+  "outboundTransport": ["http"],
+  "autoAcceptMediationRequests": true,
   "adminPort": 8002,
   "tenancy": true,
-  "webhookUrl": "http://host.docker.internal:5000/webhooks"
+  "webhookUrl": "http://nginx-proxy:5000/webhooks"
 }

@@ -41,6 +41,7 @@ import { CloudWalletRepository } from './cloud-wallet.repository';
 import { ResponseMessages } from '@credebl/common/response-messages';
 import { CloudWalletType } from '@credebl/enum/enum';
 import { CommonConstants } from '@credebl/common/common.constant';
+import { Socket, io } from 'socket.io-client';
 
 @Injectable()
 export class CloudWalletService {
@@ -51,6 +52,38 @@ export class CloudWalletService {
     private readonly logger: Logger,
     @Inject(CACHE_MANAGER) private cacheService: Cache
   ) {}
+
+  /**
+   * Initialize socket connection
+   * @param socketHost 
+   * @returns Socket instance
+   */
+  async createSocketInstance(): Promise<Socket> {
+    return io(`${process.env.SOCKET_HOST}`, {
+      reconnection: true,
+      reconnectionDelay: 5000,
+      reconnectionAttempts: Infinity,
+      autoConnect: true,
+      transports: ['websocket']
+    });
+  }
+
+  /**
+   * Notify client via socket
+   * @param eventName 
+   * @param clientId 
+   */
+  private async notifyClientSocket(eventName: string, clientId: string | undefined): Promise<void> {
+    try {
+      if (clientId) {
+        const socket = await this.createSocketInstance();
+        socket.emit(eventName, { clientId });
+        this.logger.log(`Socket event emitted: ${eventName} for clientId: ${clientId}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error emitting socket event ${eventName}: ${error.message}`);
+    }
+  }
 
   /**
    * configure cloud base wallet
@@ -240,7 +273,11 @@ export class CloudWalletService {
    */
   async createCloudWallet(cloudWalletDetails: ICreateCloudWallet): Promise<IStoredWalletDetails> {
     try {
-      const { label, connectionImageUrl, email, userId } = cloudWalletDetails;
+      const { label, connectionImageUrl, email, userId, clientSocketId } = cloudWalletDetails;
+      
+      // Emit wallet creation initiated event
+      await this.notifyClientSocket('agent-spinup-process-initiated', clientSocketId);
+      
       const agentPayload = {
         config: {
           label,
@@ -265,6 +302,10 @@ export class CloudWalletService {
       if (!checkCloudWalletAgentHealth) {
         throw new NotFoundException(ResponseMessages.cloudWallet.error.agentNotRunning);
       }
+
+      // Emit agent health check completed event
+      await this.notifyClientSocket('invitation-url-creation-started', clientSocketId);
+      
       const createCloudWalletResponse = await this.commonService.httpPost(url, agentPayload, {
         headers: { authorization: decryptedApiKey }
       });
@@ -299,9 +340,25 @@ export class CloudWalletService {
         connectionImageUrl
       };
       const storeCloudWalletDetails = await this.cloudWalletRepository.storeCloudWalletDetails(cloudWalletResponse);
+      
+      // Emit wallet creation completed event
+      await this.notifyClientSocket('invitation-url-creation-success', clientSocketId);
+      
       return storeCloudWalletDetails;
     } catch (error) {
       this.logger.error(`[createCloudWallet] - error in create cloud wallet: ${error}`);
+      
+      // Emit error event
+      if (cloudWalletDetails.clientSocketId) {
+        try {
+          const socket = await this.createSocketInstance();
+          socket.emit('error-in-wallet-creation-process', { clientId: cloudWalletDetails.clientSocketId, error });
+          this.logger.error(`Error in wallet creation process emitted for clientId ${cloudWalletDetails.clientSocketId}: ${error.message}`);
+        } catch (emitError) {
+          this.logger.error(`Error emitting error-in-wallet-creation-process event: ${emitError.message}`);
+        }
+      }
+      
       await this.commonService.handleError(error);
     }
   }

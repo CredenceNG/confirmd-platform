@@ -58,7 +58,18 @@ import { OutOfBandIssuance } from '../templates/out-of-band-issuance.template';
 import { EmailDto } from '@credebl/common/dtos/email.dto';
 import { join } from 'path';
 import { parse } from 'json2csv';
-import { checkIfFileOrDirectoryExists, createFile } from '../../api-gateway/src/helper-files/file-operation.helper';
+// Temporary helper function definitions until moved to common library
+import { promises as fs } from 'fs';
+import { existsSync } from 'fs';
+
+// Helper functions
+const checkIfFileOrDirectoryExists = (path: string): boolean => existsSync(path);
+const createFile = async (dirPath: string, fileName: string, data: any): Promise<void> => {
+  // Ensure directory exists
+  await fs.mkdir(dirPath, { recursive: true });
+  const fullPath = `${dirPath}/${fileName}`;
+  await fs.writeFile(fullPath, data);
+};
 import { parse as paParse } from 'papaparse';
 import { v4 as uuidv4 } from 'uuid';
 import { Cache } from 'cache-manager';
@@ -66,10 +77,40 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { convertUrlToDeepLinkUrl, paginator } from '@credebl/common/common.utils';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { FileUploadStatus, FileUploadType } from 'apps/api-gateway/src/enum';
+// Import from common enum where available, define missing ones locally
+import { IssueCredentialType } from '@credebl/enum/enum';
+
+// Temporary enum definitions until moved to common library
+enum FileUploadStatus {
+  COMPLETED = 'completed',
+  completed = 'completed',  // lowercase alias
+  PROCESSING = 'processing',
+  FAILED = 'failed',
+  interrupted = 'interrupted',
+  partially_completed = 'partially_completed',
+  started = 'started',
+  retry = 'retry'
+}
+
+enum FileUploadType {
+  BULK = 'bulk',
+  SINGLE = 'single',
+  Issuance = 'issuance'
+}
 import { AwsService } from '@credebl/aws';
 import { io } from 'socket.io-client';
-import { IIssuedCredentialSearchParams, IssueCredentialType } from 'apps/api-gateway/src/issuance/interfaces';
+// Import from common interface where available, define missing ones locally
+
+// Temporary interface definitions until moved to common library
+interface IIssuedCredentialSearchParams {
+  pageNumber?: number;
+  pageSize?: number;
+  searchByText?: string;
+  sortByValue?: string;
+  search?: string;
+}
+
+// Note: IssueCredentialType is imported from common enum above
 import {
   ICredentialOfferResponse,
   IDeletedIssuanceRecords,
@@ -78,7 +119,28 @@ import {
   IPrettyVc,
   ISchemaObject
 } from '@credebl/common/interfaces/issuance.interface';
-import { OOBIssueCredentialDto } from 'apps/api-gateway/src/issuance/dtos/issuance.dto';
+// Temporary DTO definition until moved to common library
+class OOBIssueCredentialDto {
+  protocolVersion?: string;
+  credentialData?: any;
+  connectionId?: string;
+  organisationId?: string;
+  orgId?: string;
+  willConfirm?: boolean;
+  imageUrl?: string;
+  goalCode?: string;
+  parentThreadId?: string;
+  autoAcceptCredential?: string;
+  isValidateSchema?: boolean;
+  attributes?: any[];
+  isShortenUrl?: boolean;
+  reuseConnection?: boolean;
+  options?: any;
+  credentialType?: string;
+  credential?: any;
+  comment?: string;
+  credentialDefinitionId?: string;
+}
 import { RecordType, agent_invitations, organisation, user } from '@prisma/client';
 import {
   createOobJsonldIssuancePayload,
