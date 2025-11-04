@@ -1,0 +1,16 @@
+# docker-compose.standalone.yml  
+# Use this for standalone deployment with dedicated postgres
+
+version: '3.8'
+
+services:
+  platform-admin-agent:
+    depends_on:
+      - postgres
+    environment:
+      # Override to use local postgres
+      - WALLET_URL=platform-admin-postgres:5432/platform-admin
+
+  postgres:
+    # Enable postgres service for standalone mode
+    profiles: []  # Remove profile restriction

@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/app/logs/geo-location/.cad6b858dd2238a1dae9e0afbb8234443dfef960-audit.json",
+    "files": [
+        {
+            "date": 1762202978008,
+            "name": "/app/logs/geo-location/app-2025-11-03.log",
+            "hash": "2e79e5328ac19bdc8ab6b9ba147f05d6d3bcf0d0ec4f1b91d34956ad9450f953"
+        }
+    ],
+    "hashType": "sha256"
+}

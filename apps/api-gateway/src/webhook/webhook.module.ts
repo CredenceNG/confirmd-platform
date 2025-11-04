@@ -2,14 +2,15 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { Module } from '@nestjs/common';
 import { WebhookController } from './webhook.controller';
 import { WebhookService } from './webhook.service';
-import { WebhookReceiverController } from './webhook-receiver.controller';
 import { WebhookReceiverService } from './webhook-receiver.service';
+import { WebhookDeliveryService } from './webhook-delivery.service';
 import { CommonService } from '@credebl/common';
 import { HttpModule } from '@nestjs/axios';
 import { getNatsOptions } from '@credebl/common/nats.config';
 import { AwsService } from '@credebl/aws';
 import { CommonConstants } from '@credebl/common/common.constant';
 import { NATSClient } from '@credebl/common/NATSClient';
+import { PrismaService } from '@credebl/prisma-service';
 
 @Module({
   imports: [
@@ -18,20 +19,19 @@ import { NATSClient } from '@credebl/common/NATSClient';
       {
         name: 'NATS_CLIENT',
         transport: Transport.NATS,
-        options: getNatsOptions(
-          CommonConstants.WEBHOOK_SERVICE,
-          process.env.API_GATEWAY_NKEY_SEED
-        )
+        options: getNatsOptions(CommonConstants.WEBHOOK_SERVICE, process.env.API_GATEWAY_NKEY_SEED)
       }
     ])
   ],
-  controllers: [WebhookController, WebhookReceiverController],
+  controllers: [WebhookController],
   providers: [
     WebhookService,
     WebhookReceiverService,
+    WebhookDeliveryService,
     CommonService,
     AwsService,
-    NATSClient
+    NATSClient,
+    PrismaService
   ]
 })
 export class WebhookModule {}

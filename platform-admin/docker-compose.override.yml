@@ -1,0 +1,11 @@
+# docker-compose.override.yml
+# This file is automatically loaded by docker-compose
+# Use this to override settings based on your environment
+
+version: '3.8'
+
+services:
+  platform-admin-agent:
+    # Use this override when postgres is running externally (default)
+    # Remove depends_on to avoid dependency on local postgres service
+    depends_on: []

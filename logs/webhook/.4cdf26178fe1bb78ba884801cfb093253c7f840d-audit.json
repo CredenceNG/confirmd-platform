@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/app/logs/webhook/.4cdf26178fe1bb78ba884801cfb093253c7f840d-audit.json",
+    "files": [
+        {
+            "date": 1762202990899,
+            "name": "/app/logs/webhook/app-2025-11-03.log",
+            "hash": "331b780a4e23201c642f1f98794127dcf5e745f3e45a7993fe983b0264c03be0"
+        }
+    ],
+    "hashType": "sha256"
+}

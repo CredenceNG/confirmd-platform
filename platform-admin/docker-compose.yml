@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  platform-admin-agent:
+    image: ghcr.io/credebl/credo-controller:v2.0.0
+    container_name: platform-admin-agent
+    networks:
+      - confirmd-platform_default
+    ports:
+      - '${ADMIN_PORT:-8002}:${ADMIN_PORT:-8002}'
+      - '${INBOUND_PORT:-9002}:${INBOUND_PORT:-9002}'
+    volumes:
+      - './config.master.json:/app/config.master.json:ro'
+      - './startup.sh:/app/startup.sh:ro'
+      - '../apps/agent-provisioning/AFJ:/app/AFJ:ro'
+    env_file:
+      - .env
+    environment:
+      # Override specific environment variables if needed
+      - AFJ_REST_LOG_LEVEL=${AFJ_REST_LOG_LEVEL:-1}
+      - BCOVRIN_REGISTER_URL=${BCOVRIN_REGISTER_URL:-http://test.bcovrin.vonx.io/register}
+      # Wallet configuration overrides to fix lock timeout issues
+      - WALLET_SCHEME=MultiWalletSingleTable
+      - WALLET_LOCK_TIMEOUT=90000
+      - MAX_CONCURRENT_OPERATIONS=1
+      - POSTGRES_MAX_CONNECTIONS=100
+      - POSTGRES_IDLE_TIMEOUT=30000
+      - POSTGRES_CONNECTION_TIMEOUT=60000
+    entrypoint: ['/bin/bash', '/app/startup.sh']
+    restart: unless-stopped
+    healthcheck:
+      # Simple port check that works without additional tools
+      test: ['CMD-SHELL', "timeout 5 bash -c '</dev/tcp/localhost/${ADMIN_PORT:-8002}' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Note: depends_on postgres only when using standalone profile
+    # If using external postgres, remove this or it will be ignored
+
+  # Optional: Include postgres service if not running elsewhere
+  postgres:
+    image: postgres:15
+    container_name: platform-admin-postgres
+    networks:
+      - confirmd-platform_default
+    environment:
+      POSTGRES_DB: platform-admin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - platform_admin_postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5433:5432' # Different port to avoid conflicts
+    restart: unless-stopped
+    profiles:
+      - standalone # Only start with --profile standalone
+
+volumes:
+  platform_admin_postgres_data:
+
+networks:
+  confirmd-platform_default:
+    external: true

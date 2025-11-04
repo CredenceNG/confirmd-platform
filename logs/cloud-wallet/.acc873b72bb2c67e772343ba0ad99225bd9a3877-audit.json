@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/app/logs/cloud-wallet/.acc873b72bb2c67e772343ba0ad99225bd9a3877-audit.json",
+    "files": [
+        {
+            "date": 1762202986580,
+            "name": "/app/logs/cloud-wallet/app-2025-11-03.log",
+            "hash": "ea7b86a211a34a81c8e86582ccacbab32675a4dd8acd82edf247dc7f2854c709"
+        }
+    ],
+    "hashType": "sha256"
+}
