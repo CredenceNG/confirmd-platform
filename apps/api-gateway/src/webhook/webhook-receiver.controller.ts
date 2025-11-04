@@ -36,15 +36,19 @@ export class WebhookReceiverController {
     @Body() webhookData: any
   ): Promise<{ status: string }> {
     this.logger.log('🎯 === EXTERNAL CONNECTION WEBHOOK RECEIVED ===');
-    this.logger.log(`📨 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
-      await this.webhookReceiverService.processConnectionWebhook(webhookData);
+      const result = await this.webhookReceiverService.processConnectionWebhook(webhookData);
+      const response = { status: 'success' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(response)}`);
       this.logger.log('✅ Connection webhook processed successfully');
-      return { status: 'success' };
+      return response;
     } catch (error) {
       this.logger.error('❌ Connection webhook processing failed:', error);
-      return { status: 'error' };
+      const errorResponse = { status: 'error' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
+      return errorResponse;
     }
   }
 
@@ -59,15 +63,19 @@ export class WebhookReceiverController {
     @Body() webhookData: any
   ): Promise<{ status: string }> {
     this.logger.log('🎓 === EXTERNAL CREDENTIAL WEBHOOK RECEIVED ===');
-    this.logger.log(`📨 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
-      await this.webhookReceiverService.processCredentialWebhook(webhookData);
+      const result = await this.webhookReceiverService.processCredentialWebhook(webhookData);
+      const response = { status: 'success' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(response)}`);
       this.logger.log('✅ Credential webhook processed successfully');
-      return { status: 'success' };
+      return response;
     } catch (error) {
       this.logger.error('❌ Credential webhook processing failed:', error);
-      return { status: 'error' };
+      const errorResponse = { status: 'error' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
+      return errorResponse;
     }
   }
 
@@ -82,15 +90,19 @@ export class WebhookReceiverController {
     @Body() webhookData: any
   ): Promise<{ status: string }> {
     this.logger.log('🔍 === EXTERNAL PROOF WEBHOOK RECEIVED ===');
-    this.logger.log(`📨 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
-      await this.webhookReceiverService.processProofWebhook(webhookData);
+      const result = await this.webhookReceiverService.processProofWebhook(webhookData);
+      const response = { status: 'success' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(response)}`);
       this.logger.log('✅ Proof webhook processed successfully');
-      return { status: 'success' };
+      return response;
     } catch (error) {
       this.logger.error('❌ Proof webhook processing failed:', error);
-      return { status: 'error' };
+      const errorResponse = { status: 'error' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
+      return errorResponse;
     }
   }
 
@@ -105,15 +117,19 @@ export class WebhookReceiverController {
     @Body() webhookData: any
   ): Promise<{ status: string }> {
     this.logger.log('💬 === EXTERNAL BASIC MESSAGE WEBHOOK RECEIVED ===');
-    this.logger.log(`📨 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
-      await this.webhookReceiverService.processBasicMessageWebhook(webhookData);
+      const result = await this.webhookReceiverService.processBasicMessageWebhook(webhookData);
+      const response = { status: 'success' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(response)}`);
       this.logger.log('✅ Basic message webhook processed successfully');
-      return { status: 'success' };
+      return response;
     } catch (error) {
       this.logger.error('❌ Basic message webhook processing failed:', error);
-      return { status: 'error' };
+      const errorResponse = { status: 'error' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
+      return errorResponse;
     }
   }
 
@@ -128,17 +144,21 @@ export class WebhookReceiverController {
     @Body() webhookData: any
   ): Promise<{ status: string }> {
     this.logger.log('❓ === EXTERNAL QUESTION-ANSWER WEBHOOK RECEIVED ===');
-    this.logger.log(`📨 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
-      await this.webhookReceiverService.processQuestionAnswerWebhook(
+      const result = await this.webhookReceiverService.processQuestionAnswerWebhook(
         webhookData
       );
+      const response = { status: 'success' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(response)}`);
       this.logger.log('✅ Question-answer webhook processed successfully');
-      return { status: 'success' };
+      return response;
     } catch (error) {
       this.logger.error('❌ Question-answer webhook processing failed:', error);
-      return { status: 'error' };
+      const errorResponse = { status: 'error' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
+      return errorResponse;
     }
   }
 
@@ -161,23 +181,25 @@ export class WebhookReceiverController {
     this.logger.log(
       `🏢 === ORG-SPECIFIC CONNECTION WEBHOOK RECEIVED (${orgId}) ===`
     );
-    this.logger.log(`📨 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    const payload = { ...webhookData, orgId };
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(payload)}`);
 
     try {
-      await this.webhookReceiverService.processConnectionWebhook({
-        ...webhookData,
-        orgId
-      });
+      const result = await this.webhookReceiverService.processConnectionWebhook(payload);
+      const response = { status: 'success' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(response)}`);
       this.logger.log(
         '✅ Org-specific connection webhook processed successfully'
       );
-      return { status: 'success' };
+      return response;
     } catch (error) {
       this.logger.error(
         '❌ Org-specific connection webhook processing failed:',
         error
       );
-      return { status: 'error' };
+      const errorResponse = { status: 'error' };
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
+      return errorResponse;
     }
   }
 }

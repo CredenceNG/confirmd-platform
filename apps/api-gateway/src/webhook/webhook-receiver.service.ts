@@ -18,9 +18,7 @@ export class WebhookReceiverService {
         webhookData.id || webhookData.connectionId || 'unknown'
       }`
     );
-    this.logger.log(
-      `📦 Raw Webhook Data: ${JSON.stringify(webhookData, null, 2)}`
-    );
+    this.logger.log(`� WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
       // Transform webhook data into the format expected by connection service
@@ -28,7 +26,7 @@ export class WebhookReceiverService {
         this.transformWebhookToConnectionPayload(webhookData);
 
       this.logger.log(
-        `🔄 Transformed Payload: ${JSON.stringify(connectionPayload, null, 2)}`
+        `🔄 Transformed Payload: ${JSON.stringify(connectionPayload)}`
       );
 
       // Forward the webhook to the connection service for processing
@@ -215,7 +213,7 @@ export class WebhookReceiverService {
    */
   async processWebhookEvent(webhookData: any): Promise<any> {
     this.logger.log('🎯 === GENERAL WEBHOOK EVENT PROCESSING ===');
-    this.logger.log(`📦 Webhook Data: ${JSON.stringify(webhookData, null, 2)}`);
+    this.logger.log(`� WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
       // Determine webhook type based on the data structure

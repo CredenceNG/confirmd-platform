@@ -182,8 +182,8 @@ export class WebhookController {
     @Res() res: Response
   ): Promise<Response> {
     this.logger.log('🎯 === EXTERNAL WEBHOOK EVENT RECEIVED ===');
-    this.logger.log(`📨 Event Body: ${JSON.stringify(body, null, 2)}`);
-    this.logger.log(`📊 Headers: ${JSON.stringify(res.req.headers, null, 2)}`);
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(body)}`);
+    this.logger.log(`📊 Headers: ${JSON.stringify(res.req.headers)}`);
     
     try {
       // Process the webhook event using WebhookReceiverService
@@ -197,6 +197,7 @@ export class WebhookController {
         data: result
       };
 
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(finalResponse)}`);
       return res.status(HttpStatus.OK).json(finalResponse);
     } catch (error) {
       this.logger.error('❌ Webhook event processing failed:', error);
@@ -207,6 +208,7 @@ export class WebhookController {
         data: null
       };
 
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
     }
   }
@@ -228,7 +230,7 @@ export class WebhookController {
     @Res() res: Response
   ): Promise<Response> {
     this.logger.log('🔗 === CONNECTION WEBHOOK EVENT RECEIVED ===');
-    this.logger.log(`📨 Connection Event Body: ${JSON.stringify(body, null, 2)}`);
+    this.logger.log(`📨 WEBHOOK_PAYLOAD: ${JSON.stringify(body)}`);
     
     try {
       // Process the connection webhook event specifically
@@ -242,6 +244,7 @@ export class WebhookController {
         data: result
       };
 
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(finalResponse)}`);
       return res.status(HttpStatus.OK).json(finalResponse);
     } catch (error) {
       this.logger.error('❌ Connection webhook event processing failed:', error);
@@ -252,6 +255,7 @@ export class WebhookController {
         data: null
       };
 
+      this.logger.log(`📬 WEBHOOK_RESPONSE: ${JSON.stringify(errorResponse)}`);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse);
     }
   }
