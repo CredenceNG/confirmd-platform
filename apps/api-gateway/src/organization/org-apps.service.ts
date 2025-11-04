@@ -76,7 +76,7 @@ export class OrgAppsService {
         description: description as string,
         webhookUrl: webhookUrl as string,
         webhookSecret: encryptedSecret,
-        clientContext: clientContext || {},
+        clientContext: (clientContext as object) || {},
         isActive: true,
         createdBy: orgId, // TODO: Replace with actual user ID from auth context
         lastChangedBy: orgId // TODO: Replace with actual user ID from auth context
@@ -122,7 +122,7 @@ export class OrgAppsService {
       updateData.webhookUrl = updateAppDto.webhookUrl;
     }
     if (updateAppDto.clientContext) {
-      updateData.clientContext = updateAppDto.clientContext;
+      updateData.clientContext = updateAppDto.clientContext as object;
     }
     if ('boolean' === typeof updateAppDto.isActive) {
       updateData.isActive = updateAppDto.isActive;
