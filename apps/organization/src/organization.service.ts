@@ -1196,11 +1196,15 @@ export class OrganizationService {
   ): Promise<boolean> {
     const platformConfigData = await this.prisma.platform_config.findMany();
 
+    if (!platformConfigData || 0 === platformConfigData.length) {
+      throw new InternalServerErrorException('Platform configuration not found. Please configure the platform before sending invitations.');
+    }
+
     const urlEmailTemplate = new OrganizationInviteTemplate();
     const emailData = new EmailDto();
     emailData.emailFrom = platformConfigData[0].emailFrom;
     emailData.emailTo = email;
-    emailData.emailSubject = `Invitation to join “${orgName}” on ${process.env.PLATFORM_NAME}`;
+    emailData.emailSubject = `Invitation to join "${orgName}" on ${process.env.PLATFORM_NAME}`;
 
     emailData.emailHtml = await urlEmailTemplate.sendInviteEmailTemplate(
       email,

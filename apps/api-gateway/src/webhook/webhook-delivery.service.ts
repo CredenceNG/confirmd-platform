@@ -1,13 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@credebl/prisma-service';
 import { CommonService } from '@credebl/common';
+import { JsonValue } from '@prisma/client/runtime/library';
 
 interface OrgApp {
   id: string;
   name: string;
   webhookUrl: string;
   webhookSecret: string;
-  clientContext: Record<string, unknown>;
+  clientContext: JsonValue;
 }
 
 interface WebhookPayload {
@@ -16,7 +17,7 @@ interface WebhookPayload {
   orgId: string;
   tenantId: string;
   data: Record<string, unknown>;
-  clientContext: Record<string, unknown>;
+  clientContext: JsonValue;
 }
 
 @Injectable()

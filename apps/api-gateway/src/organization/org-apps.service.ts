@@ -76,7 +76,7 @@ export class OrgAppsService {
         description: description as string,
         webhookUrl: webhookUrl as string,
         webhookSecret: encryptedSecret,
-        clientContext: clientContext as Record<string, unknown>,
+        clientContext: clientContext || {},
         isActive: true,
         createdBy: orgId, // TODO: Replace with actual user ID from auth context
         lastChangedBy: orgId // TODO: Replace with actual user ID from auth context
