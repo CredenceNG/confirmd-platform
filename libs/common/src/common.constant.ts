@@ -391,6 +391,7 @@ export enum CommonConstants {
   NOTIFICATION_SERVICE = 'notification',
   GEO_LOCATION_SERVICE = 'geo-location',
   CLOUD_WALLET_SERVICE = 'cloud-wallet',
+  ECOSYSTEM_SERVICE = 'ecosystem',
 
   //CLOUD WALLET
   RECEIVE_INVITATION_BY_URL = '/multi-tenancy/receive-invitation-url/',

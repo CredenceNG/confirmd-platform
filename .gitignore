@@ -25,3 +25,12 @@ decrypt-*.js
 encrypt-*.js
 reset-*.js
 update-*.sql
+
+# Ignore log files
+logs/**/*.log
+logs/**/*.log.gz
+*.log
+
+# Ignore macOS system files
+.DS_Store
+**/.DS_Store

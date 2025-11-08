@@ -133,6 +133,7 @@ model organisation {
   schema                       schema[]
   userActivities               user_activity[]
   userOrgRoles                 user_org_roles[]
+  ecosystems                   ecosystem_orgs[]
 
   @@index([countryCode])
   @@index([stateCode])
@@ -592,6 +593,128 @@ model webhook_deliveries {
   @@index([appId])
   @@index([deliveryStatus])
   @@index([eventType])
+}
+
+model ecosystem {
+  id                  String    @id @default(uuid()) @db.Uuid
+  name                String    @db.VarChar(255)
+  logo                String?   @db.VarChar(500)
+  description         String?
+  createdBy           String    @db.Uuid
+  lastChangedBy       String    @db.Uuid
+  createDateTime      DateTime  @default(now()) @db.Timestamptz(6)
+  lastChangedDateTime DateTime  @default(now()) @db.Timestamptz(6)
+  deletedAt           DateTime? @db.Timestamptz(6)
+
+  organizations ecosystem_orgs[]
+  schemas       ecosystem_schemas[]
+  transactions  ecosystem_transactions[]
+  invitations   ecosystem_invitations[]
+}
+
+model ecosystem_orgs {
+  id              String    @id @default(uuid()) @db.Uuid
+  ecosystemId     String    @db.Uuid
+  orgId           String    @db.Uuid
+  ecosystemRole   EcosystemRole[]
+  createDateTime  DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy       String    @db.Uuid
+  deletedAt       DateTime? @db.Timestamptz(6)
+
+  ecosystem       ecosystem    @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+  organisation    organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([ecosystemId, orgId])
+  @@index([ecosystemId])
+  @@index([orgId])
+}
+
+model ecosystem_schemas {
+  id                    String    @id @default(uuid()) @db.Uuid
+  ecosystemId           String    @db.Uuid
+  schemaLedgerId        String    @db.VarChar(255)
+
+  // Pricing
+  issuancePrice         Decimal   @default(0) @db.Decimal(10, 2)
+  verificationPrice     Decimal   @default(0) @db.Decimal(10, 2)
+  revocationPrice       Decimal   @default(0) @db.Decimal(10, 2)
+  currency              String    @default("USD") @db.VarChar(10)
+
+  // Issuance Revenue Sharing (must total 100%)
+  issuancePlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+  issuanceEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+  issuanceIssuerShare     Decimal   @default(85) @db.Decimal(5, 2)
+
+  // Verification Revenue Sharing (must total 100%)
+  verificationPlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+  verificationEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+  verificationVerifierShare   Decimal   @default(85) @db.Decimal(5, 2)
+
+  // Revocation Revenue Sharing (must total 100%)
+  revocationPlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+  revocationEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+  revocationIssuerShare     Decimal   @default(85) @db.Decimal(5, 2)
+
+  createDateTime        DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy             String    @db.Uuid
+  lastChangedDateTime   DateTime  @default(now()) @db.Timestamptz(6)
+  lastChangedBy         String    @db.Uuid
+  deletedAt             DateTime? @db.Timestamptz(6)
+
+  ecosystem ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+
+  @@unique([ecosystemId, schemaLedgerId])
+  @@index([ecosystemId])
+}
+
+model ecosystem_transactions {
+  id              String   @id @default(uuid()) @db.Uuid
+  ecosystemId     String   @db.Uuid
+  orgId           String   @db.Uuid
+  schemaLedgerId  String   @db.VarChar(255)
+  transactionType String   @db.VarChar(50)
+  amount          Decimal  @db.Decimal(10, 2)
+  issuerShare     Decimal? @db.Decimal(10, 2)
+  platformShare   Decimal? @db.Decimal(10, 2)
+  credentialId    String?  @db.VarChar(255)
+  createDateTime  DateTime @default(now()) @db.Timestamptz(6)
+
+  ecosystem ecosystem @relation(fields: [ecosystemId], references: [id])
+
+  @@index([ecosystemId, createDateTime])
+  @@index([orgId, createDateTime])
+  @@index([schemaLedgerId])
+}
+
+model ecosystem_invitations {
+  id              String    @id @default(uuid()) @db.Uuid
+  ecosystemId     String    @db.Uuid
+  email           String    @db.VarChar(255)
+  orgId           String?   @db.Uuid
+  ecosystemRole   EcosystemRole[]
+  status          InvitationStatus @default(PENDING)
+  createDateTime  DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy       String    @db.Uuid
+  deletedAt       DateTime? @db.Timestamptz(6)
+
+  ecosystem ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+
+  @@unique([ecosystemId, email])
+  @@index([ecosystemId])
+  @@index([email])
+}
+
+enum EcosystemRole {
+  ECOSYSTEM_LEAD
+  ECOSYSTEM_MEMBER
+  ECOSYSTEM_ISSUER
+  ECOSYSTEM_VERIFIER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 enum RecordType {

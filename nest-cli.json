@@ -116,6 +116,15 @@
         "tsConfigPath": "apps/organization/tsconfig.app.json"
       }
     },
+    "ecosystem": {
+      "type": "application",
+      "root": "apps/ecosystem",
+      "entryFile": "main",
+      "sourceRoot": "apps/ecosystem/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ecosystem/tsconfig.app.json"
+      }
+    },
     "user": {
       "type": "application",
       "root": "apps/user",

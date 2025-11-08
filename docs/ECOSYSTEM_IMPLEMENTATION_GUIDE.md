@@ -63,9 +63,28 @@ model ecosystem_schemas {
   id                    String    @id @default(uuid()) @db.Uuid
   ecosystemId           String    @db.Uuid
   schemaLedgerId        String    @db.VarChar(255)
+
+  // Pricing
   issuancePrice         Decimal   @default(0) @db.Decimal(10, 2)
   verificationPrice     Decimal   @default(0) @db.Decimal(10, 2)
-  issuerRevenueShare    Decimal   @default(0) @db.Decimal(5, 2)
+  revocationPrice       Decimal   @default(0) @db.Decimal(10, 2)
+  currency              String    @default("USD") @db.VarChar(10)
+
+  // Issuance Revenue Sharing (must total 100%)
+  issuancePlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+  issuanceEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+  issuanceIssuerShare     Decimal   @default(85) @db.Decimal(5, 2)
+
+  // Verification Revenue Sharing (must total 100%)
+  verificationPlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+  verificationEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+  verificationVerifierShare   Decimal   @default(85) @db.Decimal(5, 2)
+
+  // Revocation Revenue Sharing (must total 100%)
+  revocationPlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+  revocationEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+  revocationIssuerShare     Decimal   @default(85) @db.Decimal(5, 2)
+
   createDateTime        DateTime  @default(now()) @db.Timestamptz(6)
   createdBy             String    @db.Uuid
   lastChangedDateTime   DateTime  @default(now()) @db.Timestamptz(6)
@@ -306,4 +325,185 @@ import { EcosystemModule } from './ecosystem/ecosystem.module';
 
 ---
 
+## Pricing Model Update (November 2025)
+
+### Overview
+The ecosystem pricing model has been redesigned to support granular three-way revenue sharing for each credential operation type: issuance, verification, and revocation.
+
+### Changes Summary
+
+**Previous Model:**
+- Simple pricing: `issuancePrice`, `verificationPrice`
+- Single revenue share: `issuerRevenueShare` (0-100%)
+- Implied platform takes remainder
+
+**New Model:**
+- Comprehensive pricing: `issuancePrice`, `verificationPrice`, `revocationPrice`, `currency`
+- Three-way revenue splits for each operation:
+  - **Issuance**: Platform % + Ecosystem % + Issuer % = 100%
+  - **Verification**: Platform % + Ecosystem % + Verifier % = 100%
+  - **Revocation**: Platform % + Ecosystem % + Issuer % = 100%
+
+### Database Fields Added
+
+**To `ecosystem_schemas` table:**
+```prisma
+revocationPrice       Decimal   @default(0) @db.Decimal(10, 2)
+currency              String    @default("USD") @db.VarChar(10)
+
+// Issuance Revenue Sharing
+issuancePlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+issuanceEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+issuanceIssuerShare     Decimal   @default(85) @db.Decimal(5, 2)
+
+// Verification Revenue Sharing
+verificationPlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+verificationEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+verificationVerifierShare   Decimal   @default(85) @db.Decimal(5, 2)
+
+// Revocation Revenue Sharing
+revocationPlatformShare   Decimal   @default(10) @db.Decimal(5, 2)
+revocationEcosystemShare  Decimal   @default(5) @db.Decimal(5, 2)
+revocationIssuerShare     Decimal   @default(85) @db.Decimal(5, 2)
+```
+
+### DTO Updates
+
+**AddSchemaToEcosystemDto** - All fields required:
+```typescript
+{
+  schemaLedgerId: string;
+  issuancePrice: number;
+  verificationPrice: number;
+  revocationPrice: number;
+  currency: string;
+  issuancePlatformShare: number;
+  issuanceEcosystemShare: number;
+  issuanceIssuerShare: number;
+  verificationPlatformShare: number;
+  verificationEcosystemShare: number;
+  verificationVerifierShare: number;
+  revocationPlatformShare: number;
+  revocationEcosystemShare: number;
+  revocationIssuerShare: number;
+}
+```
+
+**UpdateSchemaPricingDto** - All fields optional:
+```typescript
+{
+  issuancePrice?: number;
+  verificationPrice?: number;
+  revocationPrice?: number;
+  currency?: string;
+  issuancePlatformShare?: number;
+  issuanceEcosystemShare?: number;
+  issuanceIssuerShare?: number;
+  verificationPlatformShare?: number;
+  verificationEcosystemShare?: number;
+  verificationVerifierShare?: number;
+  revocationPlatformShare?: number;
+  revocationEcosystemShare?: number;
+  revocationIssuerShare?: number;
+}
+```
+
+### Validation Rules
+
+**Service Layer Validation:**
+1. All percentage fields must be between 0-100
+2. For each operation type, the three shares must total exactly 100%
+3. Validation occurs when:
+   - Creating a schema (all shares required)
+   - Updating a schema (only if all three shares for an operation are provided)
+
+**Implementation:**
+```typescript
+// In ecosystem.service.ts - addSchemaToEcosystem()
+const issuanceTotal = data.issuancePlatformShare + data.issuanceEcosystemShare + data.issuanceIssuerShare;
+if (Math.abs(issuanceTotal - 100) > 0.01) {
+  throw new BadRequestException('Issuance revenue shares must total 100%');
+}
+// Similar validation for verification and revocation
+```
+
+### Files Modified
+
+**Backend:**
+1. `libs/prisma-service/prisma/schema.prisma` - Database schema
+2. `apps/ecosystem/interfaces/ecosystem.interface.ts` - TypeScript interfaces
+3. `apps/ecosystem/dtos/add-schema-to-ecosystem.dto.ts` - Create DTO
+4. `apps/ecosystem/dtos/update-schema-pricing.dto.ts` - Update DTO
+5. `apps/ecosystem/repositories/ecosystem.repository.ts` - Data access layer
+6. `apps/ecosystem/src/ecosystem.service.ts` - Business logic with validation
+7. `apps/ecosystem/src/ecosystem.controller.ts` - NATS message handlers
+
+**Documentation:**
+1. `docs/ECOSYSTEM_FRONTEND_GUIDE.md` - Frontend API documentation
+2. `docs/ECOSYSTEM_IMPLEMENTATION_GUIDE.md` - This file
+
+### Migration Steps
+
+**For New Deployments:**
+- Run `npx prisma db push --schema=libs/prisma-service/prisma/schema.prisma`
+- Run `npx prisma generate --schema=libs/prisma-service/prisma/schema.prisma`
+- Rebuild ecosystem service: `nest build ecosystem`
+- Restart ecosystem Docker container
+
+**For Existing Deployments:**
+1. Existing schemas will have default values:
+   - Platform: 10%, Ecosystem: 5%, Issuer/Verifier: 85%
+   - Currency: "USD"
+   - Revocation price: 0
+2. Frontend should be updated to support new fields
+3. API clients should send all required fields when creating new schemas
+
+### Frontend Integration
+
+**When Creating a Schema:**
+```javascript
+const schemaData = {
+  schemaLedgerId: 'schema-id',
+  issuancePrice: 10.00,
+  verificationPrice: 5.00,
+  revocationPrice: 2.00,
+  currency: 'USD',
+  issuancePlatformShare: 10,
+  issuanceEcosystemShare: 5,
+  issuanceIssuerShare: 85,
+  verificationPlatformShare: 10,
+  verificationEcosystemShare: 5,
+  verificationVerifierShare: 85,
+  revocationPlatformShare: 10,
+  revocationEcosystemShare: 5,
+  revocationIssuerShare: 85
+};
+```
+
+**When Updating Pricing:**
+```javascript
+// Update only prices (revenue shares unchanged)
+{ issuancePrice: 12.00 }
+
+// Update only issuance revenue split (all three required)
+{
+  issuancePlatformShare: 15,
+  issuanceEcosystemShare: 10,
+  issuanceIssuerShare: 75
+}
+```
+
+### Testing Checklist
+
+- [ ] Create schema with valid revenue shares (totaling 100% for each operation)
+- [ ] Create schema with invalid shares (should fail validation)
+- [ ] Update schema pricing without changing shares
+- [ ] Update schema shares (all three for one operation)
+- [ ] Verify database stores all fields correctly
+- [ ] Test different currencies
+- [ ] Test decimal precision for percentages (e.g., 33.33%)
+
+---
+
 **Estimated Implementation Time: 4-6 hours**
+**Pricing Model Update Time: 3-4 hours (completed November 2025)**

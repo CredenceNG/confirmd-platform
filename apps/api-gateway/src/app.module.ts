@@ -27,15 +27,13 @@ import { UtilitiesModule } from './utilities/utilities.module';
 import { NotificationModule } from './notification/notification.module';
 import { GeoLocationModule } from './geo-location/geo-location.module';
 import { LocationModule } from './location/location.module';
-import {
-  CommonConstants,
-  MICRO_SERVICE_NAME
-} from '@credebl/common/common.constant';
+import { CommonConstants, MICRO_SERVICE_NAME } from '@credebl/common/common.constant';
 import { CloudWalletModule } from './cloud-wallet/cloud-wallet.module';
 import { ContextModule } from '@credebl/context/contextModule';
 import { LoggerModule } from '@credebl/logger/logger.module';
 import { GlobalConfigModule } from '@credebl/config/global-config.module';
 import { ConfigModule as PlatformConfig } from '@credebl/config/config.module';
+import { EcosystemModule } from './ecosystem/ecosystem.module';
 
 @Module({
   imports: [
@@ -47,10 +45,7 @@ import { ConfigModule as PlatformConfig } from '@credebl/config/config.module';
       {
         name: 'NATS_CLIENT',
         transport: Transport.NATS,
-        options: getNatsOptions(
-          CommonConstants.API_GATEWAY_SERVICE,
-          process.env.API_GATEWAY_NKEY_SEED
-        )
+        options: getNatsOptions(CommonConstants.API_GATEWAY_SERVICE, process.env.API_GATEWAY_NKEY_SEED)
       }
     ]),
     AgentModule,
@@ -63,6 +58,7 @@ import { ConfigModule as PlatformConfig } from '@credebl/config/config.module';
     VerificationModule,
     FidoModule,
     OrganizationModule,
+    EcosystemModule,
     UserModule,
     ConnectionModule,
     IssuanceModule,

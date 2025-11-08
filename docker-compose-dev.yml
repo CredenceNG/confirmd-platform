@@ -108,6 +108,7 @@ services:
       - ./.env
     volumes:
       - ./uploads:/app/uploads
+      - ./resources:/app/resources
       # Volume mappings for hot reloading
       - ./apps/api-gateway:/app/apps/api-gateway
       # Mount other apps that api-gateway imports from
@@ -248,6 +249,32 @@ services:
       # Exclude node_modules and dist folders from sync
       - /app/node_modules
       - /app/dist
+  ecosystem:
+    depends_on:
+      - nats
+      - postgres
+      - api-gateway
+      - user
+      - connection
+      - issuance
+      - ledger
+      - organization
+    build:
+      context: ./
+      dockerfile: Dockerfiles/Dockerfile.ecosystem.dev
+    env_file:
+      - ./.env
+    volumes:
+      # Volume mappings for hot reloading
+      - ./apps/ecosystem:/app/apps/ecosystem
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./nest-cli.json:/app/nest-cli.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      # Exclude node_modules and dist folders from sync
+      - /app/node_modules
+      - /app/dist
   verification:
     depends_on:
       - nats
@@ -258,6 +285,7 @@ services:
       - issuance
       - ledger
       - organization
+      - ecosystem
     build:
       context: ./
       dockerfile: Dockerfiles/Dockerfile.verification.dev

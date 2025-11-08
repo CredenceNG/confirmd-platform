@@ -16,6 +16,8 @@ interface WebhookPayload {
   timestamp: string;
   orgId: string;
   tenantId: string;
+  appId?: string; // Added: Unique app identifier
+  appName?: string; // Added: Human-readable app name
   data: Record<string, unknown>;
   clientContext: JsonValue;
 }
@@ -44,9 +46,12 @@ export class WebhookDeliveryService {
   ): Promise<void> {
     this.logger.log(`📤 === OUTBOUND WEBHOOK DELIVERY START ===`);
     this.logger.log(`📋 Type: ${webhookType}, TenantId: ${tenantId}`);
+    this.logger.log(`📦 Webhook data keys: ${Object.keys(webhookData).join(', ')}`);
+    this.logger.log(`📊 Webhook state: ${webhookData.state || 'N/A'}`);
 
     try {
       // Step 1: Get orgId from tenantId
+      this.logger.log(`🔍 Looking up orgId for tenantId: ${tenantId}`);
       const orgAgent = await this.prisma.org_agents.findFirst({
         where: { tenantId },
         select: { orgId: true }
@@ -54,6 +59,7 @@ export class WebhookDeliveryService {
 
       if (!orgAgent || !orgAgent.orgId) {
         this.logger.warn(`⚠️ No org found for tenantId: ${tenantId}`);
+        this.logger.warn(`⚠️ This means no org_agents record exists with this tenantId`);
         return;
       }
 
@@ -61,6 +67,7 @@ export class WebhookDeliveryService {
       this.logger.log(`🏢 Found orgId: ${orgId}`);
 
       // Step 2: Get all active apps for this org
+      this.logger.log(`🔍 Looking up active apps for orgId: ${orgId}`);
       const orgApps = await this.prisma.org_apps.findMany({
         where: {
           orgId,
@@ -77,10 +84,12 @@ export class WebhookDeliveryService {
 
       if (!orgApps || 0 === orgApps.length) {
         this.logger.warn(`⚠️ No active apps found for orgId: ${orgId}`);
+        this.logger.warn(`⚠️ Either no apps are registered or all apps are inactive`);
         return;
       }
 
       this.logger.log(`📱 Found ${orgApps.length} active app(s) for orgId: ${orgId}`);
+      this.logger.log(`📱 Apps: ${orgApps.map((app) => `${app.name} (${app.id})`).join(', ')}`);
 
       // Step 3: Format the webhook payload according to org app spec
       const payload: WebhookPayload = {
@@ -92,12 +101,18 @@ export class WebhookDeliveryService {
         clientContext: {}
       };
 
+      this.logger.log(`📨 Formatted payload ready for delivery`);
+
       // Step 4: Send to each app
       const deliveryPromises = orgApps.map((app) => this.sendWebhookToApp(app, payload));
 
-      await Promise.allSettled(deliveryPromises);
+      const results = await Promise.allSettled(deliveryPromises);
 
-      this.logger.log(`✅ Webhook delivery completed for all apps`);
+      // Log results summary
+      const successful = results.filter((r) => 'fulfilled' === r.status).length;
+      const failed = results.filter((r) => 'rejected' === r.status).length;
+
+      this.logger.log(`✅ Webhook delivery completed: ${successful} successful, ${failed} failed`);
     } catch (error) {
       this.logger.error(`❌ Error in webhook delivery: ${error.message}`, error.stack);
       throw error;
@@ -111,13 +126,24 @@ export class WebhookDeliveryService {
     this.logger.log(`📤 Sending webhook to app: ${app.name} (${app.id})`);
     this.logger.log(`🌐 URL: ${app.webhookUrl}`);
 
+    const deliveryRecord = {
+      appId: app.id,
+      webhookUrl: app.webhookUrl,
+      eventType: payload.type,
+      eventData: payload as Record<string, unknown>,
+      createdBy: payload.orgId,
+      lastChangedBy: payload.orgId
+    };
+
     try {
       // Decrypt the webhook secret
       const decryptedSecret = this.decryptSecret(app.webhookSecret);
 
-      // Merge app's clientContext if exists
+      // Merge app's clientContext and add app identification
       const finalPayload = {
         ...payload,
+        appId: app.id, // Add app ID as differentiator
+        appName: app.name, // Add app name for clarity
         clientContext: app.clientContext || {}
       };
 
@@ -128,7 +154,9 @@ export class WebhookDeliveryService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': decryptedSecret
+          'x-api-key': decryptedSecret,
+          'x-app-id': app.id, // Add app ID to headers for easier filtering
+          'x-org-id': payload.orgId // Add org ID to headers
         },
         body: JSON.stringify(finalPayload)
       });
@@ -137,14 +165,83 @@ export class WebhookDeliveryService {
         const responseData = await response.text();
         this.logger.log(`✅ Webhook delivered successfully to ${app.name}`);
         this.logger.log(`📬 Response: ${responseData}`);
+
+        // Track successful delivery
+        await this.trackDelivery({
+          ...deliveryRecord,
+          deliveryStatus: 'delivered',
+          httpStatus: response.status,
+          responseBody: responseData.substring(0, 1000), // Limit response body size
+          deliveredAt: new Date()
+        });
       } else {
-        this.logger.error(`❌ Webhook delivery failed to ${app.name}: ${response.status} ${response.statusText}`);
         const errorBody = await response.text();
+        this.logger.error(`❌ Webhook delivery failed to ${app.name}: ${response.status} ${response.statusText}`);
         this.logger.error(`Error response: ${errorBody}`);
+
+        // Track failed delivery
+        await this.trackDelivery({
+          ...deliveryRecord,
+          deliveryStatus: 'failed',
+          httpStatus: response.status,
+          responseBody: errorBody.substring(0, 1000),
+          errorMessage: `HTTP ${response.status}: ${response.statusText}`
+        });
       }
     } catch (error) {
       this.logger.error(`❌ Failed to send webhook to ${app.name}: ${error.message}`);
+
+      // Track failed delivery (network error, timeout, etc.)
+      await this.trackDelivery({
+        ...deliveryRecord,
+        deliveryStatus: 'failed',
+        errorMessage: error.message,
+        httpStatus: null,
+        responseBody: null
+      });
+
       // Don't throw - continue with other apps
+    }
+  }
+
+  /**
+   * Track webhook delivery attempt in database
+   */
+  private async trackDelivery(data: {
+    appId: string;
+    webhookUrl: string;
+    eventType: string;
+    eventData: Record<string, unknown>;
+    deliveryStatus: string;
+    httpStatus: number | null;
+    responseBody: string | null;
+    errorMessage?: string;
+    createdBy: string;
+    lastChangedBy: string;
+    deliveredAt?: Date;
+  }): Promise<void> {
+    try {
+      await this.prisma.webhook_deliveries.create({
+        data: {
+          appId: data.appId,
+          webhookUrl: data.webhookUrl,
+          eventType: data.eventType,
+          eventData: data.eventData,
+          deliveryStatus: data.deliveryStatus,
+          httpStatus: data.httpStatus,
+          responseBody: data.responseBody,
+          errorMessage: data.errorMessage || null,
+          attemptCount: 1,
+          createdBy: data.createdBy,
+          lastChangedBy: data.lastChangedBy,
+          deliveredAt: data.deliveredAt || null
+        }
+      });
+
+      this.logger.log(`📝 Delivery tracked: ${data.deliveryStatus} to app ${data.appId}`);
+    } catch (error) {
+      // Don't fail webhook delivery if tracking fails
+      this.logger.error(`⚠️ Failed to track delivery: ${error.message}`);
     }
   }
 

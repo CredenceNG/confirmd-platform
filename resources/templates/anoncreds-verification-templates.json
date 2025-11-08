@@ -1,0 +1,415 @@
+{
+  "templates": [
+    {
+      "id": "basic-identity-verification",
+      "name": "Basic Identity Verification",
+      "description": "Request basic identity attributes including name, date of birth, and ID number",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your basic identity credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Basic Identity Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "firstName": {
+                "name": "firstName",
+                "restrictions": []
+              },
+              "lastName": {
+                "name": "lastName",
+                "restrictions": []
+              },
+              "dateOfBirth": {
+                "name": "dateOfBirth",
+                "restrictions": []
+              },
+              "idNumber": {
+                "name": "idNumber",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "employment-verification",
+      "name": "Employment Verification",
+      "description": "Verify employment status, position, and company",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your employment credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Employment Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "employeeName": {
+                "name": "employeeName",
+                "restrictions": []
+              },
+              "position": {
+                "name": "position",
+                "restrictions": []
+              },
+              "company": {
+                "name": "company",
+                "restrictions": []
+              },
+              "startDate": {
+                "name": "startDate",
+                "restrictions": []
+              },
+              "employeeId": {
+                "name": "employeeId",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "education-verification",
+      "name": "Education Verification",
+      "description": "Verify educational qualifications and degree information",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your educational credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Education Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "studentName": {
+                "name": "studentName",
+                "restrictions": []
+              },
+              "degree": {
+                "name": "degree",
+                "restrictions": []
+              },
+              "institution": {
+                "name": "institution",
+                "restrictions": []
+              },
+              "graduationYear": {
+                "name": "graduationYear",
+                "restrictions": []
+              },
+              "major": {
+                "name": "major",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "age-verification",
+      "name": "Age Verification (18+)",
+      "description": "Verify that the holder is 18 years or older using predicates",
+      "type": "indy",
+      "template": {
+        "comment": "Please prove you are 18 years or older",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Age Verification Proof",
+            "version": "1.0",
+            "requested_attributes": {},
+            "requested_predicates": {
+              "age": {
+                "name": "age",
+                "p_type": ">=",
+                "p_value": 18,
+                "restrictions": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "kyc-verification",
+      "name": "KYC Verification",
+      "description": "Complete Know Your Customer verification with identity and address proof",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your KYC credentials for verification",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "KYC Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "fullName": {
+                "name": "fullName",
+                "restrictions": []
+              },
+              "dateOfBirth": {
+                "name": "dateOfBirth",
+                "restrictions": []
+              },
+              "nationality": {
+                "name": "nationality",
+                "restrictions": []
+              },
+              "address": {
+                "name": "address",
+                "restrictions": []
+              },
+              "idType": {
+                "name": "idType",
+                "restrictions": []
+              },
+              "idNumber": {
+                "name": "idNumber",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "medical-license-verification",
+      "name": "Medical License Verification",
+      "description": "Verify medical practitioner license and credentials",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your medical license credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Medical License Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "practitionerName": {
+                "name": "practitionerName",
+                "restrictions": []
+              },
+              "licenseNumber": {
+                "name": "licenseNumber",
+                "restrictions": []
+              },
+              "specialty": {
+                "name": "specialty",
+                "restrictions": []
+              },
+              "issuingAuthority": {
+                "name": "issuingAuthority",
+                "restrictions": []
+              },
+              "expiryDate": {
+                "name": "expiryDate",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "vaccination-verification",
+      "name": "Vaccination Status Verification",
+      "description": "Verify vaccination status and certificate",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your vaccination credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Vaccination Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "recipientName": {
+                "name": "recipientName",
+                "restrictions": []
+              },
+              "vaccineName": {
+                "name": "vaccineName",
+                "restrictions": []
+              },
+              "doseNumber": {
+                "name": "doseNumber",
+                "restrictions": []
+              },
+              "vaccinationDate": {
+                "name": "vaccinationDate",
+                "restrictions": []
+              },
+              "administeredBy": {
+                "name": "administeredBy",
+                "restrictions": []
+              },
+              "certificateId": {
+                "name": "certificateId",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "financial-verification",
+      "name": "Financial Account Verification",
+      "description": "Verify bank account or financial institution relationship",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your financial account credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Financial Account Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "accountHolderName": {
+                "name": "accountHolderName",
+                "restrictions": []
+              },
+              "accountType": {
+                "name": "accountType",
+                "restrictions": []
+              },
+              "institutionName": {
+                "name": "institutionName",
+                "restrictions": []
+              },
+              "accountStatus": {
+                "name": "accountStatus",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {
+              "accountBalance": {
+                "name": "accountBalance",
+                "p_type": ">=",
+                "p_value": 1000,
+                "restrictions": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "membership-verification",
+      "name": "Membership Verification",
+      "description": "Verify membership status in an organization or program",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your membership credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Membership Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "memberName": {
+                "name": "memberName",
+                "restrictions": []
+              },
+              "membershipId": {
+                "name": "membershipId",
+                "restrictions": []
+              },
+              "organizationName": {
+                "name": "organizationName",
+                "restrictions": []
+              },
+              "membershipType": {
+                "name": "membershipType",
+                "restrictions": []
+              },
+              "startDate": {
+                "name": "startDate",
+                "restrictions": []
+              },
+              "status": {
+                "name": "status",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "professional-certification",
+      "name": "Professional Certification Verification",
+      "description": "Verify professional certifications and accreditations",
+      "type": "indy",
+      "template": {
+        "comment": "Please share your professional certification credentials",
+        "protocolVersion": "v2",
+        "autoAcceptProof": "always",
+        "proofFormats": {
+          "indy": {
+            "name": "Professional Certification Proof",
+            "version": "1.0",
+            "requested_attributes": {
+              "holderName": {
+                "name": "holderName",
+                "restrictions": []
+              },
+              "certificationName": {
+                "name": "certificationName",
+                "restrictions": []
+              },
+              "certificationId": {
+                "name": "certificationId",
+                "restrictions": []
+              },
+              "issuingOrganization": {
+                "name": "issuingOrganization",
+                "restrictions": []
+              },
+              "issueDate": {
+                "name": "issueDate",
+                "restrictions": []
+              },
+              "expiryDate": {
+                "name": "expiryDate",
+                "restrictions": []
+              }
+            },
+            "requested_predicates": {}
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "createdDate": "2025-11-06",
+    "platform": "Confirmd Platform",
+    "description": "AnonCreds verification templates for common credential verification scenarios",
+    "usage": {
+      "instructions": "Select a template from the list and customize the attributes and restrictions as needed for your verification requirements.",
+      "customization": "You can add schemaId or credDefId restrictions to limit which credentials can fulfill the proof request."
+    }
+  }
+}

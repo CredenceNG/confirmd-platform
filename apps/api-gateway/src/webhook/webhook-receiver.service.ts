@@ -141,21 +141,32 @@ export class WebhookReceiverService {
   async processProofWebhook(webhookData: Record<string, unknown>): Promise<unknown> {
     this.logger.log('🔍 === PROCESSING PROOF WEBHOOK ===');
     this.logger.log(`📊 Proof State: ${webhookData.state || 'unknown'}`);
+    this.logger.log(`🆔 Proof ID: ${webhookData.id || webhookData.proofId || webhookData.proof_id || 'unknown'}`);
+    this.logger.log(`🔗 Connection ID: ${webhookData.connectionId || webhookData.connection_id || 'unknown'}`);
+    this.logger.log(`🧵 Thread ID: ${webhookData.threadId || webhookData.thread_id || 'unknown'}`);
+    this.logger.log(`📦 Full Payload Keys: ${Object.keys(webhookData).join(', ')}`);
 
     try {
       // Forward to verification service for webhook event processing
       const result = await this.natsClient.send({ cmd: 'webhook-proof-received' }, webhookData).toPromise();
 
-      this.logger.log('✅ Proof webhook processed successfully');
+      this.logger.log('✅ Proof webhook forwarded to verification service successfully');
 
-      // Extract tenantId from webhook data
-      const tenantId = webhookData.contextCorrelationId || webhookData.tenantId;
+      // Extract tenantId from webhook data with multiple fallback options
+      const tenantId = webhookData.contextCorrelationId || webhookData.tenantId || webhookData.tenant_id;
+
+      this.logger.log(
+        `🔍 TenantId extraction: contextCorrelationId=${webhookData.contextCorrelationId}, tenantId=${webhookData.tenantId}, tenant_id=${webhookData.tenant_id}`
+      );
 
       if (tenantId && 'string' === typeof tenantId) {
+        this.logger.log(`✅ TenantId found: ${tenantId}, proceeding with org app delivery`);
         // Deliver to org apps (outbound webhook)
         await this.webhookDeliveryService.deliverToOrgApps('Proof', tenantId, webhookData);
       } else {
         this.logger.warn('⚠️ No tenantId found in webhook data, skipping org app delivery');
+        this.logger.warn(`⚠️ Available webhook fields: ${JSON.stringify(Object.keys(webhookData))}`);
+        this.logger.warn(`⚠️ Full webhook payload for debugging: ${JSON.stringify(webhookData)}`);
       }
 
       return result;
@@ -200,9 +211,38 @@ export class WebhookReceiverService {
    */
   async processWebhookEvent(webhookData: Record<string, unknown>): Promise<unknown> {
     this.logger.log('🎯 === GENERAL WEBHOOK EVENT PROCESSING ===');
+    this.logger.log(`📋 Webhook Type Detection - Available fields: ${Object.keys(webhookData).join(', ')}`);
+    this.logger.log(`📋 Webhook State: ${webhookData.state || 'N/A'}`);
     this.logger.log(`� WEBHOOK_PAYLOAD: ${JSON.stringify(webhookData)}`);
 
     try {
+      // Check for proof-related webhook FIRST with comprehensive detection
+      // This needs to be before credential check because some states overlap
+      const isProofWebhook =
+        webhookData.proofId ||
+        webhookData.proof_id ||
+        webhookData.presentation ||
+        webhookData.proofExchangeId ||
+        webhookData.proof_exchange_id ||
+        webhookData.presentationExchangeId ||
+        webhookData.presentation_exchange_id ||
+        // Check for proof-specific state values
+        (webhookData.state &&
+          'string' === typeof webhookData.state &&
+          ((webhookData.state.includes('request') && webhookData.state.includes('sent')) ||
+            (webhookData.state.includes('request') && webhookData.state.includes('received')) ||
+            webhookData.state.includes('presentation') ||
+            webhookData.state.includes('proposal') ||
+            ('done' === webhookData.state && (webhookData.threadId || webhookData.thread_id)))) ||
+        // Check metadata for proof/presentation indicators
+        (webhookData.metadata &&
+          (webhookData.metadata['_anoncreds/presentation'] || webhookData.metadata['presentationExchange']));
+
+      if (isProofWebhook) {
+        this.logger.log('✅ Detected as PROOF webhook');
+        return await this.processProofWebhook(webhookData);
+      }
+
       // Determine webhook type based on the data structure
       if (
         webhookData.credentialId ||
@@ -214,28 +254,33 @@ export class WebhookReceiverService {
           'string' === typeof webhookData.state &&
           (webhookData.state.includes('offer') ||
             webhookData.state.includes('credential') ||
-            webhookData.state.includes('issued') ||
-            'done' === webhookData.state) &&
+            webhookData.state.includes('issued')) &&
           (webhookData.threadId || webhookData.thread_id))
       ) {
         // Credential-related webhook
+        this.logger.log('✅ Detected as CREDENTIAL webhook');
         return await this.processCredentialWebhook(webhookData);
       } else if (
         webhookData.connectionId ||
         webhookData.connection_id ||
-        (webhookData.state && !webhookData.credentialAttributes)
+        (webhookData.state &&
+          'string' === typeof webhookData.state &&
+          (webhookData.state.includes('invitation') ||
+            webhookData.state.includes('request') ||
+            webhookData.state.includes('response') ||
+            webhookData.state.includes('complete')))
       ) {
         // Connection-related webhook
+        this.logger.log('✅ Detected as CONNECTION webhook');
         return await this.processConnectionWebhook(webhookData);
-      } else if (webhookData.proofId || webhookData.proof_id || webhookData.presentation) {
-        // Proof-related webhook
-        return await this.processProofWebhook(webhookData);
       } else if (webhookData.questionText || webhookData.question_text) {
         // Question-answer webhook
+        this.logger.log('✅ Detected as QUESTION-ANSWER webhook');
         return await this.processQuestionAnswerWebhook(webhookData);
       } else {
         // Default to basic message or connection webhook
-        this.logger.log('🔄 Unknown webhook type, defaulting to connection processing');
+        this.logger.warn('⚠️ Unknown webhook type, defaulting to connection processing');
+        this.logger.warn(`⚠️ Webhook payload for investigation: ${JSON.stringify(webhookData, null, 2)}`);
         return await this.processConnectionWebhook(webhookData);
       }
     } catch (error) {
