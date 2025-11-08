@@ -68,7 +68,28 @@ export class EcosystemRepository {
             }
           },
           schemas: {
-            where: { deletedAt: null }
+            where: { deletedAt: null },
+            select: {
+              id: true,
+              schemaLedgerId: true,
+              issuancePrice: true,
+              verificationPrice: true,
+              revocationPrice: true,
+              currency: true,
+              issuancePlatformShare: true,
+              issuanceEcosystemShare: true,
+              issuanceIssuerShare: true,
+              verificationPlatformShare: true,
+              verificationEcosystemShare: true,
+              verificationVerifierShare: true,
+              revocationPlatformShare: true,
+              revocationEcosystemShare: true,
+              revocationIssuerShare: true,
+              createDateTime: true,
+              createdBy: true,
+              lastChangedDateTime: true,
+              lastChangedBy: true
+            }
           },
           invitations: {
             where: { deletedAt: null }
@@ -79,6 +100,9 @@ export class EcosystemRepository {
       if (!ecosystem) {
         throw new NotFoundException('Ecosystem not found');
       }
+
+      // Log schema count for debugging
+      this.logger.log(`Found ecosystem ${ecosystemId} with ${ecosystem.schemas?.length || 0} schemas`);
 
       return ecosystem;
     } catch (error) {
@@ -248,10 +272,10 @@ export class EcosystemRepository {
     }
   }
 
-  // eslint-disable-next-line camelcase
   async getEcosystemOrganizations(
     ecosystemId: string,
     pagination: IEcosystemPagination
+    // eslint-disable-next-line camelcase
   ): Promise<{ organizations: ecosystem_orgs[]; totalCount: number }> {
     try {
       const { pageNumber, pageSize, search } = pagination;
@@ -423,10 +447,10 @@ export class EcosystemRepository {
     }
   }
 
-  // eslint-disable-next-line camelcase
   async getEcosystemSchemas(
     ecosystemId: string,
     pagination: IEcosystemPagination
+    // eslint-disable-next-line camelcase
   ): Promise<{ schemas: ecosystem_schemas[]; totalCount: number }> {
     try {
       const { pageNumber, pageSize, search } = pagination;
@@ -494,10 +518,10 @@ export class EcosystemRepository {
     }
   }
 
-  // eslint-disable-next-line camelcase
   async getEcosystemInvitations(
     ecosystemId: string,
     pagination: IEcosystemPagination
+    // eslint-disable-next-line camelcase
   ): Promise<{ invitations: ecosystem_invitations[]; totalCount: number }> {
     try {
       const { pageNumber, pageSize, search } = pagination;
