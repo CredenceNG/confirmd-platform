@@ -523,6 +523,45 @@ export class EcosystemController {
   }
 
   /**
+   * Get ecosystem pricing (all schemas with pricing)
+   */
+  @Get('/:id/pricing')
+  @ApiOperation({
+    summary: 'Get ecosystem pricing',
+    description: 'Retrieve all schemas with their pricing information for the ecosystem'
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Ecosystem ID'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Success',
+    type: ApiResponseDto
+  })
+  async getEcosystemPricing(
+    @Param(
+      'id',
+      new ParseUUIDPipe({
+        exceptionFactory: (): Error => {
+          throw new BadRequestException('Invalid ecosystem ID');
+        }
+      })
+    )
+    id: string,
+    @Res() res: Response
+  ): Promise<Response> {
+    const schemas = await this.ecosystemService.getEcosystemSchemas(id, 1, 100, '');
+    const finalResponse: IResponse = {
+      statusCode: HttpStatus.OK,
+      message: 'Ecosystem pricing retrieved successfully',
+      data: schemas
+    };
+    return res.status(HttpStatus.OK).json(finalResponse);
+  }
+
+  /**
    * Update schema pricing
    */
   @Put('/:id/schemas/:schemaId/pricing')
