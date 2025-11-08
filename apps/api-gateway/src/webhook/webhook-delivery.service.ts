@@ -130,7 +130,7 @@ export class WebhookDeliveryService {
       appId: app.id,
       webhookUrl: app.webhookUrl,
       eventType: payload.type,
-      eventData: payload as Record<string, unknown>,
+      eventData: payload as unknown as JsonValue,
       createdBy: payload.orgId,
       lastChangedBy: payload.orgId
     };
@@ -211,7 +211,7 @@ export class WebhookDeliveryService {
     appId: string;
     webhookUrl: string;
     eventType: string;
-    eventData: Record<string, unknown>;
+    eventData: JsonValue;
     deliveryStatus: string;
     httpStatus: number | null;
     responseBody: string | null;

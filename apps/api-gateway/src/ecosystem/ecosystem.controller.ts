@@ -34,6 +34,8 @@ import { ApiResponseDto } from '../dtos/apiResponse.dto';
 import { UnauthorizedErrorDto } from '../dtos/unauthorized-error.dto';
 import { ForbiddenErrorDto } from '../dtos/forbidden-error.dto';
 import IResponse from '@credebl/common/interfaces/response.interface';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { user } from '@prisma/client';
 
 @UseFilters(CustomExceptionFilter)
 @Controller('ecosystem')
