@@ -133,7 +133,10 @@ services:
       - ledger
       - organization
       - verification
-    image: ghcr.io/credebl/agent-provisioning:latest
+    build:
+      context: .
+      dockerfile: Dockerfiles/Dockerfile.agent-provisioning
+    image: confirmd-platform-agent-provisioning:latest
     # args:
     #   - ROOT_PATH=$PWD/apps/agent-provisioning/AFJ/agent-config
     env_file:
@@ -143,7 +146,7 @@ services:
     volumes:
       - $PWD/apps/agent-provisioning/AFJ/agent-config:/app/agent-provisioning/AFJ/agent-config
       - /var/run/docker.sock:/var/run/docker.sock
-      - /app/agent-provisioning/AFJ/token:/app/agent-provisioning/AFJ/token
+      - $PWD/apps/agent-provisioning/AFJ/token:/app/agent-provisioning/AFJ/token
       - $PWD/agent.env:/app/agent.env
   agent-service:
     depends_on:
@@ -160,6 +163,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfiles/Dockerfile.agent-service
+    image: confirmd-platform-agent-service:latest
     env_file:
       - ./.env
     volumes:
