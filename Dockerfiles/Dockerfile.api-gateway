@@ -40,4 +40,4 @@ COPY --from=build /app/node_modules  ./node_modules
 # COPY --from=build /app/uploadedFiles ./uploadedFiles
 
 # Set the command to run the microservice
-CMD ["sh", "-c", "cd libs/prisma-service && npx prisma migrate deploy && npx prisma generate && cd ../.. && node dist/apps/api-gateway/main.js"]
+CMD ["sh", "-c", "cd libs/prisma-service && npx prisma generate && cd ../.. && node dist/apps/api-gateway/main.js"]

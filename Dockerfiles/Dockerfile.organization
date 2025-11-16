@@ -50,6 +50,6 @@ COPY --from=build /app/node_modules  ./node_modules
 
 # Set the command to run the microservice with proper setup
 CMD ["sh", "-c", "cd libs/prisma-service && \
-    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma migrate deploy --schema=./prisma/schema.prisma && \
+    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma generate --schema=./prisma/schema.prisma && \
     cd ../.. && \
     node dist/apps/organization/main.js"]

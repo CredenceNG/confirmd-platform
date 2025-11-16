@@ -26,4 +26,4 @@ COPY libs/prisma-service ./libs/prisma-service
 RUN cd libs/prisma-service && npx prisma generate
 
 # Set the command to run the microservice with hot reloading
-CMD ["sh", "-c", "cd libs/prisma-service && npx prisma migrate deploy && npx prisma generate && cd ../.. && pnpm run start:dev api-gateway"]
+CMD ["sh", "-c", "cd libs/prisma-service && npx prisma generate && cd ../.. && pnpm run start:dev api-gateway"]

@@ -6,23 +6,11 @@ import {
   ISaveCredDef
 } from '../interfaces/create-credential-definition.interface';
 import { PrismaService } from '@credebl/prisma-service';
-import {
-  credential_definition,
-  org_agents,
-  org_agents_type,
-  organisation,
-  schema
-} from '@prisma/client';
+import { credential_definition, org_agents, org_agents_type, organisation, schema } from '@prisma/client';
 import { Injectable, Logger } from '@nestjs/common';
 import { ResponseMessages } from '@credebl/common/response-messages';
-import {
-  BulkCredDefSchema,
-  CredDefSchema
-} from '../interfaces/credential-definition.interface';
-import {
-  ICredDefData,
-  IPlatformCredDefDetails
-} from '@credebl/common/interfaces/cred-def.interface';
+import { BulkCredDefSchema, CredDefSchema } from '../interfaces/credential-definition.interface';
+import { ICredDefData, IPlatformCredDefDetails } from '@credebl/common/interfaces/cred-def.interface';
 import { SchemaType, SortValue } from '@credebl/enum/enum';
 import { ISchemaResponse } from '../interfaces';
 
@@ -32,14 +20,9 @@ export class CredentialDefinitionRepository {
 
   constructor(private prisma: PrismaService) {}
 
-  async saveCredentialDefinition(
-    credDef: CredDefPayload
-  ): Promise<credential_definition> {
+  async saveCredentialDefinition(credDef: CredDefPayload): Promise<credential_definition> {
     try {
-      const dbResult: credential_definition = await this.getByAttribute(
-        credDef.schemaLedgerId,
-        credDef.tag
-      );
+      const dbResult: credential_definition = await this.getByAttribute(credDef.schemaLedgerId, credDef.tag);
       if (!dbResult) {
         const saveResult = await this.prisma.credential_definition.create({
           data: {
@@ -56,9 +39,7 @@ export class CredentialDefinitionRepository {
         return saveResult;
       }
     } catch (error) {
-      this.logger.error(
-        `${ResponseMessages.credentialDefinition.error.NotSaved}: ${error.message} `
-      );
+      this.logger.error(`${ResponseMessages.credentialDefinition.error.NotSaved}: ${error.message} `);
       throw error;
     }
   }
@@ -70,19 +51,14 @@ export class CredentialDefinitionRepository {
       });
       return response;
     } catch (error) {
-      this.logger.error(
-        `${ResponseMessages.credentialDefinition.error.NotSaved}: ${error.message} `
-      );
+      this.logger.error(`${ResponseMessages.credentialDefinition.error.NotSaved}: ${error.message} `);
       throw error;
     }
   }
 
-  async getAllPlatformCredDefsDetails(
-    credDefsPayload: IPlatformCredDefs
-  ): Promise<IPlatformCredDefDetails> {
+  async getAllPlatformCredDefsDetails(credDefsPayload: IPlatformCredDefs): Promise<IPlatformCredDefDetails> {
     try {
-      const { ledgerId, search, sortBy, sortField, pageNumber, pageSize } =
-        credDefsPayload || {};
+      const { ledgerId, search, sortBy, sortField, pageNumber, pageSize } = credDefsPayload || {};
       const credDefResult = await this.prisma.credential_definition.findMany({
         where: {
           schema: {
@@ -107,8 +83,7 @@ export class CredentialDefinitionRepository {
           revocable: true
         },
         orderBy: {
-          [sortField]:
-            SortValue.DESC === sortBy ? SortValue.DESC : SortValue.ASC
+          [sortField]: SortValue.DESC === sortBy ? SortValue.DESC : SortValue.ASC
         },
         take: Number(pageSize),
         skip: (pageNumber - 1) * pageSize
@@ -128,10 +103,7 @@ export class CredentialDefinitionRepository {
     }
   }
 
-  async getByAttribute(
-    schema: string,
-    tag: string
-  ): Promise<credential_definition> {
+  async getByAttribute(schema: string, tag: string): Promise<credential_definition> {
     try {
       const response = await this.prisma.credential_definition.findFirst({
         where: {
@@ -141,16 +113,11 @@ export class CredentialDefinitionRepository {
       });
       return response;
     } catch (error) {
-      this.logger.error(
-        `${ResponseMessages.credentialDefinition.error.NotFound}: ${error}`
-      );
+      this.logger.error(`${ResponseMessages.credentialDefinition.error.NotFound}: ${error}`);
     }
   }
 
-  async getAllCredDefs(
-    credDefSearchCriteria: GetAllCredDefsDto,
-    orgId: string
-  ): Promise<ICredDefData[]> {
+  async getAllCredDefs(credDefSearchCriteria: GetAllCredDefsDto, orgId: string): Promise<ICredDefData[]> {
     try {
       const credDefResult = await this.prisma.credential_definition.findMany({
         where: {
@@ -188,14 +155,10 @@ export class CredentialDefinitionRepository {
         },
         orderBy: {
           [credDefSearchCriteria.sorting]:
-            SortValue.DESC === credDefSearchCriteria.sortByValue
-              ? SortValue.DESC
-              : SortValue.ASC
+            SortValue.DESC === credDefSearchCriteria.sortByValue ? SortValue.DESC : SortValue.ASC
         },
         take: credDefSearchCriteria.pageSize,
-        skip:
-          (credDefSearchCriteria.pageNumber - 1) *
-          credDefSearchCriteria.pageSize
+        skip: (credDefSearchCriteria.pageNumber - 1) * credDefSearchCriteria.pageSize
       });
       return credDefResult;
     } catch (error) {
@@ -247,16 +210,18 @@ export class CredentialDefinitionRepository {
           }
         }
       });
-      return agentDetails;
+      return agentDetails as unknown as organisation & {
+        org_agents: (org_agents & {
+          org_agent_type: org_agents_type;
+        })[];
+      };
     } catch (error) {
       this.logger.error(`Error in getting agent type: ${error}`);
       throw error;
     }
   }
 
-  async getCredentialDefinitionBySchemaId(
-    schemaId: string
-  ): Promise<credential_definition[]> {
+  async getCredentialDefinitionBySchemaId(schemaId: string): Promise<credential_definition[]> {
     try {
       return this.prisma.credential_definition.findMany({
         where: {
@@ -269,33 +234,27 @@ export class CredentialDefinitionRepository {
     }
   }
 
-  async getAllCredDefsByOrgIdForBulk(
-    payload: BulkCredDefSchema
-  ): Promise<CredDefSchema[]> {
+  async getAllCredDefsByOrgIdForBulk(payload: BulkCredDefSchema): Promise<CredDefSchema[]> {
     try {
       const { credDefSortBy, sortValue, orgId } = payload;
 
-      const credentialDefinitions =
-        await this.prisma.credential_definition.findMany({
-          where: {
-            orgId
-          },
-          select: {
-            id: true,
-            credentialDefinitionId: true,
-            tag: true,
-            createDateTime: true,
-            schemaLedgerId: true
-          },
-          orderBy: {
-            [credDefSortBy]:
-              SortValue.DESC === sortValue ? SortValue.DESC : SortValue.ASC
-          }
-        });
+      const credentialDefinitions = await this.prisma.credential_definition.findMany({
+        where: {
+          orgId
+        },
+        select: {
+          id: true,
+          credentialDefinitionId: true,
+          tag: true,
+          createDateTime: true,
+          schemaLedgerId: true
+        },
+        orderBy: {
+          [credDefSortBy]: SortValue.DESC === sortValue ? SortValue.DESC : SortValue.ASC
+        }
+      });
 
-      const schemaLedgerIdArray = credentialDefinitions.map(
-        (credDef) => credDef.schemaLedgerId
-      );
+      const schemaLedgerIdArray = credentialDefinitions.map((credDef) => credDef.schemaLedgerId);
 
       const schemas = await this.prisma.schema.findMany({
         where: {
@@ -316,9 +275,7 @@ export class CredentialDefinitionRepository {
 
       // Match Credential Definitions with Schemas and map to CredDefSchema
       const matchingSchemas = credentialDefinitions.map((credDef) => {
-        const matchingSchema = schemas.find(
-          (schema) => schema.schemaLedgerId === credDef.schemaLedgerId
-        );
+        const matchingSchema = schemas.find((schema) => schema.schemaLedgerId === credDef.schemaLedgerId);
         if (matchingSchema) {
           return {
             credentialDefinitionId: credDef.credentialDefinitionId,
@@ -335,21 +292,14 @@ export class CredentialDefinitionRepository {
       });
 
       // Filter out null values (missing schemas) and return the result
-      return matchingSchemas.filter(
-        (schema) => null !== schema
-      ) as CredDefSchema[];
+      return matchingSchemas.filter((schema) => null !== schema) as CredDefSchema[];
     } catch (error) {
-      this.logger.error(
-        `Error in listing all credential definitions with schema details: ${error}`
-      );
+      this.logger.error(`Error in listing all credential definitions with schema details: ${error}`);
       throw error;
     }
   }
 
-  async getAllSchemaByOrgIdAndType(
-    orgId: string,
-    schemaType: string
-  ): Promise<ISchemaResponse[]> {
+  async getAllSchemaByOrgIdAndType(orgId: string, schemaType: string): Promise<ISchemaResponse[]> {
     try {
       return await this.prisma.schema.findMany({
         where: {
@@ -382,9 +332,7 @@ export class CredentialDefinitionRepository {
         }
       });
     } catch (error) {
-      this.logger.error(
-        `[getAllSchemaByOrgIdAndType] - error: ${JSON.stringify(error)}`
-      );
+      this.logger.error(`[getAllSchemaByOrgIdAndType] - error: ${JSON.stringify(error)}`);
       throw error;
     }
   }
@@ -404,9 +352,7 @@ export class CredentialDefinitionRepository {
     }
   }
 
-  async storeCredDefRecord(
-    credDefDetails: ISaveCredDef
-  ): Promise<credential_definition> {
+  async storeCredDefRecord(credDefDetails: ISaveCredDef): Promise<credential_definition> {
     try {
       const saveResult = await this.prisma.credential_definition.create({
         data: {
@@ -422,9 +368,7 @@ export class CredentialDefinitionRepository {
       });
       return saveResult;
     } catch (error) {
-      this.logger.error(
-        `Error in saving credential-definition: ${error.message} `
-      );
+      this.logger.error(`Error in saving credential-definition: ${error.message} `);
       throw error;
     }
   }

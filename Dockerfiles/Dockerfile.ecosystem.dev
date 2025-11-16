@@ -46,7 +46,7 @@ RUN echo '#!/bin/sh' > /app/start-dev.sh && \
     echo 'ls -la /app/libs/prisma-service/prisma/' >> /app/start-dev.sh && \
     echo 'echo "🔧 Running Prisma migrations..."' >> /app/start-dev.sh && \
     echo 'cd /app/libs/prisma-service' >> /app/start-dev.sh && \
-    echo 'PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start-dev.sh && \
+    echo 'echo "⏭️  Skipping migrations (handled by agent-provisioning service)"' >> /app/start-dev.sh && \
     echo 'echo "⚡ Generating Prisma client..."' >> /app/start-dev.sh && \
     echo 'PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 PRISMA_SKIP_DOWNLOAD=true npx prisma generate --schema=./prisma/schema.prisma' >> /app/start-dev.sh && \
     echo 'echo "📦 Checking generated Prisma client..."' >> /app/start-dev.sh && \

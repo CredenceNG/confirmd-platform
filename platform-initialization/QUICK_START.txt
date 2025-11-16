@@ -1,0 +1,37 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║      Confirmd Platform - Quick Start Initialization              ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+📋 Prerequisites:
+   ✓ Docker running
+   ✓ Services started: docker compose -f docker-compose-dev.yml up -d
+   ✓ Wait 2-3 minutes for migrations to complete
+
+🚀 Quick Initialize (All Steps):
+   cd platform-initialization/scripts
+   ./run-all.sh
+
+📝 Manual Steps:
+   ./1-seed-database.sh                    # Seed base data
+   ./2-setup-keycloak.sh                   # Setup auth  
+   ./3-create-platform-admin.sh            # Create admin org
+   ./4-update-platform-token.sh "TOKEN"    # Update API token
+
+📚 Documentation:
+   README.md                               # Overview
+   docs/INITIALIZATION_CHECKLIST.md        # Step-by-step guide
+   docs/PLATFORM_ADMIN_SETUP.md            # Admin details
+   docs/TROUBLESHOOTING.md                 # Common issues
+
+🔑 Platform Admin Credentials:
+   Email:    admin@getconfirmd.com
+   Password: PlatformAdmin123!
+   Org ID:   f856e3a4-b09c-4356-82de-b105594eec43
+
+✅ Verify Setup:
+   docker compose -f docker-compose-dev.yml ps
+   docker exec confirmd-platform-postgres-1 psql -U postgres -d credebl -c \
+       "SELECT COUNT(*) FROM organisation WHERE id = 'f856e3a4-b09c-4356-82de-b105594eec43';"
+

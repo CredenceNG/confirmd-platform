@@ -19,4 +19,4 @@ RUN pnpm i --ignore-scripts
 RUN cd libs/prisma-service && npx prisma generate
 
 # Set the command to run the microservice
-CMD ["sh", "-c", "cd libs/prisma-service && npx prisma migrate deploy && npx prisma generate && npx prisma db seed"]
+CMD ["sh", "-c", "cd libs/prisma-service && npx prisma generate && npx prisma db seed"]

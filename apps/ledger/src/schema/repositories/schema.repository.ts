@@ -262,7 +262,11 @@ export class SchemaRepository {
           }
         }
       });
-      return agentDetails;
+      return agentDetails as unknown as organisation & {
+        org_agents: (org_agents & {
+          org_agent_type: org_agents_type;
+        })[];
+      };
     } catch (error) {
       this.logger.error(`Error in getting agent type: ${error}`);
       throw error;
