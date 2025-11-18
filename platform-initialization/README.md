@@ -15,7 +15,7 @@ platform-initialization/
 │   ├── 1-seed-database.sh            # Seed base data (agents, ledgers, roles)
 │   ├── 2-setup-keycloak.sh           # Configure Keycloak authentication
 │   ├── 3-create-platform-admin.sh    # Create platform admin org & agent
-│   ├── 4-update-platform-token.sh    # Update platform admin API token
+│   ├── 4-update-platform-token.js    # Auto-extract & update platform admin API token
 │   └── run-all.sh                    # Run all initialization scripts
 └── sql/
     ├── seed-agent-types.sql          # Agent type seed data
@@ -54,8 +54,11 @@ If you prefer to run steps individually:
 # 3. Create platform admin organization and agent
 ./scripts/3-create-platform-admin.sh
 
-# 4. Update platform admin API token (when you have a new token)
-./scripts/4-update-platform-token.sh "your-new-api-token-here"
+# 4. Update platform admin API token (auto-extracts from agent logs)
+node ./scripts/4-update-platform-token.js
+
+# Or provide token manually if auto-extraction fails:
+node ./scripts/4-update-platform-token.js "your-new-api-token-here"
 ```
 
 ## Platform Admin Credentials
@@ -83,8 +86,9 @@ If you prefer to run steps individually:
 
 - Always run migrations before initialization (handled by agent-provisioning)
 - Scripts are idempotent - safe to run multiple times
-- Platform admin API token needs to be updated when the external agent is restarted
-- Keep track of your `.env` file - it contains critical configuration
+- Platform admin API token is automatically extracted from agent logs during initialization
+- Token can be manually updated anytime with: `node ./scripts/4-update-platform-token.js`
+- Keep track of your `.env` file - it contains critical configuration (especially `CRYPTO_PRIVATE_KEY`)
 
 ## Verification
 

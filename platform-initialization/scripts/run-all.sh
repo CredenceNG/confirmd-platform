@@ -65,29 +65,52 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 ./3-create-platform-admin.sh
 echo ""
 
-# Step 4: Update Platform Token (if provided)
+# Step 4: Update Platform Token (auto-extract or manual)
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "STEP 4/4: Platform Admin API Token"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "⚠️  Platform admin API token update required."
+echo "This step will automatically extract the JWT token from platform-admin-agent logs."
 echo ""
-read -p "Do you have the platform admin API token? (y/N) " -n 1 -r
+read -p "Proceed with automatic token extraction? (Y/n) " -n 1 -r
 echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+if [[ ! $REPLY =~ ^[Nn]$ ]]; then
     echo ""
-    echo "Please paste your platform admin API token:"
-    read -r API_TOKEN
-    if [ -n "$API_TOKEN" ]; then
-        ./4-update-platform-token.sh "$API_TOKEN"
+    echo "Attempting automatic token extraction..."
+    node ./4-update-platform-token.js
+    TOKEN_UPDATE_STATUS=$?
+    if [ $TOKEN_UPDATE_STATUS -eq 0 ]; then
+        echo ""
+        echo "✅ Token updated successfully via auto-extraction"
+        TOKEN_UPDATED=true
     else
-        echo "⚠️  No token provided. You can update it later with:"
-        echo "   ./4-update-platform-token.sh \"your-token-here\""
+        echo ""
+        echo "⚠️  Auto-extraction failed. You can provide the token manually:"
+        read -p "Do you want to provide the token manually? (y/N) " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo ""
+            echo "Please paste your platform admin API token:"
+            read -r API_TOKEN
+            if [ -n "$API_TOKEN" ]; then
+                node ./4-update-platform-token.js "$API_TOKEN"
+                if [ $? -eq 0 ]; then
+                    TOKEN_UPDATED=true
+                fi
+            else
+                echo "⚠️  No token provided. You can update it later with:"
+                echo "   node ./4-update-platform-token.js \"your-token-here\""
+            fi
+        else
+            echo ""
+            echo "⚠️  Skipping token update. You can update it later with:"
+            echo "   node ./4-update-platform-token.js"
+        fi
     fi
 else
     echo ""
     echo "⚠️  Skipping token update. You can update it later with:"
-    echo "   ./4-update-platform-token.sh \"your-token-here\""
+    echo "   node ./4-update-platform-token.js"
 fi
 
 echo ""
@@ -101,7 +124,7 @@ echo "📋 Summary:"
 echo "  ✅ Database seeded with base data"
 echo "  ✅ Keycloak configured"
 echo "  ✅ Platform admin organization created"
-echo "  $([ -n "$API_TOKEN" ] && echo '✅' || echo '⚠️ ') Platform admin API token $([ -n "$API_TOKEN" ] && echo 'updated' || echo 'pending')"
+echo "  $([ "$TOKEN_UPDATED" = true ] && echo '✅' || echo '⚠️ ') Platform admin API token $([ "$TOKEN_UPDATED" = true ] && echo 'updated' || echo 'pending')"
 echo ""
 echo "🎯 Next Steps:"
 echo "  1. Verify setup with: docker compose -f docker-compose-dev.yml ps"

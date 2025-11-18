@@ -70,10 +70,15 @@ Expected: 1 organization, 1 agent
 
 ### Step 4: Platform Admin API Token ✓
 
-- [ ] Obtain API token from platform-admin agent logs or UI
-- [ ] Run: `./scripts/4-update-platform-token.sh "your-token"`
+- [ ] Run: `node ./scripts/4-update-platform-token.js` (auto-extracts token from agent logs)
 - [ ] Verify token encrypted and stored
 - [ ] Verify agent endpoint configured
+
+**Note:** The script automatically extracts the JWT token from platform-admin-agent container logs.
+If auto-extraction fails, you can provide the token manually:
+```bash
+node ./scripts/4-update-platform-token.js "your-jwt-token"
+```
 
 **Verification Command:**
 ```bash

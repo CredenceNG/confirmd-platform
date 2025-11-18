@@ -115,17 +115,23 @@ const encryptedToken = CryptoJS.AES.encrypt(
 
 ### Updating the Token
 
-When the platform admin agent is restarted or a new token is generated:
+The token is automatically updated during platform initialization. If you need to update it manually:
 
 ```bash
 cd platform-initialization/scripts
-./4-update-platform-token.sh "your-new-api-token"
+
+# Auto-extract from agent logs (recommended)
+node ./4-update-platform-token.js
+
+# Or provide token manually
+node ./4-update-platform-token.js "your-new-api-token"
 ```
 
 This script:
-1. Encrypts the token using AES
-2. Updates the `org_agents` table
-3. Verifies the update
+1. Extracts the current JWT token from platform-admin-agent logs (or uses provided token)
+2. Encrypts the token using CryptoJS AES (matching platform encryption)
+3. Updates the `org_agents` table
+4. Verifies encryption/decryption works correctly
 
 ## Agent Endpoint Configuration
 
@@ -230,7 +236,10 @@ docker exec confirmd-platform-postgres-1 psql -U postgres -d credebl \
 ```
 
 ### 4. Update API Token
-Use script 4 with the actual token.
+Use the automated script:
+```bash
+node platform-initialization/scripts/4-update-platform-token.js
+```
 
 ## References
 

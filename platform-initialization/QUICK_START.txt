@@ -15,9 +15,9 @@
 
 📝 Manual Steps:
    ./1-seed-database.sh                    # Seed base data
-   ./2-setup-keycloak.sh                   # Setup auth  
+   ./2-setup-keycloak.sh                   # Setup auth
    ./3-create-platform-admin.sh            # Create admin org
-   ./4-update-platform-token.sh "TOKEN"    # Update API token
+   node ./4-update-platform-token.js       # Auto-extract & update token
 
 📚 Documentation:
    README.md                               # Overview
