@@ -187,7 +187,7 @@ export class EcosystemService {
     try {
       this.logger.log(`Removing organization ${data.orgId} from ecosystem ${data.ecosystemId}`);
 
-      await this.ecosystemRepository.removeOrganizationFromEcosystem(data.ecosystemId, data.orgId, data.userId);
+      await this.ecosystemRepository.removeOrganizationFromEcosystem(data.ecosystemId, data.orgId);
 
       this.logger.log(`Organization removed from ecosystem successfully`);
       return { message: 'Organization removed from ecosystem successfully' };

@@ -7,7 +7,8 @@ import {
   IAddSchemaToEcosystem,
   IUpdateSchemaPricing,
   ICreateEcosystemInvitation,
-  IEcosystemPagination
+  IEcosystemPagination,
+  ICreateTransaction
 } from '../interfaces/ecosystem.interface';
 import {
   ecosystem,
@@ -558,7 +559,7 @@ export class EcosystemRepository {
 
   // Transaction management
   // eslint-disable-next-line camelcase
-  async createTransaction(data: Record<string, unknown>): Promise<ecosystem_transactions> {
+  async createTransaction(data: ICreateTransaction): Promise<ecosystem_transactions> {
     try {
       // eslint-disable-next-line camelcase
       return await this.prisma.ecosystem_transactions.create({
