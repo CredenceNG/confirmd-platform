@@ -194,7 +194,7 @@ interface Organization {
   stateCode?: string;
   cityCode?: string;
   status?: string;
-  org_agents: org_agents[];
+  org_agents: org_agents | null;
 }
 
 interface org_agents {

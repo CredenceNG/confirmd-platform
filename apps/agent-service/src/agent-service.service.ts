@@ -841,7 +841,7 @@ export class AgentServiceService {
       // Get platform admin details
       const platformAdminSpinnedUp = await this.getPlatformAdminAndNotify(payload.clientSocketId);
 
-      payload.endpoint = platformAdminSpinnedUp.org_agents[0].agentEndPoint;
+      payload.endpoint = platformAdminSpinnedUp.org_agents?.agentEndPoint;
       // Create tenant wallet and DID
       const tenantDetails = await this.createTenantAndNotify(payload, platformAdminSpinnedUp);
       if (!tenantDetails?.walletResponseDetails?.id || !tenantDetails?.DIDCreationOption?.did) {
@@ -852,7 +852,7 @@ export class AgentServiceService {
         });
       }
 
-      if (AgentSpinUpStatus.COMPLETED !== platformAdminSpinnedUp.org_agents[0].agentSpinUpStatus) {
+      if (AgentSpinUpStatus.COMPLETED !== platformAdminSpinnedUp.org_agents?.agentSpinUpStatus) {
         this.logger.error(`Platform-admin agent is not spun-up`);
         throw new NotFoundException(ResponseMessages.agent.error.platformAdminNotAbleToSpinp, {
           cause: new Error(),
@@ -871,7 +871,7 @@ export class AgentServiceService {
         agentSpinUpStatus: AgentSpinUpStatus.COMPLETED,
         agentsTypeId: agentTypeId,
         orgId: payload.orgId,
-        agentEndPoint: platformAdminSpinnedUp.org_agents[0].agentEndPoint,
+        agentEndPoint: platformAdminSpinnedUp.org_agents?.agentEndPoint,
         orgAgentTypeId,
         tenantId: tenantDetails.walletResponseDetails['id'],
         walletName: payload.label,
@@ -924,8 +924,8 @@ export class AgentServiceService {
         CommonConstants.PLATFORM_ADMIN_ORG
       );
 
-      const getPlatformAgentEndPoint = platformAdminSpinnedUp.org_agents[0].agentEndPoint;
-      const getDcryptedToken = await this.commonService.decryptPassword(platformAdminSpinnedUp?.org_agents[0].apiKey);
+      const getPlatformAgentEndPoint = platformAdminSpinnedUp.org_agents?.agentEndPoint;
+      const getDcryptedToken = await this.commonService.decryptPassword(platformAdminSpinnedUp?.org_agents?.apiKey);
 
       const { label } = payload;
       const createTenantOptions = {
@@ -1091,8 +1091,8 @@ export class AgentServiceService {
         CommonConstants.PLATFORM_ADMIN_ORG
       );
 
-      const getPlatformAgentEndPoint = platformAdminSpinnedUp.org_agents[0].agentEndPoint;
-      const getDcryptedToken = await this.commonService.decryptPassword(platformAdminSpinnedUp?.org_agents[0].apiKey);
+      const getPlatformAgentEndPoint = platformAdminSpinnedUp.org_agents?.agentEndPoint;
+      const getDcryptedToken = await this.commonService.decryptPassword(platformAdminSpinnedUp?.org_agents?.apiKey);
 
       const url = `${getPlatformAgentEndPoint}${CommonConstants.CREATE_POLYGON_SECP256k1_KEY}`;
 
@@ -1151,10 +1151,10 @@ export class AgentServiceService {
     delete WalletSetupPayload.orgId;
     delete WalletSetupPayload.ledgerId;
 
-    const getDcryptedToken = await this.commonService.decryptPassword(platformAdminSpinnedUp?.org_agents[0].apiKey);
+    const getDcryptedToken = await this.commonService.decryptPassword(platformAdminSpinnedUp?.org_agents?.apiKey);
     const walletResponseDetails = await this._createTenantWallet(
       walletLabel,
-      platformAdminSpinnedUp.org_agents[0].agentEndPoint,
+      platformAdminSpinnedUp.org_agents?.agentEndPoint,
       getDcryptedToken
     );
     if (!walletResponseDetails && !walletResponseDetails.id) {
@@ -1162,7 +1162,7 @@ export class AgentServiceService {
     }
     const didCreateOption = {
       didPayload: WalletSetupPayload,
-      agentEndpoint: platformAdminSpinnedUp.org_agents[0].agentEndPoint,
+      agentEndpoint: platformAdminSpinnedUp.org_agents?.agentEndPoint,
       apiKey: getDcryptedToken,
       tenantId: walletResponseDetails.id
     };
@@ -1930,7 +1930,7 @@ export class AgentServiceService {
         if (!platformAdminSpinnedUp) {
           throw new InternalServerErrorException('Agent not able to spin-up');
         }
-        apiKey = platformAdminSpinnedUp.org_agents[0]?.apiKey;
+        apiKey = platformAdminSpinnedUp.org_agents?.apiKey;
       } else {
         apiKey = orgAgentApiKey?.apiKey;
       }

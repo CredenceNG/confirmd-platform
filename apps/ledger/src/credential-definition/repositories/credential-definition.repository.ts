@@ -192,9 +192,11 @@ export class CredentialDefinitionRepository {
 
   async getAgentType(orgId: string): Promise<
     organisation & {
-      org_agents: (org_agents & {
-        org_agent_type: org_agents_type;
-      })[];
+      org_agents:
+        | (org_agents & {
+            org_agent_type: org_agents_type;
+          })
+        | null;
     }
   > {
     try {
@@ -211,9 +213,11 @@ export class CredentialDefinitionRepository {
         }
       });
       return agentDetails as unknown as organisation & {
-        org_agents: (org_agents & {
-          org_agent_type: org_agents_type;
-        })[];
+        org_agents:
+          | (org_agents & {
+              org_agent_type: org_agents_type;
+            })
+          | null;
       };
     } catch (error) {
       this.logger.error(`Error in getting agent type: ${error}`);

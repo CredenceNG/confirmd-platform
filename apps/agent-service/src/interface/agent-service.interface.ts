@@ -455,7 +455,7 @@ interface IOrgAgentEndPoint {
 }
 
 export interface IOrgAgentsResponse {
-  org_agents: IOrgAgentEndPoint[];
+  org_agents: IOrgAgentEndPoint | null;
 }
 export interface IStoreAgent {
   id: string;

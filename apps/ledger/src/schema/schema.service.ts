@@ -123,7 +123,8 @@ export class SchemaService extends BaseService {
               });
             }
 
-            const attributeDisplayNamesLowerCase = trimmedAttributes.map((attribute) => attribute.displayName.toLocaleLowerCase()
+            const attributeDisplayNamesLowerCase = trimmedAttributes.map((attribute) =>
+              attribute.displayName.toLocaleLowerCase()
             );
             const duplicateAttributeDisplayNames = attributeDisplayNamesLowerCase.filter(
               (value, index, element) => element.indexOf(value) !== index
@@ -150,7 +151,7 @@ export class SchemaService extends BaseService {
             const did = schema.orgDid?.split(':').length >= 4 ? schema.orgDid : orgDid;
 
             const orgAgentType = await this.schemaRepository.getOrgAgentType(
-              getAgentDetails.org_agents[0].orgAgentTypeId
+              getAgentDetails.org_agents?.orgAgentTypeId
             );
 
             const attributeArray = trimmedAttributes.map((item) => item.attributeName);
@@ -298,7 +299,7 @@ export class SchemaService extends BaseService {
       }
 
       const getAgentDetails = await this.schemaRepository.getAgentType(orgId);
-      const orgAgentType = await this.schemaRepository.getOrgAgentType(getAgentDetails.org_agents[0].orgAgentTypeId);
+      const orgAgentType = await this.schemaRepository.getOrgAgentType(getAgentDetails.org_agents?.orgAgentTypeId);
       let url;
       if (OrgAgentType.DEDICATED === orgAgentType) {
         url = `${agentEndPoint}${CommonConstants.DEDICATED_CREATE_POLYGON_W3C_SCHEMA}`;
@@ -359,7 +360,6 @@ export class SchemaService extends BaseService {
   }
 
   private async storeW3CSchemas(schemaDetails, user, orgId, attributes, alias): Promise<schema> {
-
     let ledgerDetails;
     const schemaServerUrl = `${process.env.SCHEMA_FILE_SERVER_URL}${schemaDetails.schemaId}`;
     const schemaRequest = await this.commonService.httpGet(schemaServerUrl).then(async (response) => response);
@@ -496,7 +496,7 @@ export class SchemaService extends BaseService {
         throw new NotFoundException(ResponseMessages.schema.error.notFound);
       }
 
-      const orgAgentType = await this.schemaRepository.getOrgAgentType(getAgentDetails.org_agents[0].orgAgentTypeId);
+      const orgAgentType = await this.schemaRepository.getOrgAgentType(getAgentDetails.org_agents?.orgAgentTypeId);
 
       let schemaResponse;
       if (getSchemaDetails?.type === SchemaType.INDY) {
