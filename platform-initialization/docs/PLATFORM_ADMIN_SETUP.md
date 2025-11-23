@@ -9,7 +9,7 @@ The platform admin is a special system-level account with full access to manage 
 1. **Keycloak User**: Authentication and authorization
 2. **Database User Record**: Platform user profile
 3. **Platform Organization**: System organization for platform operations
-4. **Platform Agent**: Dedicated agent for platform-level SSI operations
+4. **Platform Agent**: SHARED agent for platform-level SSI operations
 
 ## Components
 
@@ -86,7 +86,7 @@ tenantId: platform-admin-tenant
 ```
 
 **Purpose**:
-- Dedicated agent for platform-level SSI operations
+- SHARED agent for platform-level SSI operations (used by all organizations with SHARED agent type)
 - Handles system-wide credential issuance
 - Manages platform-level DIDs and schemas
 

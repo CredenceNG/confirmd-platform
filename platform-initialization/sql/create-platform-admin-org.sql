@@ -57,7 +57,7 @@ SELECT
     3, -- Spin up complete
     'ENCRYPTED_API_TOKEN_HERE', -- Will be updated by script 4
     (SELECT id FROM ledgers WHERE name = 'bcovrin:testnet' LIMIT 1),
-    (SELECT id FROM org_agents_type WHERE agent = 'DEDICATED' LIMIT 1),
+    (SELECT id FROM org_agents_type WHERE agent = 'SHARED' LIMIT 1),
     'platform-admin-tenant'
 WHERE NOT EXISTS (
     SELECT 1 FROM org_agents WHERE "orgId" = 'f856e3a4-b09c-4356-82de-b105594eec43'

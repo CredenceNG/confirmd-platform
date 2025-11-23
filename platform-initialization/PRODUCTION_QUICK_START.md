@@ -12,7 +12,7 @@ Your Confirmd platform has been initialized with the following:
 - ✅ **User Roles**: DEFAULT_USER, HOLDER
 - ✅ **Platform Admin User**: admin@getconfirmd.com
 - ✅ **Platform Admin Organization**: f856e3a4-b09c-4356-82de-b105594eec43
-- ✅ **Platform Admin Agent**: Configured and token updated
+- ✅ **Platform Admin Agent**: SHARED agent - used by all organizations with SHARED agent type
 
 ---
 

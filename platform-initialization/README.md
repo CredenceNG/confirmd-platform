@@ -80,7 +80,9 @@ node ./scripts/4-update-platform-token.js "your-new-api-token-here"
 3. **Ledgers**: BCovrin testnet, Indicio networks
 4. **User Roles**: DEFAULT_USER, HOLDER
 5. **Keycloak**: Realm roles, platform admin client, user accounts
-6. **Platform Admin**: Organization record, agent record, API token
+6. **Platform Admin**: Organization record, SHARED agent record, API token
+
+> **Note**: The Platform Admin organization uses a SHARED agent type. All organizations configured with SHARED agent type will use the Platform Admin's agent for SSI operations.
 
 ## Important Notes
 
